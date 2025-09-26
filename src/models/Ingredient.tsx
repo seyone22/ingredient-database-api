@@ -7,6 +7,7 @@ export interface IIngredient extends Document {
     cuisine: string[];      // list of cuisines
     region?: string[];
     flavor_profile?: string[];
+    dietary_flags?: string[];
     provenance: string;     // fallback / single string
     comment?: string;
     pronunciation?: string;
@@ -29,6 +30,7 @@ export interface IIngredientData {
     cuisine?: string[];
     region?: string[];
     flavor_profile?: string[];
+    dietary_flags?: string[];
     provenance?: string;
     comment?: string;
     pronunciation?: string;
@@ -50,6 +52,7 @@ const IngredientSchema = new Schema<IIngredient>({
     cuisine: { type: [String], default: [] },
     region: { type: [String], default: [] },
     flavor_profile: { type: [String], default: [] },
+    dietary_flags: { type: [String], default: [] },
     provenance: { type: String, default: "MISSING" },
     comment: { type: String },
     pronunciation: { type: String },
