@@ -12,6 +12,14 @@ export interface IIngredient extends Document {
     pronunciation?: string;
     photo?: string;         // URL or relative path
     last_modified: Date;
+
+    // Graph relationships (all use IDs, not names)
+    partOf?: string[];      // Egg White -> Egg
+    derivatives?: string[]; // Egg -> Egg White, Powdered Egg
+    varieties?: string[];   // Egg -> Hen Egg, Duck Egg
+    usedIn?: string[];      // Egg -> Eggnog
+    substitutes?: string[]; // Egg -> Chia Seeds
+    pairsWith?: string[];   // Egg -> Bacon
 }
 
 export interface IIngredientData {
@@ -26,6 +34,13 @@ export interface IIngredientData {
     pronunciation?: string;
     photo?: string;
     last_modified?: Date;
+
+    partOf?: string[];
+    derivatives?: string[];
+    varieties?: string[];
+    usedIn?: string[];
+    substitutes?: string[];
+    pairsWith?: string[];
 }
 
 const IngredientSchema = new Schema<IIngredient>({
@@ -39,6 +54,14 @@ const IngredientSchema = new Schema<IIngredient>({
     comment: { type: String },
     pronunciation: { type: String },
     photo: { type: String },
+
+    // Relationship arrays
+    partOf: { type: [String], default: [] },
+    derivatives: { type: [String], default: [] },
+    varieties: { type: [String], default: [] },
+    usedIn: { type: [String], default: [] },
+    substitutes: { type: [String], default: [] },
+    pairsWith: { type: [String], default: [] }
 }, {
     timestamps: true,
     collection: "ingredients",
