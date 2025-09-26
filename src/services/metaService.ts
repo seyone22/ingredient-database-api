@@ -37,10 +37,20 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
     const byFlavor: Record<string, number> = {};
 
     ingredients.forEach((ing) => {
-        (ing.country || []).forEach(c => byCountry[c] = (byCountry[c] || 0) + 1);
-        (ing.cuisine || []).forEach(c => byCuisine[c] = (byCuisine[c] || 0) + 1);
-        (ing.region || []).forEach(r => byRegion[r] = (byRegion[r] || 0) + 1);
-        (ing.flavor_profile || []).forEach(f => byFlavor[f] = (byFlavor[f] || 0) + 1);
+        const { country = [], cuisine = [], region = [], flavor_profile = [] } = ing;
+
+        country.forEach((c: string) => {
+            byCountry[c] = (byCountry[c] || 0) + 1;
+        });
+        cuisine.forEach((c: string) => {
+            byCuisine[c] = (byCuisine[c] || 0) + 1;
+        });
+        region.forEach((r: string) => {
+            byRegion[r] = (byRegion[r] || 0) + 1;
+        });
+        flavor_profile.forEach((f: string) => {
+            byFlavor[f] = (byFlavor[f] || 0) + 1;
+        });
     });
 
     return {
