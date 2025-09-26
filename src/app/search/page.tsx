@@ -11,7 +11,13 @@ import styles from "./page.module.css";
 
 export default function SearchPage() {
     const searchParams = useSearchParams();
-    const query = searchParams.get("query") || "";
+    const [query, setQuery] = useState<string | null>(null);
+
+    useEffect(() => {
+        setQuery(searchParams.get("query"));
+    }, [searchParams]);
+
+    if (!query) return <p style={{ padding: "2rem" }}>No search query provided.</p>;
 
     const [results, setResults] = useState<IIngredientData[]>([]);
     const [loading, setLoading] = useState(false);
