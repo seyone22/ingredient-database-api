@@ -9,7 +9,7 @@ export default function NavBar() {
                 </h2>
             </a>
             <ul className={styles.navLinks}>
-                <li><a href="/explore">Documentation</a></li>
+                <li><a href="/documentation">Documentation</a></li>
                 <li><a href="/contribute">Contribute</a></li>
                 <li><a href="/about">About</a></li>
             </ul>

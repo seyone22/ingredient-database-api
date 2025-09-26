@@ -39,7 +39,9 @@ const IngredientSchema = new Schema<IIngredient>({
     comment: { type: String },
     pronunciation: { type: String },
     photo: { type: String },
-    last_modified: { type: Date, default: Date.now },
+}, {
+    timestamps: true,
+    collection: "ingredients",
 });
 
 export const Ingredient = mongoose.models.Ingredient || model<IIngredient>("Ingredient", IngredientSchema);

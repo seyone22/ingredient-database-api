@@ -1,0 +1,54 @@
+.page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
+    background: var(--color-bg, #f0f1f5);
+}
+
+.main {
+    flex: 1;
+    padding: 3rem 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.title {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.searchBarContainer {
+    margin-bottom: 2rem;
+}
+
+.resultsList {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 1.5rem;
+}
+
+.card {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.ingName {
+    margin: 0 0 0.5rem 0;
+}
+
+.loading,
+.error,
+.noResults {
+    text-align: center;
+    font-size: 1.1rem;
+    color: #666;
+}
+
+.error {
+    color: #d9534f;
+}
