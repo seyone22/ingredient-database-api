@@ -1,15 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { IIngredientData } from "@/models/Ingredient";
-import Navbar from "@/components/NavBar";
-import Footer from "@/components/Footer";
-import SearchBar from "@/components/SearchBar";
+import Navbar from "@/components/navbar/NavBar";
+import Footer from "@/components/footer/Footer";
+import SearchBar from "@/components/searchbar/SearchBar";
+import IngredientCard from "@/components/ingredientcard/IngredientCard";
+import Pagination from "@/components/pagination/Pagination"; // Import the new component
 import styles from "./page.module.css";
 
+
 export default function SearchPage() {
-    const router = useRouter();
     const [query, setQuery] = useState<string>("");
     const [results, setResults] = useState<IIngredientData[]>([]);
     const [loading, setLoading] = useState(false);
@@ -24,8 +26,11 @@ export default function SearchPage() {
         setQuery(q);
     }, []);
 
-    const fetchData = async (pageNumber: number = 1) => {
+    const fetchData = useCallback(async (pageNumber: number = 1) => {
+
         if (!query.trim()) return;
+
+        console.log("Hi" + pageNumber)
 
         setLoading(true);
         setError(null);
@@ -43,34 +48,51 @@ export default function SearchPage() {
                 setResults([]);
                 setError(data.error || "No results found");
                 setTotalPages(1);
+                setPage(1); // Reset page on error
                 return;
             }
 
             setResults(data.results);
             setPage(data.page);
             setTotalPages(data.totalPages);
-            if (data.results.length === 0) setError("No results found");
+
+            if (data.results.length === 0 && data.page === 1) {
+                setError("No results found");
+            } else if (data.results.length === 0 && data.page > 1) {
+                // If we navigate to an empty page, it means there are no more results
+                // You could reset to the last valid page or simply show a message.
+                // For now, let's keep showing the empty results and an error message.
+                setError("No more results on this page.");
+            }
+
         } catch (err) {
             setResults([]);
             setError("Failed to fetch ingredients");
+            setTotalPages(1);
+            setPage(1); // Reset page on error
         } finally {
             setLoading(false);
         }
-    };
+    }, [query]); // Added totalPages to dependencies
 
     // Fetch data whenever query changes
     useEffect(() => {
         if (query) fetchData(1);
-    }, [query]);
+    }, [query, fetchData]); // fetchData is stable due to useCallback
+
+    const handlePageChange = useCallback((newPage: number) => {
+        fetchData(newPage);
+    }, [fetchData]);
+
 
     return (
         <div className={styles.page}>
-            <Navbar />
+            <Navbar/>
 
             <main className={styles.main}>
                 <h1 className={styles.title}>Search results for "{query}"</h1>
                 <div className={styles.searchBarContainer}>
-                    <SearchBar />
+                    <SearchBar/>
                 </div>
 
                 {loading && <p className={styles.loading}>Loading...</p>}
@@ -78,42 +100,23 @@ export default function SearchPage() {
 
                 <ul className={styles.resultsList}>
                     {results.map((ing) => (
-                        <li key={ing.name} className={styles.card}>
-                            <h2 className={styles.ingName}>{ing.name}</h2>
-                            <p>
-                                <strong>Provenance:</strong> {ing.provenance || "Unknown"}
-                            </p>
-                            {ing.flavor_profile && (
-                                <p>
-                                    <strong>Flavor:</strong> {ing.flavor_profile.join(", ")}
-                                </p>
-                            )}
-                            {ing.comment && (
-                                <p dangerouslySetInnerHTML={{ __html: ing.comment }}></p>
-                            )}
-                        </li>
+                        <IngredientCard key={ing.name} ingredient={ing}/>
                     ))}
                 </ul>
 
+                {/* Render the Pagination component */}
                 {totalPages > 1 && (
-                    <div className={styles.pagination}>
-                        <button onClick={() => fetchData(page - 1)} disabled={page <= 1}>
-                            Previous
-                        </button>
-                        <span>
-              Page {page} of {totalPages}
-            </span>
-                        <button
-                            onClick={() => fetchData(page + 1)}
-                            disabled={page >= totalPages}
-                        >
-                            Next
-                        </button>
-                    </div>
+                    <Pagination
+                        currentPage={page}
+                        totalPageCount={totalPages}
+                        onPageChange={handlePageChange}
+                        disabled={loading} // Disable all pagination buttons when loading
+                        siblingCount={1}
+                    />
                 )}
             </main>
 
-            <Footer />
+            <Footer/>
         </div>
     );
 }

@@ -19,7 +19,7 @@ export default function Footer() {
                     height={16}
                 />
             </a>
-            <p>© {new Date().getFullYear()} FoodRepo by Seyone Gunasingham</p>
+            <p>© {new Date().getFullYear()} FoodRepo by <a href={'https://www.github.com/seyone22'}>Seyone Gunasingham</a> </p>
         </footer>
     );
 }

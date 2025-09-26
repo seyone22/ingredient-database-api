@@ -1,6 +1,6 @@
-import NavBar from "../components/NavBar";
-import SearchBar from "../components/SearchBar";
-import Footer from "../components/Footer";
+import NavBar from "../components/navbar/NavBar";
+import SearchBar from "../components/searchbar/SearchBar";
+import Footer from "../components/footer/Footer";
 import styles from "./page.module.css";
 
 export default function Home() {

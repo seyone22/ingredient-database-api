@@ -1,5 +1,5 @@
-import Navbar from "@/components/NavBar";
-import Footer from "@/components/Footer";
+import Navbar from "@/components/navbar/NavBar";
+import Footer from "@/components/footer/Footer";
 
 export default function Documentation() {
     return (

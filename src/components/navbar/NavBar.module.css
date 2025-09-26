@@ -1,0 +1,151 @@
+/* NavBar.module.css */
+
+/* Base Styles for NavBar */
+.nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem 3rem;
+    border-bottom: 1px solid #eee;
+    background-color: #f0f1f5;
+    position: relative; /* Crucial for absolute positioning of mobile menu */
+    z-index: 1000; /* Ensure nav is above other content */
+}
+
+.logoLink {
+    text-decoration: none;
+    color: inherit; /* Ensure logo text color is inherited */
+    /* On mobile, we want the logo to stand alone at the top-left */
+    z-index: 20; /* Ensure logo is above the mobile menu */
+}
+
+.logo {
+    font-weight: bold;
+    font-size: 1.5rem;
+    color: #222;
+    margin: 0; /* Override any default margin */
+}
+
+.textPrimary {
+    color: var(--color-primary); /* Primary accent color */
+}
+
+/* Nav Links - Default (Desktop) */
+.navLinks {
+    display: flex;
+    gap: 1.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    transition: all 0.3s ease-in-out; /* Add transition for smoothness */
+}
+
+.navLinks a {
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+    transition: color 0.2s ease-in-out;
+    padding: 0.5rem 0; /* Add padding for better hover/click area */
+}
+
+.navLinks a:hover {
+    color: var(--color-primary); /* Primary accent color */
+}
+
+/* Hamburger Button - Hidden by default on desktop */
+.hamburger {
+    display: none; /* Hide on desktop */
+    flex-direction: column;
+    justify-content: space-around;
+    width: 30px;
+    height: 25px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 20; /* Ensure it's above other content if menu is open */
+}
+
+.hamburger:focus {
+    outline: none;
+}
+
+.line {
+    width: 100%;
+    height: 3px;
+    background-color: #333; /* Use a color that contrasts with your nav bg */
+    transition: all 0.3s ease-in-out;
+    border-radius: 2px;
+}
+
+/* --- Mobile Specific Styles --- */
+@media (max-width: 768px) { /* Adjust breakpoint as needed */
+    .nav {
+        flex-direction: row; /* Keep logo and hamburger on one row */
+        justify-content: space-between; /* Space them out */
+        align-items: center; /* Vertically align them */
+        padding: 1rem 2rem; /* Adjusted padding for mobile */
+    }
+
+    /* Show hamburger on mobile */
+    .hamburger {
+        display: flex;
+    }
+
+    /* Nav Links on Mobile - Overlay behavior */
+    .navLinks {
+        position: fixed; /* Fixed position to cover entire viewport */
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(240, 241, 245, 0.95); /* Semi-transparent version of your nav background */
+        flex-direction: column;
+        justify-content: center; /* Center links vertically */
+        align-items: center;
+        gap: 2rem; /* More space between links in full-screen menu */
+
+        /* Initially hidden */
+        transform: translateX(100%); /* Start off-screen to the right */
+        opacity: 0;
+        pointer-events: none; /* Prevent interaction when hidden */
+        z-index: 15; /* Below hamburger, above main content */
+    }
+
+    /* When menu is open */
+    .navLinksOpen {
+        transform: translateX(0); /* Slide into view */
+        opacity: 1;
+        pointer-events: auto; /* Allow interaction */
+    }
+
+    .navLinks li {
+        width: 100%; /* Make list items take full width */
+        text-align: center;
+        /* No border-bottom needed for this overlay style */
+    }
+
+    .navLinks li a {
+        font-size: 1.8rem; /* Larger font for mobile menu links */
+        padding: 1rem 0;
+        display: block; /* Make the entire area clickable */
+        color: #222; /* Adjust link color for the overlay background */
+    }
+
+    .navLinks li a:hover {
+        color: var(--color-primary);
+    }
+
+    /* Hamburger Animation for 'X' icon */
+    .line1Open {
+        transform: translateY(9px) rotate(45deg);
+    }
+
+    .line2Open {
+        opacity: 0;
+    }
+
+    .line3Open {
+        transform: translateY(-9px) rotate(-45deg);
+    }
+}

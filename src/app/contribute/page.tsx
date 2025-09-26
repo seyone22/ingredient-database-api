@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Navbar from "@/components/NavBar";
-import Footer from "@/components/Footer";
+import Navbar from "@/components/navbar/NavBar";
+import Footer from "@/components/footer/Footer";
 import styles from "./page.module.css";
 
 export default function ContributePage() {

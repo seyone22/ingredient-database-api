@@ -1,7 +1,7 @@
 import Image from "next/image";
 import styles from "./page.module.css";
-import NavBar from "@/components/NavBar";
-import Footer from "@/components/Footer";
+import NavBar from "@/components/navbar/NavBar";
+import Footer from "@/components/footer/Footer";
 
 export default function About() {
     return (
