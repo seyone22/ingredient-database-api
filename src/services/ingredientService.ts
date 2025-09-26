@@ -7,10 +7,27 @@ export interface IngredientSearchResponse {
     total: number;
 }
 
+interface SearchOptions {
+    page?: number;
+    limit?: number;
+    autosuggest?: boolean;
+    country?: string | null;
+    cuisine?: string | null;
+    region?: string | null;
+    flavor?: string | null;
+}
+
 export async function searchIngredients(
     query: string,
-    page: number = 1,
-    limit: number = 20
+    {
+        page = 1,
+        limit = 20,
+        autosuggest = false,
+        country,
+        cuisine,
+        region,
+        flavor,
+    }: SearchOptions
 ): Promise<IngredientSearchResponse> {
     if (!query.trim()) {
         return { results: [], page: 1, totalPages: 0, total: 0 };
@@ -18,17 +35,27 @@ export async function searchIngredients(
 
     const skip = (page - 1) * limit;
 
-    // Case-insensitive search on name or aliases
-    const filter = {
+    // Prefix-first regex (better for autosuggest)
+    const prefixRegex = new RegExp(`^${query}`, "i");
+    // Fallback substring regex
+    const containsRegex = new RegExp(query, "i");
+
+    let baseFilter: any = {
         $or: [
-            { name: { $regex: query, $options: "i" } },
-            { aliases: { $regex: query, $options: "i" } }
+            { name: autosuggest ? prefixRegex : containsRegex },
+            { aliases: autosuggest ? prefixRegex : containsRegex }
         ]
     };
 
+    // Apply structured filters if provided
+    if (country) baseFilter.country = country;
+    if (cuisine) baseFilter.cuisine = cuisine;
+    if (region) baseFilter.region = region;
+    if (flavor) baseFilter.flavor_profile = flavor;
+
     const [results, total] = await Promise.all([
-        Ingredient.find(filter).skip(skip).limit(limit),
-        Ingredient.countDocuments(filter)
+        Ingredient.find(baseFilter).skip(skip).limit(limit),
+        Ingredient.countDocuments(baseFilter)
     ]);
 
     return {
@@ -38,28 +65,6 @@ export async function searchIngredients(
         total
     };
 }
-
-
-export async function contributeIngredient(ingredient: IIngredientData) {
-    try {
-        const res = await fetch("/api/ingredients", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(ingredient),
-        });
-
-        if (!res.ok) {
-            const data = await res.json();
-            throw new Error(data.error || "Failed to add ingredient");
-        }
-
-        return await res.json();
-    } catch (err) {
-        console.error("Error contributing ingredient:", err);
-        throw err;
-    }
-}
-
 
 export async function addIngredient(data: IIngredientData) {
     try {
@@ -77,8 +82,7 @@ export async function addIngredient(data: IIngredientData) {
             last_modified: new Date(),
         };
 
-        const created = await Ingredient.create(ingredientData);
-        return created;
+        return await Ingredient.create(ingredientData);
     } catch (err: any) {
         console.error("Error in addIngredient service:", err);
         throw new Error(err.message || "Failed to add ingredient");
