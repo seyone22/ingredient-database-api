@@ -44,3 +44,38 @@
 .textPrimary {
     color: var(--color-primary);
 }
+
+
+
+
+.description {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.statement {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 2rem;
+}
+
+.contact {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+}
+
+.contact a {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: var(--color-text);
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.contact a:hover {
+    color: var(--color-primary);
+}
