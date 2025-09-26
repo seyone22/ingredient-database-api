@@ -1,36 +1,132 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FoodRepo
 
-## Getting Started
+FoodRepo is a culinary ingredient knowledge base built with **Next.js** and **MongoDB**.  
+It provides search, contribution, and metadata features for exploring ingredients in a structured way.
 
-First, run the development server:
+## Features
+
+- Ingredient search by name and aliases, with pagination
+- Contribute page for adding new ingredients
+- Metadata endpoint with statistics (entries, countries, cuisines, regions, flavors)
+- Support for culinary relationships: `partOf`, `varieties`, `derivatives`, `usedIn`, `substitutes`, `pairsWith`
+- MongoDB schema designed to be portable into graph databases like Neo4j
+
+## Tech Stack
+
+- Frontend: Next.js (App Router), React, TypeScript  
+- Backend: Next.js API routes  
+- Database: MongoDB Atlas with Mongoose  
+- Styling: CSS Modules and MUI  
+
+## Project Structure
+
+```
+
+src/
+app/
+api/            # API endpoints
+contribute/     # Contribute page
+search/         # Search page
+components/       # Navbar, Footer, SearchBar, etc.
+models/           # Mongoose schemas
+services/         # Database services
+utils/            # Helpers (dbConnect, etc.)
+
+````
+
+## Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/your-username/foodrepo.git
+cd foodrepo
+````
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Configure environment:
+   Copy `.env.sample` to `.env.local` and set your MongoDB connection string:
+
+```
+MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.mongodb.net/foodrepo
+```
+
+4. Run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app will be available at [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## API Documentation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Search Ingredients
 
-## Learn More
+`GET /api/ingredients?query=<string>&page=<number>&limit=<number>`
 
-To learn more about Next.js, take a look at the following resources:
+Parameters:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+* `query` (required): search term
+* `page` (optional, default 1): page number
+* `limit` (optional, default 20): items per page
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Response:
 
-## Deploy on Vercel
+```json
+{
+  "results": [ { "name": "Banana", "country": ["Sri Lanka"], ... } ],
+  "page": 1,
+  "totalPages": 3,
+  "total": 45
+}
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Contribute Ingredient
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`POST /api/ingredients`
+
+Body:
+
+```json
+{
+  "name": "Mango",
+  "aliases": ["Amba"],
+  "country": ["Sri Lanka"],
+  "cuisine": ["Sri Lankan"],
+  "provenance": "Cultivated in South Asia",
+  "flavor_profile": ["sweet", "fragrant"]
+}
+```
+
+### Database Metadata
+
+`GET /api/meta`
+
+Response:
+
+```json
+{
+  "entryCount": 123,
+  "countries": { "count": 15, "byCountry": { "Sri Lanka": 20, "India": 35 } },
+  "cuisines": { "count": 10, "byCuisine": { "Sri Lankan": 18, "Thai": 12 } },
+  "regions": { "count": 8, "byRegion": { "South Asia": 25, "Southeast Asia": 20 } },
+  "flavorProfiles": { "count": 12, "byFlavor": { "sweet": 40, "sour": 10 } }
+}
+```
+
+## Contributing
+
+Contributions are welcome. You can:
+
+* Add missing ingredients using the Contribute page
+* Open issues for bugs or improvements
+* Submit pull requests for new features
+
+## License
+
+MIT License.
