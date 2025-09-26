@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/utils/dbConnect";
-import { searchIngredients } from "@/services/ingredientService";
+import {addIngredient, searchIngredients} from "@/services/ingredientService";
 
 export const GET = async (req: Request) => {
     await dbConnect();
@@ -27,5 +27,24 @@ export const GET = async (req: Request) => {
             { error: "Server error", details: err.message || err },
             { status: 500 }
         );
+    }
+};
+
+
+export const POST = async (req: Request) => {
+    await dbConnect();
+
+    try {
+        const body = await req.json();
+
+        if (!body.name) {
+            return NextResponse.json({ error: "Name is required" }, { status: 400 });
+        }
+
+        const ingredient = await addIngredient(body);
+
+        return NextResponse.json({ message: "Ingredient added", ingredient }, { status: 201 });
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
     }
 };

@@ -38,3 +38,49 @@ export async function searchIngredients(
         total
     };
 }
+
+
+export async function contributeIngredient(ingredient: IIngredientData) {
+    try {
+        const res = await fetch("/api/ingredients", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ingredient),
+        });
+
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || "Failed to add ingredient");
+        }
+
+        return await res.json();
+    } catch (err) {
+        console.error("Error contributing ingredient:", err);
+        throw err;
+    }
+}
+
+
+export async function addIngredient(data: IIngredientData) {
+    try {
+        const ingredientData = {
+            name: data.name.trim(),
+            aliases: Array.isArray(data.aliases) ? data.aliases.map(a => a.trim()) : [],
+            country: Array.isArray(data.country) ? data.country.map(c => c.trim()) : [],
+            cuisine: Array.isArray(data.cuisine) ? data.cuisine.map(c => c.trim()) : [],
+            region: Array.isArray(data.region) ? data.region.map(r => r.trim()) : [],
+            flavor_profile: Array.isArray(data.flavor_profile) ? data.flavor_profile.map(f => f.trim()) : [],
+            provenance: data.provenance?.trim() || "Unknown",
+            comment: data.comment?.trim(),
+            pronunciation: data.pronunciation?.trim(),
+            photo: data.photo?.trim(),
+            last_modified: new Date(),
+        };
+
+        const created = await Ingredient.create(ingredientData);
+        return created;
+    } catch (err: any) {
+        console.error("Error in addIngredient service:", err);
+        throw new Error(err.message || "Failed to add ingredient");
+    }
+}
