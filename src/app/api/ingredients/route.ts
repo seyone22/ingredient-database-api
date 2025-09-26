@@ -1,21 +1,26 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+// app/api/ingredients/route.ts
+import { NextResponse } from "next/server";
 import dbConnect from "@/utils/dbConnect";
 import { Ingredient } from "@/models/Ingredient";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export const GET = async (req: Request) => {
     await dbConnect();
 
-    const { name } = req.query;
+    const { searchParams } = new URL(req.url);
+    const query = searchParams.get("query")?.trim();
 
-    if (req.method === "GET") {
-        try {
-            const ingredient = await Ingredient.findOne({ name: name as string });
-            if (!ingredient) return res.status(404).json({ error: "Ingredient not found" });
-            return res.status(200).json(ingredient);
-        } catch (err) {
-            return res.status(500).json({ error: "Server error", details: err });
-        }
+    if (!query) {
+        return NextResponse.json({ error: "Missing query parameter" }, { status: 400 });
     }
 
-    return res.status(405).json({ error: "Method not allowed" });
-}
+    try {
+        // Case-insensitive partial match
+        const ingredient = await Ingredient.findOne({ name: { $regex: query, $options: "i" } });
+        if (!ingredient) {
+            return NextResponse.json({ error: "Ingredient not found" }, { status: 404 });
+        }
+        return NextResponse.json(ingredient);
+    } catch (err: any) {
+        return NextResponse.json({ error: "Server error", details: err.message || err }, { status: 500 });
+    }
+};
