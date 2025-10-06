@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: FoodRepo API
-  description: API for FoodRepo, a culinary ingredient knowledge base.
+  description: API for FoodRepo, a culinary ingredient knowledge base and API
   version: 1.0.0
 servers:
   - url: http://localhost:3000
