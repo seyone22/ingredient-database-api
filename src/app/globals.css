@@ -66,3 +66,19 @@ a {
   }
 }
 
+
+.menu-content {
+  background-color: transparent !important; /* your custom color */
+}
+
+.sc-fpikKz {
+  background-color: transparent !important;
+}
+
+.ixknQI:not(:last-child) {
+  border-bottom: 1px solid lightgray !important;
+}
+
+.ps__rail-y {
+  visibility: hidden !important;
+}

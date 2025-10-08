@@ -8,19 +8,27 @@ export interface IIngredient extends Document {
     region?: string[];
     flavor_profile?: string[];
     dietary_flags?: string[];
-    provenance: string;     // fallback / single string
+    provenance?: string;
     comment?: string;
     pronunciation?: string;
-    photo?: string;         // URL or relative path
     last_modified: Date;
 
+    // Image object
+    image?: {
+        url?: string;
+        license?: string;
+        author?: string;
+        source?: string;
+        missing?: boolean;
+    };
+
     // Graph relationships (all use IDs, not names)
-    partOf?: string[];      // Egg White -> Egg
-    derivatives?: string[]; // Egg -> Egg White, Powdered Egg
-    varieties?: string[];   // Egg -> Hen Egg, Duck Egg
-    usedIn?: string[];      // Egg -> Eggnog
-    substitutes?: string[]; // Egg -> Chia Seeds
-    pairsWith?: string[];   // Egg -> Bacon
+    partOf?: string[];
+    derivatives?: string[];
+    varieties?: string[];
+    usedIn?: string[];
+    substitutes?: string[];
+    pairsWith?: string[];
 }
 
 export interface IIngredientData {
@@ -34,8 +42,15 @@ export interface IIngredientData {
     provenance?: string;
     comment?: string;
     pronunciation?: string;
-    photo?: string;
     last_modified?: Date;
+
+    image?: {
+        url?: string;
+        license?: string;
+        author?: string;
+        source?: string;
+        missing?: boolean;
+    };
 
     partOf?: string[];
     derivatives?: string[];
@@ -56,15 +71,23 @@ const IngredientSchema = new Schema<IIngredient>({
     provenance: { type: String, default: "MISSING" },
     comment: { type: String },
     pronunciation: { type: String },
-    photo: { type: String },
+    last_modified: { type: Date, default: Date.now },
 
-    // Relationship arrays
+    image: {
+        url: { type: String },
+        license: { type: String },
+        author: { type: String },
+        source: { type: String },
+        missing: { type: Boolean, default: true },
+    },
+
+    // Relationships
     partOf: { type: [String], default: [] },
     derivatives: { type: [String], default: [] },
     varieties: { type: [String], default: [] },
     usedIn: { type: [String], default: [] },
     substitutes: { type: [String], default: [] },
-    pairsWith: { type: [String], default: [] }
+    pairsWith: { type: [String], default: [] },
 }, {
     timestamps: true,
     collection: "ingredients",

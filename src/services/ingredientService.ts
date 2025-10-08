@@ -78,7 +78,7 @@ export async function addIngredient(data: IIngredientData) {
             provenance: data.provenance?.trim() || "Unknown",
             comment: data.comment?.trim(),
             pronunciation: data.pronunciation?.trim(),
-            photo: data.photo?.trim(),
+            photo: data.image?.url?.trim(),
             last_modified: new Date(),
         };
 

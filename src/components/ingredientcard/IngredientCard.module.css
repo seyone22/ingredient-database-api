@@ -11,8 +11,8 @@
 
 
 .imageWrapper {
-    width: 100px;
-    height: 160px;
+    max-width: 200px;
+    min-height: 160px;
     overflow: hidden;
     background: #f9fafb;
 }

@@ -1,18 +1,21 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
-import { IIngredientData } from "@/models/Ingredient";
+import {useSearchParams} from "next/navigation";
+import {useCallback, useEffect, useState} from "react";
+import {IIngredientData} from "@/models/Ingredient";
 import Navbar from "@/components/navbar/NavBar";
 import Footer from "@/components/footer/Footer";
 import SearchBar from "@/components/searchbar/SearchBar";
 import IngredientCard from "@/components/ingredientcard/IngredientCard";
 import Pagination from "@/components/pagination/Pagination"; // Import the new component
 import styles from "./page.module.css";
+import Loader from "@/components/loader/Loader";
 
 
 export default function SearchPage() {
-    const [query, setQuery] = useState<string>("");
+    const searchParams = useSearchParams();
+    const [query, setQuery] = useState("");
+
     const [results, setResults] = useState<IIngredientData[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -21,10 +24,9 @@ export default function SearchPage() {
 
     // Extract query from URL manually
     useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const q = params.get("query") || "";
+        const q = searchParams.get("query") || "";
         setQuery(q);
-    }, []);
+    }, [searchParams]);
 
     const fetchData = useCallback(async (pageNumber: number = 1) => {
 
@@ -89,30 +91,35 @@ export default function SearchPage() {
         <div className={styles.page}>
             <Navbar/>
 
+
             <main className={styles.main}>
                 <h1 className={styles.title}>Search results for "{query}"</h1>
                 <div className={styles.searchBarContainer}>
                     <SearchBar/>
                 </div>
 
-                {loading && <p className={styles.loading}>Loading...</p>}
+                {loading && <Loader/>}
                 {!loading && error && <p className={styles.error}>{error}</p>}
 
-                <ul className={styles.resultsList}>
-                    {results.map((ing) => (
-                        <IngredientCard key={ing.name} ingredient={ing}/>
-                    ))}
-                </ul>
+                {!loading && results.length > 0 && (
+                    <>
+                        <ul className={styles.resultsList}>
+                            {results.map((ing) => (
+                                <IngredientCard key={ing.name} ingredient={ing}/>
+                            ))}
+                        </ul>
 
-                {/* Render the Pagination component */}
-                {totalPages > 1 && (
-                    <Pagination
-                        currentPage={page}
-                        totalPageCount={totalPages}
-                        onPageChange={handlePageChange}
-                        disabled={loading} // Disable all pagination buttons when loading
-                        siblingCount={1}
-                    />
+                        {/* Render the Pagination component */}
+                        {totalPages > 1 && (
+                            <Pagination
+                                currentPage={page}
+                                totalPageCount={totalPages}
+                                onPageChange={handlePageChange}
+                                disabled={loading} // Disable all pagination buttons when loading
+                                siblingCount={1}
+                            />
+                        )}
+                    </>
                 )}
             </main>
 

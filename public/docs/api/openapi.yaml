@@ -1,0 +1,196 @@
+openapi: 3.1.0
+info:
+  title: FoodRepo API
+  description: API for FoodRepo, a culinary ingredient knowledge base and API
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+paths:
+  /api/ingredients:
+    get:
+      summary: Search Ingredients
+      description: Search ingredients by name or aliases with pagination.
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search term
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+          description: Items per page
+      responses:
+        '200':
+          description: Paginated list of ingredients
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Ingredient'
+                  page:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  total:
+                    type: integer
+    post:
+      summary: Contribute Ingredient
+      description: Add a new ingredient to the database.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngredientInput'
+      responses:
+        '201':
+          description: Ingredient successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ingredient'
+        '400':
+          description: Invalid request
+  /api/meta:
+    get:
+      summary: Database Metadata
+      description: Retrieve statistics about the ingredient database.
+      responses:
+        '200':
+          description: Metadata response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Metadata'
+components:
+  schemas:
+    Ingredient:
+      type: object
+      properties:
+        name:
+          type: string
+        aliases:
+          type: array
+          items:
+            type: string
+        country:
+          type: array
+          items:
+            type: string
+        cuisine:
+          type: array
+          items:
+            type: string
+        provenance:
+          type: string
+        flavor_profile:
+          type: array
+          items:
+            type: string
+        partOf:
+          type: array
+          items:
+            type: string
+        varieties:
+          type: array
+          items:
+            type: string
+        derivatives:
+          type: array
+          items:
+            type: string
+        usedIn:
+          type: array
+          items:
+            type: string
+        substitutes:
+          type: array
+          items:
+            type: string
+        pairsWith:
+          type: array
+          items:
+            type: string
+    IngredientInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        aliases:
+          type: array
+          items:
+            type: string
+        country:
+          type: array
+          items:
+            type: string
+        cuisine:
+          type: array
+          items:
+            type: string
+        provenance:
+          type: string
+        flavor_profile:
+          type: array
+          items:
+            type: string
+    Metadata:
+      type: object
+      properties:
+        entryCount:
+          type: integer
+        countries:
+          type: object
+          properties:
+            count:
+              type: integer
+            byCountry:
+              type: object
+              additionalProperties:
+                type: integer
+        cuisines:
+          type: object
+          properties:
+            count:
+              type: integer
+            byCuisine:
+              type: object
+              additionalProperties:
+                type: integer
+        regions:
+          type: object
+          properties:
+            count:
+              type: integer
+            byRegion:
+              type: object
+              additionalProperties:
+                type: integer
+        flavorProfiles:
+          type: object
+          properties:
+            count:
+              type: integer
+            byFlavor:
+              type: object
+              additionalProperties:
+                type: integer
