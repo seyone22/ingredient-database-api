@@ -14,7 +14,7 @@ export default function SearchBar() {
         e.preventDefault();
         setLoading(true);
         if (!query.trim()) return;
-        router.push(`/search?query=${encodeURIComponent(query.trim())}`);
+        router.push(`/search/?query=${encodeURIComponent(query.trim())}`);
         setLoading(false);
     };
 

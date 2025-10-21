@@ -33,7 +33,7 @@ export default function SearchContent() {
             setError(null);
 
             try {
-                const url = new URL("/api/ingredients", window.location.origin);
+                const url = new URL("/api/ingredients/vector", window.location.origin);
                 url.searchParams.set("query", query);
                 url.searchParams.set("page", pageNumber.toString());
                 url.searchParams.set("limit", "20");
