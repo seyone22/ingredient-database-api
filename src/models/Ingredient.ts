@@ -1,6 +1,6 @@
 import mongoose, { Schema, model, Document } from "mongoose";
 
-export interface IIngredient extends Document {
+export interface IIngredientData {
     name: string;
     aliases: string[];
     country: string[];      // list of countries
@@ -31,33 +31,7 @@ export interface IIngredient extends Document {
     pairsWith?: string[];
 }
 
-export interface IIngredientData {
-    name: string;
-    aliases?: string[];
-    country?: string[];
-    cuisine?: string[];
-    region?: string[];
-    flavor_profile?: string[];
-    dietary_flags?: string[];
-    provenance?: string;
-    comment?: string;
-    pronunciation?: string;
-    last_modified?: Date;
-
-    image?: {
-        url?: string;
-        license?: string;
-        author?: string;
-        source?: string;
-        missing?: boolean;
-    };
-
-    partOf?: string[];
-    derivatives?: string[];
-    varieties?: string[];
-    usedIn?: string[];
-    substitutes?: string[];
-    pairsWith?: string[];
+export interface IIngredient extends IIngredientData, Document {
 }
 
 const IngredientSchema = new Schema<IIngredient>({
@@ -94,3 +68,5 @@ const IngredientSchema = new Schema<IIngredient>({
 });
 
 export const Ingredient = mongoose.models.Ingredient || model<IIngredient>("Ingredient", IngredientSchema);
+
+export default Ingredient;

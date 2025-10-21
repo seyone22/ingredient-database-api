@@ -1,9 +1,22 @@
-import mongoose from "mongoose";
+import {Document, model, Model, models, Schema} from "mongoose";
 
-const queryEmbeddingSchema = new mongoose.Schema({
-    query: { type: String, required: true, unique: true },
-    embedding: { type: [Number], required: true },
-    createdAt: { type: Date, default: Date.now }
-});
+export interface IQueryEmbeddingData {
+    query: string;
+    embedding: number[];
+    createdAt: Date;
+}
 
-export const QueryEmbedding = mongoose.model("QueryEmbedding", queryEmbeddingSchema);
+export interface IQueryEmbedding extends IQueryEmbeddingData, Document {
+}
+
+const queryEmbeddingSchema = new Schema<IQueryEmbedding>(
+    {
+        query: {type: String, required: true, unique: true},
+        embedding: {type: [Number], required: true},
+    },
+    {timestamps: true}
+);
+
+export const QueryEmbedding: Model<IQueryEmbedding> = models?.QueryEmbedding || model<IQueryEmbedding>("QueryEmbedding", queryEmbeddingSchema);
+
+export default QueryEmbedding;
