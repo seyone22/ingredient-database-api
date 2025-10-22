@@ -1,4 +1,4 @@
-import {NextResponse} from "next/server";
+import {NextRequest, NextResponse} from "next/server";
 import dbConnect from "@/utils/dbConnect";
 import Ingredient from "@/models/Ingredient";
 import PriceSource from "@/models/PriceSource";
@@ -11,7 +11,10 @@ const fetcherRegistry: Record<string, any> = {
     // Add other fetchers here
 };
 
-export const GET = async (req: Request, context: { params: Promise<{ id: string }> }) => {
+export async function GET(
+    req: NextRequest,
+    context: { params: { id: string } }
+) {
     await dbConnect();
 
     const ingredientId = (await context.params).id;

@@ -1,10 +1,13 @@
-import { NextResponse } from "next/server";
+import {NextRequest, NextResponse} from "next/server";
 import dbConnect from "@/utils/dbConnect";
 import { Ingredient } from "@/models/Ingredient";
 import { Product } from "@/models/Product"; // make sure this exists in /models
 import { Types } from "mongoose";
 
-export const GET = async (req: Request, context: { params: Promise<{ id: string }> }) => {
+export async function GET(
+    req: NextRequest,
+    context: { params: { id: string } }
+) {
     await dbConnect();
 
     const { id } = await context.params;
