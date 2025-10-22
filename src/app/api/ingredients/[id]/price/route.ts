@@ -13,7 +13,7 @@ const fetcherRegistry: Record<string, any> = {
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    { params }: { params: any }
 ): Promise<NextResponse> {
     await dbConnect();
 
