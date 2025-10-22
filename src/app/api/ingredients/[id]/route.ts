@@ -6,7 +6,7 @@ import { Types } from "mongoose";
 
 export async function GET(
     req: NextRequest,
-    context: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     await dbConnect();
 
