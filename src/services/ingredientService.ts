@@ -164,6 +164,12 @@ export async function searchIngredients(
 // -------------------------
 export async function addIngredient(data: IIngredientData) {
     try {
+        const embeddingResponse = await openai.embeddings.create({
+            model: "gemini-embedding-001",
+            input: data.name.trim(),
+        });
+        const queryVector = embeddingResponse.data[0].embedding;
+
         const ingredientData = {
             name: data.name.trim(),
             aliases: Array.isArray(data.aliases) ? data.aliases.map((a) => a.trim()) : [],
@@ -176,6 +182,7 @@ export async function addIngredient(data: IIngredientData) {
             pronunciation: data.pronunciation?.trim(),
             photo: data.image?.url?.trim(),
             last_modified: new Date(),
+            embedding: queryVector,
         };
 
         return await Ingredient.create(ingredientData);

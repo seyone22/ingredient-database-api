@@ -13,6 +13,8 @@ export interface IIngredientData {
     pronunciation?: string;
     last_modified: Date;
 
+    embedding?: number[];
+
     // Image object
     image?: {
         url?: string;
@@ -31,8 +33,7 @@ export interface IIngredientData {
     pairsWith?: string[];
 }
 
-export interface IIngredient extends IIngredientData, Document {
-}
+export interface IIngredient extends IIngredientData, Document {}
 
 const IngredientSchema = new Schema<IIngredient>({
     name: { type: String, required: true, unique: true },
@@ -46,6 +47,8 @@ const IngredientSchema = new Schema<IIngredient>({
     comment: { type: String },
     pronunciation: { type: String },
     last_modified: { type: Date, default: Date.now },
+
+    embedding: { type: [Number], default: [] },
 
     image: {
         url: { type: String },
