@@ -3,15 +3,16 @@ import dbConnect from "@/utils/dbConnect";
 import { Ingredient } from "@/models/Ingredient";
 import { Product } from "@/models/Product"; // make sure this exists in /models
 import { Types } from "mongoose";
+import {req} from "agent-base";
 
 export async function GET(
-    req: NextRequest,
-    context: { params: Promise<{ id: string }> }
-) {
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
     await dbConnect();
 
-    const { id } = await context.params;
-    const { searchParams } = new URL(req.url);
+    const { id } = await params;
+    const { searchParams } = new URL(request.url);
     const includeProducts = searchParams.get("includeProducts") === "true";
 
     if (!Types.ObjectId.isValid(id)) {

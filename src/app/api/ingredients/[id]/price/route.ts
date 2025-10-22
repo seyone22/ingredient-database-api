@@ -12,13 +12,13 @@ const fetcherRegistry: Record<string, any> = {
 };
 
 export async function GET(
-    req: NextRequest,
-    context: { params: Promise<{ id: string }> }
-) {
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
     await dbConnect();
 
-    const ingredientId = (await context.params).id;
-    const urlParams = new URL(req.url).searchParams;
+    const ingredientId = (await params).id;
+    const urlParams = new URL(request.url).searchParams;
     const country = urlParams.get("country") || "LK";
 
     // 1️⃣ Find ingredient
