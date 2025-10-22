@@ -11,10 +11,10 @@ const fetcherRegistry: Record<string, any> = {
     // Add other fetchers here
 };
 
-export const GET = async (req: Request, {params}: { params: { id: string } }) => {
+export const GET = async (req: Request, context: { params: Promise<{ id: string }> }) => {
     await dbConnect();
 
-    const ingredientId = (await params).id;
+    const ingredientId = (await context.params).id;
     const urlParams = new URL(req.url).searchParams;
     const country = urlParams.get("country") || "LK";
 

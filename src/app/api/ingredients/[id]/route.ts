@@ -4,13 +4,10 @@ import { Ingredient } from "@/models/Ingredient";
 import { Product } from "@/models/Product"; // make sure this exists in /models
 import { Types } from "mongoose";
 
-export const GET = async (
-    req: Request,
-    { params }: { params: { id: string } }
-) => {
+export const GET = async (req: Request, context: { params: Promise<{ id: string }> }) => {
     await dbConnect();
 
-    const { id } = params;
+    const { id } = await context.params;
     const { searchParams } = new URL(req.url);
     const includeProducts = searchParams.get("includeProducts") === "true";
 
