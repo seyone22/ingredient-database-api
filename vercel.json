@@ -1,3 +1,0 @@
-{
-  "buildCommand": "NEXT_IGNORE_TYPECHECK=1 next build"
-}
