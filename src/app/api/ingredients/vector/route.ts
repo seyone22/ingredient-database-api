@@ -16,6 +16,7 @@ export const GET = async (req: Request) => {
     const cuisine = searchParams.get("cuisine");
     const region = searchParams.get("region");
     const flavor = searchParams.get("flavor");
+    const includeProducts = searchParams.get("includeProducts") === "true";
 
     if (!query) {
         return NextResponse.json({ error: "Missing query parameter" }, { status: 400 });
@@ -24,7 +25,7 @@ export const GET = async (req: Request) => {
     try {
         const data = await searchIngredientsVector(
             query,
-            { page, limit, autosuggest, country, cuisine, region, flavor }
+            { page, limit, autosuggest, country, cuisine, region, flavor, includeProducts }
         );
 
         if (!data.results || data.results.length === 0) {

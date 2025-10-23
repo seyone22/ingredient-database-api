@@ -1,6 +1,7 @@
 import { Ingredient, IIngredientData } from "@/models/Ingredient";
 import OpenAI from "openai";
 import { QueryEmbedding } from "@/models/QueryEmbedding";
+import {Product} from "@/models/Product";
 
 export interface IngredientSearchResponse {
     results: IIngredientData[];
@@ -17,6 +18,7 @@ interface SearchOptions {
     cuisine?: string | null;
     region?: string | null;
     flavor?: string | null;
+    includeProducts?: boolean;
 }
 
 // -------------------------
@@ -28,7 +30,7 @@ const openai = new OpenAI({
 });
 
 // -------------------------
-// Vector Search
+// Vector Search with Product Inclusion
 // -------------------------
 export async function searchIngredientsVector(
     query: string,
@@ -39,6 +41,7 @@ export async function searchIngredientsVector(
         cuisine,
         region,
         flavor,
+        includeProducts = false,
     }: SearchOptions
 ): Promise<IngredientSearchResponse> {
     if (!query.trim()) {
@@ -98,6 +101,30 @@ export async function searchIngredientsVector(
     const results = await Ingredient.aggregate(pipeline);
     const total = await Ingredient.countDocuments(filters);
 
+    // 7️⃣ Include related products (optional)
+    if (includeProducts) {
+        const ingredientIds = results.map((r) => r._id);
+        const productsByIngredient = await Product.aggregate([
+            { $match: { ingredient: { $in: ingredientIds } } },
+            {
+                $group: {
+                    _id: "$ingredient",
+                    products: { $push: "$$ROOT" },
+                },
+            },
+        ]);
+
+        const productMap = new Map(
+            productsByIngredient.map((p) => [p._id.toString(), p.products])
+        );
+
+        // Attach products to results
+        results.forEach((r: any) => {
+            const products = productMap.get(r._id.toString());
+            if (products) r.products = products;
+        });
+    }
+
     return {
         results,
         page,
@@ -105,6 +132,7 @@ export async function searchIngredientsVector(
         total,
     };
 }
+
 
 // -------------------------
 // Text Search
