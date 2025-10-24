@@ -30,7 +30,7 @@ const openai = new OpenAI({
 });
 
 // -------------------------
-// Vector Search with Pagination & Products
+// Vector Search with Product Inclusion
 // -------------------------
 export async function searchIngredientsVector(
     query: string,
@@ -42,7 +42,6 @@ export async function searchIngredientsVector(
         region,
         flavor,
         includeProducts = false,
-        autosuggest = false,
     }: SearchOptions
 ): Promise<IngredientSearchResponse> {
     if (!query.trim()) {
@@ -51,80 +50,59 @@ export async function searchIngredientsVector(
 
     const skip = (page - 1) * limit;
 
-    // -------------------------
-    // 1️⃣ Get query embedding (cache if possible)
-    // -------------------------
+    // 1️⃣ Check cache first
     let cached = await QueryEmbedding.findOne({ query: query.trim() });
     let queryVector: number[];
 
     if (cached) {
         queryVector = cached.embedding;
     } else {
+        // 2️⃣ Generate embedding
         const embeddingResponse = await openai.embeddings.create({
             model: "gemini-embedding-001",
             input: query,
         });
         queryVector = embeddingResponse.data[0].embedding;
 
+        // 3️⃣ Store in cache
         await QueryEmbedding.create({ query: query.trim(), embedding: queryVector });
     }
 
-    // -------------------------
-    // 2️⃣ Structured filters
-    // -------------------------
+    // 4️⃣ Structured filters
     const filters: any = {};
     if (country) filters.country = country;
     if (cuisine) filters.cuisine = cuisine;
     if (region) filters.region = region;
     if (flavor) filters.flavor_profile = flavor;
 
-    // -------------------------
-    // 3️⃣ Vector search pipeline
-    // -------------------------
-    const numCandidates = Math.max(page * limit * 2, 1000); // fetch enough candidates
-
-    // Pipeline for paginated results
-    const resultsPipeline: any[] = [
+    // 5️⃣ Vector search pipeline
+    const pipeline: any[] = [
         {
             $vectorSearch: {
-                index: "vector_index",
+                index: "vector_index", // your Atlas vector index
                 path: "embedding",
                 queryVector,
-                numCandidates,
+                numCandidates: 100,
                 limit: limit,
             },
         },
         { $match: filters },
         { $skip: skip },
         { $limit: limit },
-        { $project: { embedding: 0 } }, // hide embeddings
-    ];
-
-    const results = await Ingredient.aggregate(resultsPipeline);
-
-    // -------------------------
-    // 4️⃣ Calculate total matching documents
-    // -------------------------
-    const totalPipeline: any[] = [
         {
-            $vectorSearch: {
-                index: "vector_index",
-                path: "embedding",
-                queryVector,
-                numCandidates: 10000, // high enough to cover most matches
+            // ✅ Never return embeddings
+            $project: {
+                embedding: 0,
             },
         },
-        { $match: filters },
-        { $count: "total" },
     ];
 
-    const totalResult = await Ingredient.aggregate(totalPipeline);
-    const total = totalResult[0]?.total || results.length;
+    // 6️⃣ Execute aggregation
+    const results = await Ingredient.aggregate(pipeline);
+    const total = await Ingredient.countDocuments(filters);
 
-    // -------------------------
-    // 5️⃣ Include related products if requested
-    // -------------------------
-    if (includeProducts && results.length > 0) {
+    // 7️⃣ Include related products (optional)
+    if (includeProducts) {
         const ingredientIds = results.map((r) => r._id);
         const productsByIngredient = await Product.aggregate([
             { $match: { ingredient: { $in: ingredientIds } } },
@@ -140,23 +118,20 @@ export async function searchIngredientsVector(
             productsByIngredient.map((p) => [p._id.toString(), p.products])
         );
 
+        // Attach products to results
         results.forEach((r: any) => {
             const products = productMap.get(r._id.toString());
             if (products) r.products = products;
         });
     }
 
-    // -------------------------
-    // 6️⃣ Return final response
-    // -------------------------
     return {
         results,
         page,
-        total,
         totalPages: Math.ceil(total / limit),
+        total,
     };
 }
-
 
 
 // -------------------------
