@@ -147,6 +147,7 @@ export async function searchIngredients(
         cuisine,
         region,
         flavor,
+        includeProducts = false,
     }: SearchOptions
 ): Promise<IngredientSearchResponse> {
     if (!query.trim()) {
@@ -170,12 +171,22 @@ export async function searchIngredients(
     if (region) baseFilter.region = region;
     if (flavor) baseFilter.flavor_profile = flavor;
 
-    // ✅ Exclude embedding explicitly
+    // --- 1️⃣ Fetch ingredients ---
+    let ingredientsQuery = Ingredient.find(baseFilter)
+        .skip(skip)
+        .limit(limit)
+        .select("-embedding"); // always exclude embedding
+
+    // --- 2️⃣ Include products if requested ---
+    if (includeProducts) {
+        ingredientsQuery = ingredientsQuery.populate({
+            path: "products",           // Assuming IngredientProduct references _ingredient
+            select: "-embedding -ingredient", // exclude unnecessary fields
+        });
+    }
+
     const [results, total] = await Promise.all([
-        Ingredient.find(baseFilter)
-            .skip(skip)
-            .limit(limit)
-            .select("-embedding"), // exclude vector field
+        ingredientsQuery.exec(),
         Ingredient.countDocuments(baseFilter),
     ]);
 

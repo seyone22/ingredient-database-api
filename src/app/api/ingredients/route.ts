@@ -10,6 +10,7 @@ export const GET = async (req: Request) => {
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const autosuggest = searchParams.get("autosuggest") === "true";
+    const includeProducts = searchParams.get("includeProducts") === "true";
 
     // Optional structured filters
     const country = searchParams.get("country");
@@ -24,7 +25,7 @@ export const GET = async (req: Request) => {
     try {
         const data = await searchIngredients(
             query,
-            {page, limit, autosuggest, country, cuisine, region, flavor}
+            {page, limit, autosuggest, country, cuisine, region, flavor, includeProducts}
         );
 
         if (!data.results || data.results.length === 0) {
