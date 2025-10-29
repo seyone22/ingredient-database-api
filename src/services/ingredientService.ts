@@ -187,10 +187,9 @@ export async function searchIngredients(
     if (includeProducts && results.length > 0) {
         const ingredientIds = results
             .map((ing) => ing._id)
-            .filter((id): id is ObjectId | string => !!id); // only keep defined IDs
 
         const products = await Product.find({ ingredient: { $in: ingredientIds } })
-            .select("-embedding -ingredient")
+            .select("-embedding")
             .lean();
 
         const productsByIngredient: Record<string, typeof products> = {};

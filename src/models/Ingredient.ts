@@ -15,6 +15,8 @@ export interface IIngredientData {
 
     embedding?: number[];
 
+    products?: any[];
+
     // Image object
     image?: {
         url?: string;
