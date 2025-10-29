@@ -70,6 +70,16 @@ const IngredientSchema = new Schema<IIngredient>({
     collection: "ingredients",
 });
 
+IngredientSchema.virtual("products", {
+    ref: "Product",          // model name
+    localField: "_id",       // Ingredient._id
+    foreignField: "ingredient", // Product.ingredient
+});
+
+// Optional: include virtuals when converting to JSON
+IngredientSchema.set("toObject", { virtuals: true });
+IngredientSchema.set("toJSON", { virtuals: true });
+
 export const Ingredient = mongoose.models.Ingredient || model<IIngredient>("Ingredient", IngredientSchema);
 
 export default Ingredient;
