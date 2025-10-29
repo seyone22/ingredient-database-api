@@ -36,7 +36,11 @@ export async function fetchProduct(id: string): Promise<ProductFetchResponse> {
 // -------------------------
 export async function fetchProductsByIds(ids: string[]): Promise<ProductListResponse> {
     try {
-        const products = await Product.find({ _id: { $in: ids } }).lean();
+        const products = await Product.find(
+            { _id: { $in: ids } },
+            { embedding: 0 } // Exclude the 'embedding' field
+        ).lean();
+
         return { products, total: products.length };
     } catch (err: any) {
         console.error("Error fetching products by IDs:", err);
