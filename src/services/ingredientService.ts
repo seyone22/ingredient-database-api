@@ -177,18 +177,31 @@ export async function searchIngredients(
         .limit(limit)
         .select("-embedding"); // always exclude embedding
 
-    // --- 2️⃣ Include products if requested ---
-    if (includeProducts) {
-        ingredientsQuery = ingredientsQuery.populate({
-            path: "products",           // Assuming IngredientProduct references _ingredient
-            select: "-embedding -ingredient", // exclude unnecessary fields
-        });
-    }
-
     const [results, total] = await Promise.all([
         ingredientsQuery.exec(),
         Ingredient.countDocuments(baseFilter),
     ]);
+
+    // --- 2️⃣ Include products if requested ---
+    if (includeProducts && results.length > 0) {
+        const ingredientIds = results.map((ing) => ing._id);
+        const products = await Product.find({ ingredient: { $in: ingredientIds } })
+            .select("-embedding -ingredient")
+            .lean();
+
+        // Group products by ingredient ID
+        const productsByIngredient: Record<string, typeof products> = {};
+        for (const p of products) {
+            const key = p.ingredient.toString();
+            if (!productsByIngredient[key]) productsByIngredient[key] = [];
+            productsByIngredient[key].push(p);
+        }
+
+        // Attach products to each ingredient
+        for (const ing of results) {
+            ing.products = productsByIngredient[ing._id.toString()] || [];
+        }
+    }
 
     return {
         results,
