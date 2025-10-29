@@ -4,6 +4,7 @@ export interface FetchProductParams {
     ingredientName?: string;
     productId?: string | number;
     country?: string;
+    itemsPerPage?: number;
 }
 
 export abstract class SupermarketFetcher {

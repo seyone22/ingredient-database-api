@@ -1,9 +1,11 @@
 import { SupermarketFetcher } from "@/services/supermarketFetcher";
 import { ObjectId } from "bson";
+import Ingredient from "@/models/Ingredient";
 
 export class KeellsFetcher extends SupermarketFetcher {
     sourceName = "Keells";
     country = "LK";
+    sourceId = "654f8b1a2b3d4e5f67890111";
 
     private BASE_API = "https://zebraliveback.keellssuper.com";
     private LOGIN_URL = `${this.BASE_API}/1.0/Login/GuestLogin`;
@@ -39,11 +41,11 @@ export class KeellsFetcher extends SupermarketFetcher {
         this.sessionCookies = cookiesArray.join("; ");
     }
 
-    protected async fetchFromSource(params: { ingredientName?: string }): Promise<any[]> {
+    async fetchFromSource(params: { ingredientName?: string, itemsPerPage?: number }): Promise<any[]> {
         await this.ensureSession();
 
         const itemDescription = params.ingredientName || "";
-        const itemsPerPage = 50;
+        const itemsPerPage = params.itemsPerPage || 18;
         let pageNo = 1;
         let allItems: any[] = [];
         let totalPages = 1;
@@ -98,9 +100,10 @@ export class KeellsFetcher extends SupermarketFetcher {
         return allItems;
     }
 
-    protected mapToProduct(raw: any, ingredientId: string) {
+    mapToProduct(raw: any, ingredientId: string) {
         return {
             name: raw.name,
+            source: new ObjectId(this.sourceId),
             ingredient: new ObjectId(ingredientId),
             unit: raw.uom || "unit",
             quantity: parseFloat(raw.minQty) || 1,
@@ -110,6 +113,7 @@ export class KeellsFetcher extends SupermarketFetcher {
             externalId: raw.itemID?.toString(),
             itemCode: raw.itemCode?.toString(),
             isAvailable: raw.isAvailable ?? true,
+            departmentCode: raw.departmentCode
         };
     }
 }

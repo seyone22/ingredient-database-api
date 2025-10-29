@@ -11,6 +11,8 @@ export interface IProductData {
     currency?: string;
     last_fetched: Date;
     url?: string;
+    externalId?: string;
+    departmentCode?: string;
 }
 
 export interface IProduct extends IProductData, Document {}
@@ -26,6 +28,10 @@ const ProductSchema = new Schema<IProduct>({
     currency: { type: String, default: "LKR" },
     last_fetched: { type: Date, default: Date.now },
     url: { type: String },
+    externalId: { type: String }, // <-- if you’re uniquely identifying per source
+    departmentCode: { type: String },
 }, { timestamps: true, collection: "products" });
+
+ProductSchema.index({ externalId: 1, source: 1 }, { unique: true });
 
 export const Product: Model<IProduct> = models?.Product || model<IProduct>("Product", ProductSchema);
