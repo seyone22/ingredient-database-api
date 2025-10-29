@@ -2,6 +2,7 @@ import { Ingredient, IIngredientData } from "@/models/Ingredient";
 import OpenAI from "openai";
 import { QueryEmbedding } from "@/models/QueryEmbedding";
 import {Product} from "@/models/Product";
+import {ObjectId} from "bson";
 
 export interface IngredientSearchResponse {
     results: IIngredientData[];
@@ -184,22 +185,30 @@ export async function searchIngredients(
 
     // --- 2️⃣ Include products if requested ---
     if (includeProducts && results.length > 0) {
-        const ingredientIds = results.map((ing) => ing._id);
+        const ingredientIds = results
+            .map((ing) => ing._id)
+            .filter((id): id is ObjectId | string => !!id); // only keep defined IDs
+
         const products = await Product.find({ ingredient: { $in: ingredientIds } })
             .select("-embedding -ingredient")
             .lean();
 
-        // Group products by ingredient ID
         const productsByIngredient: Record<string, typeof products> = {};
         for (const p of products) {
-            const key = p.ingredient.toString();
+            const key = p.ingredient?.toString();
+            if (!key) continue;
             if (!productsByIngredient[key]) productsByIngredient[key] = [];
             productsByIngredient[key].push(p);
         }
 
-        // Attach products to each ingredient
+        // attach products safely
         for (const ing of results) {
-            ing.products = productsByIngredient[ing._id.toString()] || [];
+            const key = ing._id?.toString();
+            if (!key) {
+                ing.products = [];
+            } else {
+                ing.products = productsByIngredient[key] || [];
+            }
         }
     }
 
