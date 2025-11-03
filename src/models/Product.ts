@@ -13,6 +13,7 @@ export interface IProductData {
     url?: string;
     externalId?: string;
     departmentCode?: string;
+    raw?: string;
 }
 
 export interface IProduct extends IProductData, Document {}
@@ -30,6 +31,7 @@ const ProductSchema = new Schema<IProduct>({
     url: { type: String },
     externalId: { type: String }, // <-- if you’re uniquely identifying per source
     departmentCode: { type: String },
+    raw: { type: String },
 }, { timestamps: true, collection: "products" });
 
 ProductSchema.index({ externalId: 1, source: 1 }, { unique: true });

@@ -1,26 +1,26 @@
-// scripts/scrapeKeellsAll.ts
+// scripts/scrapeSparAll.ts
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
 import mongoose from "mongoose";
 import { Product } from "@/models/Product";
-import { KeellsFetcher } from "@/services/keelsFetcher";
+import { SparFetcher } from "@/services/sparFetcher";
 import dbConnect from "@/utils/dbConnect";
-import {normalizeQuantityUnit} from "@/utils/normalizeQtyUtil";
+import { normalizeQuantityUnit } from "@/utils/normalizeQtyUtil";
 
 async function main() {
-    console.log("🔹 Starting full Keells scrape...");
+    console.log("🔹 Starting full SPAR scrape...");
 
     // 1️⃣ Connect to MongoDB
     await dbConnect();
 
     // 2️⃣ Instantiate the fetcher
-    const fetcher = new KeellsFetcher();
+    const fetcher = new SparFetcher();
 
     // 3️⃣ Fetch everything
-    console.log("⚙️ Fetching all Keells products (this may take a bit)...");
-    const rawProducts = await fetcher.fetchFromSource({ ingredientName: "", itemsPerPage: 10000 });
-    console.log(`📦 Retrieved ${rawProducts.length} raw items from Keells.`);
+    console.log("⚙️ Fetching all SPAR products (this may take a while)...");
+    const rawProducts = await fetcher.fetchFromSource({ itemsPerPage: 25 });
+    console.log(`📦 Retrieved ${rawProducts.length} raw items from SPAR.`);
 
     if (!rawProducts.length) {
         console.warn("⚠️ No products returned. Exiting.");
@@ -30,8 +30,13 @@ async function main() {
 
     // 4️⃣ Map to Product schema and normalize
     const mappedProducts = rawProducts.map(raw => {
+        // normalize quantity/unit from title
         const { quantity, unit } = normalizeQuantityUnit(raw);
-        const normalizedProduct = fetcher.mapToProduct(raw, "000000000000000000000000"); // placeholder ingredient
+
+        console.log(quantity, unit);
+
+        // map to product schema (ingredient placeholder ObjectId)
+        const normalizedProduct = fetcher.mapToProduct(raw, "000000000000000000000000");
 
         return {
             ...normalizedProduct,

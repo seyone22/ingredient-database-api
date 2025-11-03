@@ -113,7 +113,8 @@ export class KeellsFetcher extends SupermarketFetcher {
             externalId: raw.itemID?.toString(),
             itemCode: raw.itemCode?.toString(),
             isAvailable: raw.isAvailable ?? true,
-            departmentCode: raw.departmentCode
+            departmentCode: raw.departmentCode,
+            raw: JSON.stringify(raw),
         };
     }
 }
