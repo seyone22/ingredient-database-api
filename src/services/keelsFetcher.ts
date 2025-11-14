@@ -81,13 +81,13 @@ export class KeellsFetcher extends SupermarketFetcher {
                 },
             });
 
-            console.log(response.statusText, response.status, url.toString());
+            // console.log(response.statusText, response.status, url.toString());
 
             if (!response.ok) throw new Error(`Keells fetch failed: ${response.statusText}`);
 
             const json = await response.json();
 
-            console.log(json);
+            // console.log(json);
 
 
             const items = json?.result?.itemDetailResult?.itemDetails || [];

@@ -63,10 +63,10 @@ export class CargillsFetcher extends SupermarketFetcher {
 
             // Inspect cookies the server actually set (for debugging)
             const cookiesArr = await context.cookies();
-            console.log("🍪 Cookies in context after navigation:");
-            cookiesArr.forEach(c => {
-                console.log(`  - ${c.name}=${c.value}; domain=${c.domain}; path=${c.path}; httpOnly=${c.httpOnly}`);
-            });
+            // console.log("🍪 Cookies in context after navigation:");
+            // cookiesArr.forEach(c => {
+            //     console.log(`  - ${c.name}=${c.value}; domain=${c.domain}; path=${c.path}; httpOnly=${c.httpOnly}`);
+            // });
 
             // Build request body
             const body = {

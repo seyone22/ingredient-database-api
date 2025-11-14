@@ -19,7 +19,7 @@ async function main() {
 
     // 3️⃣ Fetch everything
     console.log("⚙️ Fetching all SPAR products (this may take a while)...");
-    const rawProducts = await fetcher.fetchFromSource({ itemsPerPage: 25 });
+    const rawProducts = await fetcher.fetchFromSource({ itemsPerPage: 25, pageCount: 120 });
     console.log(`📦 Retrieved ${rawProducts.length} raw items from SPAR.`);
 
     if (!rawProducts.length) {
@@ -33,7 +33,7 @@ async function main() {
         // normalize quantity/unit from title
         const { quantity, unit } = normalizeQuantityUnit(raw);
 
-        console.log(quantity, unit);
+        // console.log(quantity, unit);
 
         // map to product schema (ingredient placeholder ObjectId)
         const normalizedProduct = fetcher.mapToProduct(raw, "000000000000000000000000");
