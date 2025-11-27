@@ -42,11 +42,15 @@ jobs:
 
       - name: Install Playwright browsers
         run: npx playwright install
-
+        
       - name: Compile TypeScript
         run: npx tsc
-
+      
+      - name: Check compiled output
+        run: ls -R dist
+      
       - name: Run unified scraper
         env:
           MONGO_URI: ${{ secrets.MONGO_URI }}
         run: node dist/scripts/unified_scraper.js
+
