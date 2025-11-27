@@ -16,6 +16,7 @@
     "@mui/material": "^7.3.4",
     "@mui/x-charts": "^8.16.0",
     "dotenv": "^17.2.3",
+    "module-alias": "^2.2.3",
     "mongoose": "^8.18.2",
     "next": "15.5.4",
     "node-fetch": "^3.3.2",
@@ -31,6 +32,8 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5"
   }
 }
