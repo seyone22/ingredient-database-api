@@ -44,7 +44,7 @@ jobs:
         run: npx playwright install
         
       - name: Compile TypeScript
-        run: npx tsc
+        run: npx tsc --jsx preserve
       
       - name: Check compiled output
         run: ls -R dist
