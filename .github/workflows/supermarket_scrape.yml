@@ -47,7 +47,7 @@ jobs:
         run: npx tsc --jsx preserve
       
       - name: Check compiled output
-        run: ls -R ./
+        run: ls -R dist
       
       - name: Run unified scraper
         env:
