@@ -42,15 +42,17 @@ jobs:
 
       - name: Install Playwright browsers
         run: npx playwright install
-        
+
+      # Compile TypeScript
       - name: Compile TypeScript
-        run: npx tsc --jsx preserve
-      
+        run: npx tsc --build
+
+      # Optional: check compiled output
       - name: Check compiled output
         run: ls -R dist
-      
+
+      # Run scraper using tsconfig-paths to resolve aliases
       - name: Run unified scraper
         env:
           MONGO_URI: ${{ secrets.MONGO_URI }}
-        run: node dist/scripts/unified_scraper.js
-
+        run: node -r tsconfig-paths/register dist/scripts/unified_scraper.js
