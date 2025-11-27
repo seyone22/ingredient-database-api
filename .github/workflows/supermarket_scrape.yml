@@ -45,7 +45,7 @@ jobs:
 
       # Compile TypeScript
       - name: Compile TypeScript
-        run: npx tsc --build
+        run: npx tsc --build --jsx preserve
 
       # Optional: check compiled output
       - name: Check compiled output
