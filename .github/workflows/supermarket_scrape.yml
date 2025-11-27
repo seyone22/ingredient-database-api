@@ -1,0 +1,56 @@
+name: Supermarket Unified Scrape
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # Runs daily at 2:00 AM UTC
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      # Cache node_modules
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Cache Playwright browsers
+      - name: Cache Playwright browsers
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: playwright-browsers-${{ runner.os }}-
+
+      - name: Install Playwright browsers
+        run: npx playwright install
+        
+      - name: Compile TypeScript
+        run: npx tsc --jsx preserve
+      
+      - name: Check compiled output
+        run: ls -R dist
+      
+      - name: Run unified scraper
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+        run: node dist/scripts/unified_scraper.js
+
