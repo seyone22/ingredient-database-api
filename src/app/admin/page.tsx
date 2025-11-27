@@ -3,6 +3,7 @@ import styles from "../page.module.css";
 import NavBar from "@/components/navbar/NavBar";
 import Footer from "@/components/footer/Footer";
 import AdminDashboard from "@/components/adminDashboard/AdminDashboard";
+import React from "react";
 
 
 export default function AdminPage() {

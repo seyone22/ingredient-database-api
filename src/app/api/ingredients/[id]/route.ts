@@ -42,4 +42,37 @@ export async function GET(
             { status: 500 }
         );
     }
-};
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: any }) {
+    await dbConnect();
+    const { id } = params;
+    if (!Types.ObjectId.isValid(id)) {
+        return NextResponse.json({ error: "Invalid ingredient ID" }, { status: 400 });
+    }
+
+    try {
+        const body = await req.json();
+        const updated = await Ingredient.findByIdAndUpdate(id, body, { new: true }).lean();
+        if (!updated) return NextResponse.json({ error: "Ingredient not found" }, { status: 404 });
+        return NextResponse.json({ message: "Updated", ingredient: updated });
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
+    }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: any }) {
+    await dbConnect();
+    const { id } = params;
+    if (!Types.ObjectId.isValid(id)) {
+        return NextResponse.json({ error: "Invalid ingredient ID" }, { status: 400 });
+    }
+
+    try {
+        const deleted = await Ingredient.findByIdAndDelete(id).lean();
+        if (!deleted) return NextResponse.json({ error: "Ingredient not found" }, { status: 404 });
+        return NextResponse.json({ message: "Deleted", ingredient: deleted });
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
+    }
+}
