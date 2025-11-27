@@ -1,10 +1,9 @@
-name: Daily Scrape
+name: Daily Product Scraper
 
-# Run every day at 3AM UTC
 on:
   schedule:
-    - cron: "0 3 * * *"
-  workflow_dispatch: # allows manual trigger too
+    - cron: '0 2 * * *' # Every day at 2 AM UTC
+  workflow_dispatch:
 
 jobs:
   scrape:
@@ -17,12 +16,18 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20
+          node-version: '20'
 
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Build TypeScript
+        run: npx tsc --project tsconfig.json
+
       - name: Run scraper
         env:
           MONGO_URI: ${{ secrets.MONGO_URI }}
-        run: npx ts-node scripts/unified_scraper.ts
+        run: node dist/scripts/unified_scraper.js
