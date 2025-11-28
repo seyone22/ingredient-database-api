@@ -1,7 +1,7 @@
 import {NextRequest, NextResponse} from "next/server";
 import dbConnect from "@/utils/dbConnect";
 import { Ingredient } from "@/models/Ingredient";
-import { Product } from "@/models/Product"; // make sure this exists in /models
+import { Product } from "@/models/Product";
 import { Types } from "mongoose";
 import {req} from "agent-base";
 
@@ -46,7 +46,7 @@ export async function GET(
 
 export async function PATCH(req: NextRequest, { params }: { params: any }) {
     await dbConnect();
-    const { id } = params;
+    const { id } = await params;
     if (!Types.ObjectId.isValid(id)) {
         return NextResponse.json({ error: "Invalid ingredient ID" }, { status: 400 });
     }

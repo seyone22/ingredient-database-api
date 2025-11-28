@@ -100,6 +100,8 @@ Return JSON with:
 - name
 - aliases: array of alternative names
 - country, cuisine, region, flavor_profile, dietary_flags as arrays
+- comment: a string description of what the ingredient is, how it's used in cooking, where it's from, how it can be stored
+- pronunciation: as standard format for pronunciation
 Use valid JSON only.
 `;
 

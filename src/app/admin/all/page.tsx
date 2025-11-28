@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
+import React, {useEffect, useState, useCallback} from "react";
 import styles from "../../page.module.css";
 import NavBar from "@/components/navbar/NavBar";
 import Footer from "@/components/footer/Footer";
@@ -45,7 +45,7 @@ export default function IngredientsPage() {
 
 
     const [rowSelectionModel, setRowSelectionModel] =
-        useState<GridRowSelectionModel>({ type: "include", ids: new Set() });
+        useState<GridRowSelectionModel>({type: "include", ids: new Set()});
 
     const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
         page: 0,
@@ -98,50 +98,60 @@ export default function IngredientsPage() {
     }, [fetchIngredients]);
 
     const columns: GridColDef[] = [
-        { field: "_id", headerName: "ID", width: 220, editable: false },
-        { field: "name", headerName: "Name", width: 250, editable: true },
-        { field: "country", headerName: "Country", width: 150, editable: true,
+        {field: "_id", headerName: "ID", width: 220, editable: false},
+        {field: "name", headerName: "Name", width: 250, editable: true},
+        {
+            field: "country", headerName: "Country", width: 150, editable: true,
             valueGetter: (params: any) => Array.isArray(params) ? params.join(", ") : params,
             sortComparator: (v1, v2) => {
                 const s1 = Array.isArray(v1) ? v1.join(", ") : v1;
                 const s2 = Array.isArray(v2) ? v2.join(", ") : v2;
                 return s1.localeCompare(s2);
-            } },
-        { field: "cuisine", headerName: "Cuisine", width: 150, editable: true,
+            }
+        },
+        {
+            field: "cuisine", headerName: "Cuisine", width: 150, editable: true,
             valueGetter: (params: any) => Array.isArray(params) ? params.join(", ") : params,
             sortComparator: (v1, v2) => {
                 const s1 = Array.isArray(v1) ? v1.join(", ") : v1;
                 const s2 = Array.isArray(v2) ? v2.join(", ") : v2;
                 return s1.localeCompare(s2);
-            } },
-        { field: "region", headerName: "Region", width: 150, editable: true,
+            }
+        },
+        {
+            field: "region", headerName: "Region", width: 150, editable: true,
             valueGetter: (params: any) => Array.isArray(params) ? params.join(", ") : params,
             sortComparator: (v1, v2) => {
                 const s1 = Array.isArray(v1) ? v1.join(", ") : v1;
                 const s2 = Array.isArray(v2) ? v2.join(", ") : v2;
                 return s1.localeCompare(s2);
-            } },
-        { field: "flavor_profile", headerName: "Flavor", width: 150, editable: true,
+            }
+        },
+        {
+            field: "flavor_profile", headerName: "Flavor", width: 150, editable: true,
             valueGetter: (params: any) => Array.isArray(params) ? params.join(", ") : params,
             sortComparator: (v1, v2) => {
                 const s1 = Array.isArray(v1) ? v1.join(", ") : v1;
                 const s2 = Array.isArray(v2) ? v2.join(", ") : v2;
                 return s1.localeCompare(s2);
-            } },
-        { field: "aliases", headerName: "Aliases", width: 150, editable: true,
+            }
+        },
+        {
+            field: "aliases", headerName: "Aliases", width: 150, editable: true,
             valueGetter: (params: any) => Array.isArray(params) ? params.join(", ") : params,
             sortComparator: (v1, v2) => {
                 const s1 = Array.isArray(v1) ? v1.join(", ") : v1;
                 const s2 = Array.isArray(v2) ? v2.join(", ") : v2;
                 return s1.localeCompare(s2);
-            } },
+            }
+        },
         {
             field: "comment",
         }
     ];
 
     const handleFilterChange = (e: SelectChangeEvent, key: string) => {
-        setFilters((prev) => ({ ...prev, [key]: e.target.value }));
+        setFilters((prev) => ({...prev, [key]: e.target.value}));
     };
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,7 +159,7 @@ export default function IngredientsPage() {
     };
 
     const handleSearchSubmit = () => {
-        setPaginationModel((prev) => ({ ...prev, page: 0 }));
+        setPaginationModel((prev) => ({...prev, page: 0}));
         fetchIngredients();
     };
 
@@ -157,7 +167,7 @@ export default function IngredientsPage() {
         try {
             const res = await fetch(`/api/ingredients/${newRow._id}`, {
                 method: "PATCH",
-                headers: { "Content-Type": "application/json" },
+                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(newRow),
             });
             if (!res.ok) throw new Error("Failed to update");
@@ -175,8 +185,8 @@ export default function IngredientsPage() {
         try {
             const res = await fetch(`/api/ingredients/enhance`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: selectedRows }), // sending array of IDs
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({id: selectedRows}), // sending array of IDs
             });
 
             if (!res.ok) throw new Error("Enhancement failed");
@@ -203,7 +213,7 @@ export default function IngredientsPage() {
         try {
             await Promise.all(
                 selectedRows.map((id) =>
-                    fetch(`/api/ingredients/${id}`, { method: "DELETE" })
+                    fetch(`/api/ingredients/${id}`, {method: "DELETE"})
                 )
             );
             setIngredients((prev) => prev.filter((row) => !selectedRows.includes(row._id)));
@@ -215,9 +225,9 @@ export default function IngredientsPage() {
 
     return (
         <div className={styles.page}>
-            <NavBar />
+            <NavBar/>
             <main className={styles.main}>
-                <Box sx={{ width: "100%", mb: 2, display: "flex", alignItems: "center", gap: 2 }}>
+                <Box sx={{width: "100%", mb: 2, display: "flex", alignItems: "center", gap: 2}}>
                     <TextField
                         label="Search Ingredients"
                         variant="outlined"
@@ -247,7 +257,7 @@ export default function IngredientsPage() {
                     </Button>
                 </Box>
 
-                <Box sx={{ height: 'auto', width: "100%" }}>
+                <Box sx={{height: 'auto', width: "100%"}}>
                     <DataGrid
                         paginationModel={paginationModel}
                         autoPageSize={false}
@@ -271,7 +281,7 @@ export default function IngredientsPage() {
                     />
                 </Box>
             </main>
-            <Footer />
+            <Footer/>
         </div>
     );
 }
