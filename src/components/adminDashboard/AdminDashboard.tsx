@@ -1,17 +1,23 @@
+// components/adminDashboard/AdminDashboard.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-    Grid,
-    CircularProgress,
-    Box,
-    Typography,
-    Stack,
-    Divider,
-} from "@mui/material";
-import StatCard from "@/components/statCard/StatCard";
-import AdminCharts from "@/components/adminChart/AdminCharts";
 import { DatabaseStats } from "@/services/metaService";
+import AdminCharts from "@/components/adminChart/AdminCharts";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+    Database,
+    Package,
+    Link as LinkIcon,
+    Percent,
+    AlertCircle,
+    Globe,
+    Utensils,
+    MapPin,
+    Sparkles
+} from "lucide-react";
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState<DatabaseStats | null>(null);
@@ -35,55 +41,139 @@ export default function AdminDashboard() {
             });
     }, []);
 
-    if (loading)
+    // Skeleton loader for smooth transitions
+    if (loading) {
         return (
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 8 }}>
-                <CircularProgress />
-            </Box>
+            <div className="space-y-8 animate-in fade-in duration-500">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map((i) => (
+                        <Skeleton key={i} className="h-32 w-full rounded-xl" />
+                    ))}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+                    {[1, 2, 3, 4].map((i) => (
+                        <Skeleton key={i} className="h-24 w-full rounded-xl" />
+                    ))}
+                </div>
+                <Skeleton className="h-96 w-full rounded-xl mt-8" />
+            </div>
         );
+    }
 
-    if (error || !stats)
+    if (error || !stats) {
         return (
-            <Typography color="error" textAlign="center" mt={4}>
-                {error || "No data available."}
-            </Typography>
+            <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error || "No data available."}</AlertDescription>
+            </Alert>
         );
+    }
 
     const mappingCoverage = stats.mappingCoverage?.toFixed(1);
 
     return (
-        <Box sx={{ px: 4 }}>
+        <div className="space-y-8 animate-in slide-in-from-bottom-4 fade-in duration-500">
+
             {/* ====== Top Stat Cards ====== */}
-            <Grid container spacing={3} justifyContent="center">
-                <Stack gap={4} direction="row" flexWrap="wrap" sx={{ width: "100%" }} justifyContent="center" alignItems="center">
-                    <StatCard title="Ingredients" value={stats.totalIngredients.toLocaleString()} />
-                    <StatCard title="Products" value={stats.totalProducts.toLocaleString()} />
-                    <StatCard title="Mapped Products" value={stats.totalMappedProducts.toLocaleString()} />
-                    <StatCard title="Mapping Coverage" value={`${mappingCoverage}%`} />
-                </Stack>
-            </Grid>
+            <section className="space-y-4">
+                <h2 className="text-xl font-semibold tracking-tight">Overview</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Ingredients</CardTitle>
+                            <Database className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats.totalIngredients.toLocaleString()}</div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+                            <Package className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats.totalProducts.toLocaleString()}</div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Mapped Products</CardTitle>
+                            <LinkIcon className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats.totalMappedProducts.toLocaleString()}</div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Mapping Coverage</CardTitle>
+                            <Percent className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-primary">{mappingCoverage}%</div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </section>
 
             {/* ====== Data Completeness ====== */}
-            <Box mt={6}>
-                <Stack direction="row" gap={3} flexWrap="wrap" alignItems="center" justifyContent="center" sx={{ width: "100%" }}>
-                    <StatCard
-                        title="Missing Country"
-                        value={stats.dataCompleteness.missingCountry.toLocaleString()}
-                    />
-                    <StatCard
-                        title="Missing Cuisine"
-                        value={stats.dataCompleteness.missingCuisine.toLocaleString()}
-                    />
-                    <StatCard
-                        title="Missing Region"
-                        value={stats.dataCompleteness.missingRegion.toLocaleString()}
-                    />
-                    <StatCard
-                        title="Missing Flavor"
-                        value={stats.dataCompleteness.missingFlavor.toLocaleString()}
-                    />
-                </Stack>
-            </Box>
+            <section className="space-y-4">
+                <h2 className="text-xl font-semibold tracking-tight">Data Completeness Alerts</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card className="bg-destructive/5 border-destructive/20">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-destructive">Missing Country</CardTitle>
+                            <Globe className="h-4 w-4 text-destructive/70" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-destructive">
+                                {stats.dataCompleteness.missingCountry.toLocaleString()}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-destructive/5 border-destructive/20">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-destructive">Missing Cuisine</CardTitle>
+                            <Utensils className="h-4 w-4 text-destructive/70" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-destructive">
+                                {stats.dataCompleteness.missingCuisine.toLocaleString()}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-destructive/5 border-destructive/20">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-destructive">Missing Region</CardTitle>
+                            <MapPin className="h-4 w-4 text-destructive/70" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-destructive">
+                                {stats.dataCompleteness.missingRegion.toLocaleString()}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-destructive/5 border-destructive/20">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-destructive">Missing Flavor</CardTitle>
+                            <Sparkles className="h-4 w-4 text-destructive/70" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-destructive">
+                                {stats.dataCompleteness.missingFlavor.toLocaleString()}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            </section>
 
             {/* ====== Distribution Charts ====== */}
             <AdminCharts
@@ -95,6 +185,6 @@ export default function AdminDashboard() {
                 productsBySource={stats.productsBySource}
                 growth={stats.growth}
             />
-        </Box>
+        </div>
     );
 }

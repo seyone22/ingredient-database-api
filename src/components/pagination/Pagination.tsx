@@ -1,10 +1,17 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import styles from "./Pagination.module.css";
+import {
+    Pagination as PaginationContainer,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from "@/components/ui/pagination";
 
-// Helper function to generate page numbers
+// --- Custom Hook Logic ---
 const DOTS = "...";
 const range = (start: number, end: number) => {
     let length = end - start + 1;
@@ -22,9 +29,11 @@ const usePagination = ({
                            currentPage,
                            siblingCount = 1,
                        }: UsePaginationOptions) => {
-    const paginationRange = useMemo(() => {
+    return useMemo(() => {
+        // Total items to show: sibling(s) + first + last + current + 2*dots
         const totalPageNumbers = siblingCount * 2 + 5;
 
+        // If we have fewer pages than the max display limit, show all pages
         if (totalPageNumbers >= totalPageCount) {
             return range(1, totalPageCount);
         }
@@ -33,7 +42,7 @@ const usePagination = ({
         const rightSiblingIndex = Math.min(currentPage + siblingCount, totalPageCount);
 
         const shouldShowLeftDots = leftSiblingIndex > 2;
-        const shouldShowRightDots = rightSiblingIndex < totalPageCount - 1;
+        const shouldShowRightDots = rightSiblingIndex < totalPageCount - 2;
 
         const firstPageIndex = 1;
         const lastPageIndex = totalPageCount;
@@ -57,10 +66,9 @@ const usePagination = ({
 
         return range(1, totalPageCount);
     }, [totalPageCount, currentPage, siblingCount]);
-
-    return paginationRange;
 };
 
+// --- Component ---
 interface PaginationProps {
     currentPage: number;
     totalPageCount: number;
@@ -78,54 +86,73 @@ export default function Pagination({
                                    }: PaginationProps) {
     const paginationRange = usePagination({ totalPageCount, currentPage, siblingCount });
 
-    if (totalPageCount <= 1 || paginationRange.length === 0) return null;
+    // Hide pagination if there is only 1 page
+    if (currentPage === 0 || paginationRange.length < 2) {
+        return null;
+    }
 
-    const onNext = () => {
-        if (!disabled && currentPage < totalPageCount) onPageChange(currentPage + 1);
-    };
-
-    const onPrevious = () => {
+    const handlePrevious = (e: React.MouseEvent) => {
+        e.preventDefault();
         if (!disabled && currentPage > 1) onPageChange(currentPage - 1);
     };
 
-    return (
-        <div className={styles.pagination}>
-            <button
-                className={styles.paginationButton}
-                onClick={onPrevious}
-                disabled={disabled || currentPage <= 1}
-                aria-label="Previous page"
-            >
-                <FaChevronLeft size={16} style={{ marginRight: 4 }} />
-            </button>
+    const handleNext = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (!disabled && currentPage < totalPageCount) onPageChange(currentPage + 1);
+    };
 
-            <div className={styles.pageNumbers}>
+    return (
+        <PaginationContainer className={disabled ? "opacity-50 pointer-events-none" : ""}>
+            <PaginationContent>
+                {/* Previous Button */}
+                <PaginationItem>
+                    <PaginationPrevious
+                        href="#"
+                        onClick={handlePrevious}
+                        className={currentPage <= 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        aria-disabled={currentPage <= 1 || disabled}
+                    />
+                </PaginationItem>
+
+                {/* Page Numbers & Ellipses */}
                 {paginationRange.map((pageNumber, index) => {
-                    if (pageNumber === DOTS) return <span key={index} className={styles.dots}>&#8230;</span>;
+                    if (pageNumber === DOTS) {
+                        return (
+                            <PaginationItem key={`dots-${index}`}>
+                                <PaginationEllipsis />
+                            </PaginationItem>
+                        );
+                    }
 
                     const pageNum = Number(pageNumber);
+
                     return (
-                        <button
-                            key={index}
-                            className={`${styles.pageNumberButton} ${pageNum === currentPage ? styles.activePage : ''}`}
-                            onClick={() => onPageChange(pageNum)}
-                            disabled={disabled}
-                            aria-current={pageNum === currentPage ? 'page' : undefined}
-                        >
-                            {pageNumber}
-                        </button>
+                        <PaginationItem key={index}>
+                            <PaginationLink
+                                href="#"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    if (!disabled) onPageChange(pageNum);
+                                }}
+                                isActive={pageNum === currentPage}
+                                className="cursor-pointer"
+                            >
+                                {pageNum}
+                            </PaginationLink>
+                        </PaginationItem>
                     );
                 })}
-            </div>
 
-            <button
-                className={styles.paginationButton}
-                onClick={onNext}
-                disabled={disabled || currentPage >= totalPageCount}
-                aria-label="Next page"
-            >
-                <FaChevronRight size={16} style={{ padding: 0, margin: 0 }} />
-            </button>
-        </div>
+                {/* Next Button */}
+                <PaginationItem>
+                    <PaginationNext
+                        href="#"
+                        onClick={handleNext}
+                        className={currentPage >= totalPageCount ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        aria-disabled={currentPage >= totalPageCount || disabled}
+                    />
+                </PaginationItem>
+            </PaginationContent>
+        </PaginationContainer>
     );
 }

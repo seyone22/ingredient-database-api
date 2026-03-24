@@ -1,15 +1,10 @@
-import {NextRequest, NextResponse} from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/utils/dbConnect";
 import Ingredient from "@/models/Ingredient";
-import PriceSource from "@/models/PriceSource";
-import {KeellsFetcher} from "@/services/keelsFetcher";
-import {Product} from "@/models/Product";
-
-// Map source name to fetcher class
-const fetcherRegistry: Record<string, any> = {
-    "Keells": KeellsFetcher,
-    // Add other fetchers here
-};
+import { Mapping } from "@/models/Mapping";
+// We import these so Mongoose registers the schemas for the .populate() chain
+import "@/models/Product";
+import "@/models/PriceSource";
 
 export async function GET(
     request: NextRequest,
@@ -17,43 +12,43 @@ export async function GET(
 ): Promise<NextResponse> {
     await dbConnect();
 
+    // Await params if you are on Next.js 15+
     const ingredientId = (await params).id;
-    const urlParams = new URL(request.url).searchParams;
-    const country = urlParams.get("country") || "LK";
 
-    // 1️⃣ Find ingredient
+    // 1️⃣ Find the core ingredient
     const ingredient = await Ingredient.findById(ingredientId);
     if (!ingredient) {
-        return NextResponse.json({error: "Ingredient not found"}, {status: 404});
+        return NextResponse.json({ error: "Ingredient not found" }, { status: 404 });
     }
 
-    // 2️⃣ Find cached products for this ingredient and country
-    const oneDayAgo = new Date(Date.now() - 1000 * 60 * 60 * 24);
-    const cachedProducts = await Product.find({
-        ingredient: ingredient._id,
-        last_fetched: {$gt: oneDayAgo}
-    }).populate("source");
+    // 2️⃣ Query the Mapping collection for this ingredient
+    // We look for any mapping where this ingredient's ID is inside the matchedIngredients array.
+    const mappings = await Mapping.find({
+        matchedIngredients: ingredient._id
+    }).populate({
+        path: "product",
+        populate: {
+            path: "source", // Assuming 'source' is the ref on your Product schema
+        }
+    });
 
-    if (cachedProducts.length > 0) {
-        return NextResponse.json({ingredient: ingredient.name, prices: cachedProducts});
+    if (mappings.length === 0) {
+        return NextResponse.json({
+            ingredient: ingredient.name,
+            prices: [],
+            message: "No verified products mapped yet"
+        });
     }
 
-    // 3️⃣ Lazy fetch using registered fetchers
-    const sources = await PriceSource.find({country});
-    let fetchedProducts: any[] = [];
+    // 3️⃣ Extract and filter the products
+    // We map over the junction documents to extract the actual product objects.
+    // The filter(Boolean) protects us against orphaned mappings (where a product was deleted).
+    const mappedProducts = mappings
+        .map((mapping: any) => mapping.product)
+        .filter(Boolean);
 
-    for (const source of sources) {
-        const FetcherClass = fetcherRegistry[source.name];
-        if (!FetcherClass) continue; // no fetcher for this source
-
-        const fetcher = new FetcherClass();
-        const products = await fetcher.getProducts(ingredient._id.toString(), ingredient.name);
-        fetchedProducts.push(...products);
-    }
-
-    if (fetchedProducts.length === 0) {
-        return NextResponse.json({ingredient: ingredient.name, prices: [], message: "No products mapped or found"});
-    }
-
-    return NextResponse.json({ingredient: ingredient.name, prices: fetchedProducts});
-};
+    return NextResponse.json({
+        ingredient: ingredient.name,
+        prices: mappedProducts
+    });
+}

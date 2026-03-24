@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import styles from "./SearchBar.module.css";
 import Loader from "@/components/loader/Loader";
 
 export default function SearchBar() {
@@ -19,7 +18,7 @@ export default function SearchBar() {
     };
 
     return (
-        <form className={styles.search} onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
             <input
                 type="text"
                 placeholder="Search ingredients..."

@@ -1,18 +1,24 @@
+// app/admin/page.tsx
 "use client";
-import styles from "../page.module.css";
+
 import NavBar from "@/components/navbar/NavBar";
 import Footer from "@/components/footer/Footer";
 import AdminDashboard from "@/components/adminDashboard/AdminDashboard";
-import React from "react";
-
 
 export default function AdminPage() {
     return (
-        <div className={styles.page}>
+        <div className="min-h-screen flex flex-col bg-background font-sans antialiased">
             <NavBar />
-            <main className={styles.main}>
+
+            <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 flex flex-col gap-8">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+                    <p className="text-muted-foreground">Overview of database statistics, coverage, and data health.</p>
+                </div>
+
                 <AdminDashboard />
             </main>
+
             <Footer />
         </div>
     );

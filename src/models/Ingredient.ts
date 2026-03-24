@@ -1,10 +1,11 @@
 import mongoose, { Schema, model, Document } from "mongoose";
 
 export interface IIngredientData {
+    id: string;
     name: string;
     aliases: string[];
-    country: string[];      // list of countries
-    cuisine: string[];      // list of cuisines
+    country: string[];
+    cuisine: string[];
     region?: string[];
     flavor_profile?: string[];
     dietary_flags?: string[];
@@ -12,76 +13,43 @@ export interface IIngredientData {
     comment?: string;
     pronunciation?: string;
     last_modified: Date;
-
     embedding?: number[];
-
     products?: any[];
-
-    // Image object
     image?: {
-        url?: string;
-        license?: string;
-        author?: string;
-        source?: string;
-        missing?: boolean;
+        url?: string; license?: string; author?: string; source?: string; missing?: boolean;
     };
-
-    // Graph relationships (all use IDs, not names)
-    partOf?: string[];
-    derivatives?: string[];
-    varieties?: string[];
-    usedIn?: string[];
-    substitutes?: string[];
-    pairsWith?: string[];
+    partOf?: string[]; derivatives?: string[]; varieties?: string[]; usedIn?: string[]; substitutes?: string[]; pairsWith?: string[];
 }
 
-export interface IIngredient extends IIngredientData, Document {}
+// FIX: Omit 'id' from IIngredientData so it doesn't collide with Mongoose's Document 'id'
+export interface IIngredient extends Omit<IIngredientData, "id">, Document {}
 
 const IngredientSchema = new Schema<IIngredient>({
     name: { type: String, required: true, unique: true },
-    aliases: { type: [String], default: [] },
-    country: { type: [String], default: [] },
-    cuisine: { type: [String], default: [] },
-    region: { type: [String], default: [] },
-    flavor_profile: { type: [String], default: [] },
-    dietary_flags: { type: [String], default: [] },
+    aliases: [String], country: [String], cuisine: [String], region: [String],
+    flavor_profile: [String], dietary_flags: [String],
     provenance: { type: String, default: "MISSING" },
-    comment: { type: String },
-    pronunciation: { type: String },
+    comment: String, pronunciation: String,
     last_modified: { type: Date, default: Date.now },
-
-    embedding: { type: [Number], default: [] },
-
+    embedding: [Number],
     image: {
-        url: { type: String },
-        license: { type: String },
-        author: { type: String },
-        source: { type: String },
-        missing: { type: Boolean, default: true },
+        url: String, license: String, author: String, source: String, missing: { type: Boolean, default: true }
     },
-
-    // Relationships
-    partOf: { type: [String], default: [] },
-    derivatives: { type: [String], default: [] },
-    varieties: { type: [String], default: [] },
-    usedIn: { type: [String], default: [] },
-    substitutes: { type: [String], default: [] },
-    pairsWith: { type: [String], default: [] },
+    partOf: [String], derivatives: [String], varieties: [String],
+    usedIn: [String], substitutes: [String], pairsWith: [String]
 }, {
     timestamps: true,
     collection: "ingredients",
+    // Configure virtuals directly in the schema options
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
 });
 
 IngredientSchema.virtual("products", {
-    ref: "Product",          // model name
-    localField: "_id",       // Ingredient._id
-    foreignField: "ingredient", // Product.ingredient
+    ref: "Product",
+    localField: "_id",
+    foreignField: "ingredient",
 });
 
-// Optional: include virtuals when converting to JSON
-IngredientSchema.set("toObject", { virtuals: true });
-IngredientSchema.set("toJSON", { virtuals: true });
-
 export const Ingredient = mongoose.models.Ingredient || model<IIngredient>("Ingredient", IngredientSchema);
-
 export default Ingredient;

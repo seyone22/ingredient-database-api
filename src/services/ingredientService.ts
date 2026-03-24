@@ -1,7 +1,7 @@
 import { Ingredient, IIngredientData } from "@/models/Ingredient";
 import OpenAI from "openai";
 import { QueryEmbedding } from "@/models/QueryEmbedding";
-import {Product} from "@/models/Product";
+import {IProductData, Product} from "@/models/Product";
 import {ObjectId} from "bson";
 
 export interface IngredientSearchResponse {
@@ -20,6 +20,11 @@ interface SearchOptions {
     region?: string | null;
     flavor?: string | null;
     includeProducts?: boolean;
+}
+
+export interface IngredientListResponse {
+    ingredients: IIngredientData[];
+    total: number;
 }
 
 // -------------------------
@@ -217,6 +222,23 @@ export async function searchIngredients(
         totalPages: Math.ceil(total / limit),
         total,
     };
+}
+
+// -------------------------
+// Fetch multiple ingredients by IDs
+// -------------------------
+export async function fetchIngredientsByIds(ids: string[]): Promise<IngredientListResponse> {
+    try {
+        const ingredients = await Ingredient.find(
+            { _id: { $in: ids } },
+            { embedding: 0 } // Exclude the 'embedding' field
+        ).lean<IIngredientData[]>();
+
+        return { ingredients, total: ingredients.length };
+    } catch (err: any) {
+        console.error("Error fetching products by IDs:", err);
+        return { ingredients: [], total: 0 };
+    }
 }
 
 // -------------------------

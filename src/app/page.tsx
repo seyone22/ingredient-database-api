@@ -1,23 +1,18 @@
-import NavBar from "../components/navbar/NavBar";
-import SearchBar from "../components/searchbar/SearchBar";
-import Footer from "../components/footer/Footer";
-import styles from "./page.module.css";
+import { Suspense } from "react";
+import NavBar from "@/components/navbar/NavBar";
+import Footer from "@/components/footer/Footer";
+import IngredientSearch from "@/components/IngredientSearch";
 
 export default function Home() {
     return (
-        <div className={styles.page}>
+        <div>
             <NavBar />
 
-            <main className={styles.main}>
-                <h1 className={styles.title}>
-                    <span className={styles.textPrimary}>Food</span>Repo
-                </h1>
-                <p className={styles.subtitle}>
-                    FoodRepo aggregates food ingredient data and relationships to help
-                    people and developers understand what they're cooking with.
-                </p>
-
-                <SearchBar />
+            <main>
+                {/* Suspense is required here because IngredientSearch uses useSearchParams */}
+                <Suspense fallback={<div className="h-screen flex items-center justify-center">Loading...</div>}>
+                    <IngredientSearch />
+                </Suspense>
             </main>
 
             <Footer />
