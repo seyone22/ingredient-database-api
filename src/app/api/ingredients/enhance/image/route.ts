@@ -42,9 +42,11 @@ export async function POST(req: NextRequest) {
                 id,
                 {
                     $set: {
-                        "image.url": imageResult.url,
-                        "image.author": imageResult.author,
-                        "image.last_fetched": new Date()
+                        image: {
+                            url: imageResult.url,
+                            author: imageResult.author,
+                            last_fetched: new Date()
+                        }
                     }
                 },
                 { new: true }
