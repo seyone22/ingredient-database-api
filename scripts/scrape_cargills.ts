@@ -75,7 +75,6 @@ async function main() {
                         last_fetched: new Date(),
                         raw: product.raw,
                     },
-                    $setOnInsert: { ingredient: product.ingredient },
                 },
                 upsert: true,
             }

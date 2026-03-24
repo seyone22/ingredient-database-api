@@ -59,9 +59,6 @@ async function main() {
                         departmentCode: product.departmentCode,
                         raw: product.raw,
                     },
-                    $setOnInsert: {
-                        ingredient: product.ingredient, // only set placeholder if document is new
-                    },
                 },
                 upsert: true,
             },
