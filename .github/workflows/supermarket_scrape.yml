@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: '0 2 * * *' # Runs daily at 2:00 AM UTC
   workflow_dispatch: # Manual trigger
+  repository_dispatch: # 👈 Add this
+      types: [manual_ingest] # 👈 This is the "event_type" we will send from Next.js
 
 jobs:
   scrape:
