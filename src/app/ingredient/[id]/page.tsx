@@ -22,10 +22,11 @@ import {
 import {
     ArrowLeft, Globe, Image as ImageIcon, Info, Leaf,
     Sparkles, Utensils, TrendingDown, TrendingUp, Store,
-    ExternalLink, Calculator, Loader2, Wand2, Plus, Check, LineChart
+    ExternalLink, Calculator, Loader2, Wand2, Plus, Check, LineChart,
+    RefreshCw, Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ProductHistoryModal from "@/components/PriceHistoryModal"; // <-- Import the new modal!
+import ProductHistoryModal from "@/components/PriceHistoryModal";
 
 export default function IngredientPage() {
     const { id } = useParams();
@@ -36,22 +37,20 @@ export default function IngredientPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
     const [isEnhancing, setIsEnhancing] = useState(false);
+    const [isFetchingImage, setIsFetchingImage] = useState(false);
 
     // Pricing & Product State
     const [products, setProducts] = useState<any[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(true);
 
-    // Product Mapping Modal State
+    // Modal States
     const [isMappingOpen, setIsMappingOpen] = useState(false);
     const [productQuery, setProductQuery] = useState("");
     const [productResults, setProductResults] = useState<any[]>([]);
     const [selectedProduct, setSelectedProduct] = useState<any>(null);
     const [isMappingLoading, setIsMappingLoading] = useState(false);
-
-    // History Modal State
     const [selectedHistoryProduct, setSelectedHistoryProduct] = useState<any>(null);
 
-    // 1. Fetch Core Ingredient Data
     const fetchIngredient = async () => {
         try {
             const res = await fetch(`/api/ingredients/${id}`);
@@ -66,7 +65,6 @@ export default function IngredientPage() {
         }
     };
 
-    // 2. Fetch Pricing Data Independently
     const fetchPrices = async () => {
         try {
             const res = await fetch(`/api/ingredients/${id}/price`);
@@ -84,28 +82,44 @@ export default function IngredientPage() {
     useEffect(() => {
         if (!id) return;
         fetchIngredient();
-    }, [id]);
-
-    useEffect(() => {
-        if (!id) return;
         fetchPrices();
     }, [id]);
 
-    // --- Action: Enhance Item ---
+    // --- Action: Fetch/Refresh Image ---
+    const handleImageAction = async () => {
+        setIsFetchingImage(true);
+        try {
+            const res = await fetch(`/api/ingredients/enhance/image`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id }), // Passing the ID in the body now
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || "Failed to fetch image");
+            }
+
+            await fetchIngredient(); // Reload the UI with the new image
+        } catch (err: any) {
+            console.error(err);
+            alert(err.message);
+        } finally {
+            setIsFetchingImage(false);
+        }
+    };
+
     const handleEnhance = async () => {
         if (!confirm(`Run AI enrichment on ${ingredient.name}?`)) return;
         setIsEnhancing(true);
-
         try {
             const res = await fetch(`/api/ingredients/enhance`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ id: [id] }),
             });
-
             if (!res.ok) throw new Error("Enhancement failed");
-
-            await fetchIngredient(); // Refresh page data
+            await fetchIngredient();
             alert("Ingredient successfully enhanced!");
         } catch (err: any) {
             console.error(err);
@@ -115,7 +129,6 @@ export default function IngredientPage() {
         }
     };
 
-    // --- Action: Search Products (for Mapping) ---
     const searchUnmappedProducts = async (query: string) => {
         setProductQuery(query);
         if (!query || query.length < 2) {
@@ -132,11 +145,9 @@ export default function IngredientPage() {
         }
     };
 
-    // --- Action: Create Mapping ---
     const handleCreateMapping = async () => {
         if (!selectedProduct) return;
         setIsMappingLoading(true);
-
         try {
             const res = await fetch("/api/mapping/create", {
                 method: "POST",
@@ -146,18 +157,15 @@ export default function IngredientPage() {
                     ingredientId: id,
                 }),
             });
-
             if (!res.ok) {
                 const data = await res.json();
                 throw new Error(data.error || "Failed to map product");
             }
-
             setIsMappingOpen(false);
             setSelectedProduct(null);
             setProductQuery("");
             setLoadingProducts(true);
-            await fetchPrices(); // Refresh pricing table
-
+            await fetchPrices();
         } catch (error: any) {
             console.error("Mapping failed", error);
             alert(error.message);
@@ -171,7 +179,6 @@ export default function IngredientPage() {
         return aliases.map(a => (typeof a === 'string' ? a : a.name)).join(", ");
     };
 
-    // --- Pricing Analytics Logic ---
     const hasProducts = products.length > 0;
     let cheapestProduct = null;
     let expensiveProduct = null;
@@ -181,7 +188,6 @@ export default function IngredientPage() {
         const sorted = [...products].sort((a, b) => a.price - b.price);
         cheapestProduct = sorted[0];
         expensiveProduct = sorted[sorted.length - 1];
-
         const total = products.reduce((acc: number, curr: any) => acc + curr.price, 0);
         averagePrice = total / products.length;
     }
@@ -210,7 +216,6 @@ export default function IngredientPage() {
                     )}
                 </div>
 
-                {/* Main Loading State */}
                 {loading && (
                     <div className="space-y-8 animate-in fade-in duration-500">
                         <div className="space-y-4">
@@ -228,7 +233,6 @@ export default function IngredientPage() {
                     </div>
                 )}
 
-                {/* Error State */}
                 {!loading && (error || !ingredient) && (
                     <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
                         <Info className="h-12 w-12 text-muted-foreground" />
@@ -238,11 +242,8 @@ export default function IngredientPage() {
                     </div>
                 )}
 
-                {/* Content State */}
                 {!loading && ingredient && (
                     <div className="animate-in slide-in-from-bottom-4 fade-in duration-500 flex flex-col gap-12">
-
-                        {/* --- TOP SECTION: INGREDIENT DETAILS --- */}
                         <div className="flex flex-col gap-8">
                             {/* Header */}
                             <div className="space-y-3 border-b pb-6">
@@ -256,7 +257,6 @@ export default function IngredientPage() {
                                         </span>
                                     )}
                                 </div>
-
                                 {ingredient.aliases && ingredient.aliases.length > 0 && (
                                     <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-3xl">
                                         <span className="font-semibold text-foreground">Also known as: </span>
@@ -266,40 +266,68 @@ export default function IngredientPage() {
                             </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
-                                {/* Left Column: Image */}
-                                {ingredient.image?.url && (
-                                    <div className="lg:col-span-1 space-y-3">
-                                        <div className="rounded-2xl overflow-hidden border bg-muted shadow-sm ring-1 ring-border/50">
-                                            <img
-                                                src={ingredient.image.url}
-                                                alt={ingredient.name}
-                                                className="w-full h-auto object-cover aspect-square lg:aspect-[4/3]"
-                                            />
-                                        </div>
-                                        {ingredient.image.author && (
-                                            <div className="flex items-start gap-2 text-xs text-muted-foreground px-1">
-                                                <ImageIcon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                                                <span
-                                                    className="[&>a]:text-primary [&>a]:hover:underline"
-                                                    dangerouslySetInnerHTML={{ __html: `Photo by ${ingredient.image.author}` }}
+                                {/* Left Column: Image Management */}
+                                <div className="lg:col-span-1 space-y-3">
+                                    {ingredient.image?.url ? (
+                                        <div className="relative group">
+                                            <div className="rounded-2xl overflow-hidden border bg-muted shadow-sm ring-1 ring-border/50">
+                                                <img
+                                                    src={ingredient.image.url}
+                                                    alt={ingredient.name}
+                                                    className="w-full h-auto object-cover aspect-square lg:aspect-[4/3]"
                                                 />
                                             </div>
-                                        )}
-                                    </div>
-                                )}
+                                            {/* Refresh Overlay Button */}
+                                            <Button
+                                                variant="secondary"
+                                                size="icon"
+                                                onClick={handleImageAction}
+                                                disabled={isFetchingImage}
+                                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm"
+                                            >
+                                                {isFetchingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="rounded-2xl border-2 border-dashed flex flex-col items-center justify-center aspect-square lg:aspect-[4/3] bg-muted/30 gap-4 p-6 text-center">
+                                            <ImageIcon className="h-10 w-10 text-muted-foreground/50" />
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium text-muted-foreground">No image available</p>
+                                                <p className="text-xs text-muted-foreground/70">Fetch a context-aware image from Wikidata.</p>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={handleImageAction}
+                                                disabled={isFetchingImage}
+                                                className="mt-2"
+                                            >
+                                                {isFetchingImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
+                                                Fetch Image
+                                            </Button>
+                                        </div>
+                                    )}
+                                    {ingredient.image?.author && (
+                                        <div className="flex items-start gap-2 text-xs text-muted-foreground px-1">
+                                            <ImageIcon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                                            <span
+                                                className="[&>a]:text-primary [&>a]:hover:underline"
+                                                dangerouslySetInnerHTML={{ __html: `Photo by ${ingredient.image.author}` }}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
 
                                 {/* Right Column: Details */}
-                                <div className={`space-y-10 ${ingredient.image?.url ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
+                                <div className="lg:col-span-2 space-y-10">
                                     {ingredient.comment && (
                                         <div className="text-base text-foreground/90 leading-relaxed
                                             [&>p]:mb-4 last:[&>p]:mb-0
                                             [&>a]:text-primary [&>a]:font-medium [&>a]:hover:underline"
-                                        >
-                                            <div dangerouslySetInnerHTML={{ __html: ingredient.comment }} />
-                                        </div>
+                                             dangerouslySetInnerHTML={{ __html: ingredient.comment }}
+                                        />
                                     )}
 
-                                    {/* Metadata Grid */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {(ingredient.country?.length > 0 || ingredient.region?.length > 0) && (
                                             <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
@@ -366,7 +394,6 @@ export default function IngredientPage() {
 
                         <Separator className="bg-border/50" />
 
-                        {/* --- BOTTOM SECTION: PRICING & PRODUCTS --- */}
                         <div className="space-y-6">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div className="space-y-1">
@@ -377,7 +404,6 @@ export default function IngredientPage() {
                                     <p className="text-muted-foreground">Compare live supermarket listings and prices for this ingredient.</p>
                                 </div>
 
-                                {/* Map Product Modal Trigger */}
                                 <Dialog open={isMappingOpen} onOpenChange={setIsMappingOpen}>
                                     <DialogTrigger>
                                         <Button variant="outline" className="border-primary/50 text-primary hover:bg-primary/5">
@@ -391,26 +417,18 @@ export default function IngredientPage() {
                                                 Search the database for a raw supermarket product to link to <strong className="capitalize">{ingredient.name}</strong>.
                                             </DialogDescription>
                                         </DialogHeader>
-
                                         <div className="flex flex-col gap-4 py-4">
                                             <Command className="rounded-lg border shadow-md overflow-hidden" shouldFilter={false}>
                                                 <CommandInput
-                                                    placeholder="Search scraped products (e.g., Keells Apple)..."
+                                                    placeholder="Search scraped products..."
                                                     value={productQuery}
                                                     onValueChange={searchUnmappedProducts}
                                                 />
                                                 <CommandList className="max-h-[250px]">
-                                                    <CommandEmpty>
-                                                        {productQuery.length < 2 ? "Type to search..." : "No products found."}
-                                                    </CommandEmpty>
+                                                    <CommandEmpty>{productQuery.length < 2 ? "Type to search..." : "No products found."}</CommandEmpty>
                                                     <CommandGroup>
                                                         {productResults.map((prod) => (
-                                                            <CommandItem
-                                                                key={prod._id}
-                                                                value={prod.name}
-                                                                onSelect={() => setSelectedProduct(prod)}
-                                                                className="flex items-center gap-3 py-3"
-                                                            >
+                                                            <CommandItem key={prod._id} value={prod.name} onSelect={() => setSelectedProduct(prod)} className="flex items-center gap-3 py-3">
                                                                 <Check className={cn("h-4 w-4 shrink-0", selectedProduct?._id === prod._id ? "opacity-100" : "opacity-0")} />
                                                                 {(prod.url || prod.image_url) ? (
                                                                     <img src={prod.url || prod.image_url} alt="" className="h-8 w-8 object-cover rounded bg-muted" />
@@ -428,12 +446,7 @@ export default function IngredientPage() {
                                                     </CommandGroup>
                                                 </CommandList>
                                             </Command>
-
-                                            <Button
-                                                className="w-full"
-                                                disabled={!selectedProduct || isMappingLoading}
-                                                onClick={handleCreateMapping}
-                                            >
+                                            <Button className="w-full" disabled={!selectedProduct || isMappingLoading} onClick={handleCreateMapping}>
                                                 {isMappingLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Confirm Link"}
                                             </Button>
                                         </div>
@@ -441,7 +454,6 @@ export default function IngredientPage() {
                                 </Dialog>
                             </div>
 
-                            {/* Progressive Loading State for Products */}
                             {loadingProducts ? (
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -452,7 +464,6 @@ export default function IngredientPage() {
                                     <Skeleton className="h-64 w-full rounded-xl" />
                                 </div>
                             ) : !hasProducts ? (
-                                /* Empty State */
                                 <Card className="bg-muted/50 border-dashed">
                                     <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                                         <Store className="h-10 w-10 text-muted-foreground mb-4" />
@@ -461,9 +472,7 @@ export default function IngredientPage() {
                                     </CardContent>
                                 </Card>
                             ) : (
-                                /* Data State */
                                 <>
-                                    {/* Pricing Analytics Cards */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in slide-in-from-bottom-2 fade-in duration-500">
                                         <Card>
                                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -471,47 +480,32 @@ export default function IngredientPage() {
                                                 <TrendingDown className="h-4 w-4 text-green-600" />
                                             </CardHeader>
                                             <CardContent>
-                                                <div className="text-2xl font-bold text-green-600">
-                                                    {cheapestProduct?.currency} {cheapestProduct?.price.toLocaleString()}
-                                                </div>
-                                                <p className="text-xs text-muted-foreground mt-1 truncate">
-                                                    at {cheapestProduct?.source?.name || "Unknown Source"}
-                                                </p>
+                                                <div className="text-2xl font-bold text-green-600">{cheapestProduct?.currency} {cheapestProduct?.price.toLocaleString()}</div>
+                                                <p className="text-xs text-muted-foreground mt-1 truncate">at {cheapestProduct?.source?.name || "Unknown Source"}</p>
                                             </CardContent>
                                         </Card>
-
                                         <Card>
                                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                                 <CardTitle className="text-sm font-medium">Highest Price</CardTitle>
                                                 <TrendingUp className="h-4 w-4 text-destructive" />
                                             </CardHeader>
                                             <CardContent>
-                                                <div className="text-2xl font-bold text-destructive">
-                                                    {expensiveProduct?.currency} {expensiveProduct?.price.toLocaleString()}
-                                                </div>
-                                                <p className="text-xs text-muted-foreground mt-1 truncate">
-                                                    at {expensiveProduct?.source?.name || "Unknown Source"}
-                                                </p>
+                                                <div className="text-2xl font-bold text-destructive">{expensiveProduct?.currency} {expensiveProduct?.price.toLocaleString()}</div>
+                                                <p className="text-xs text-muted-foreground mt-1 truncate">at {expensiveProduct?.source?.name || "Unknown Source"}</p>
                                             </CardContent>
                                         </Card>
-
                                         <Card>
                                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                                 <CardTitle className="text-sm font-medium">Average Price</CardTitle>
                                                 <Calculator className="h-4 w-4 text-muted-foreground" />
                                             </CardHeader>
                                             <CardContent>
-                                                <div className="text-2xl font-bold">
-                                                    {cheapestProduct?.currency} {averagePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                </div>
-                                                <p className="text-xs text-muted-foreground mt-1">
-                                                    Across {products.length} products
-                                                </p>
+                                                <div className="text-2xl font-bold">{cheapestProduct?.currency} {averagePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                                <p className="text-xs text-muted-foreground mt-1">Across {products.length} products</p>
                                             </CardContent>
                                         </Card>
                                     </div>
 
-                                    {/* Products Table */}
                                     <div className="rounded-xl border bg-card overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-500 delay-100">
                                         <Table>
                                             <TableHeader className="bg-muted/50">
@@ -529,47 +523,21 @@ export default function IngredientPage() {
                                                     <TableRow key={product._id}>
                                                         <TableCell>
                                                             <div className="h-10 w-10 rounded-md overflow-hidden bg-background border flex items-center justify-center">
-                                                                {product.url ? (
-                                                                    <img src={product.url} alt={product.name} className="h-full w-full object-cover" />
-                                                                ) : (
-                                                                    <Store className="h-4 w-4 text-muted-foreground" />
-                                                                )}
+                                                                {product.url ? <img src={product.url} alt={product.name} className="h-full w-full object-cover" /> : <Store className="h-4 w-4 text-muted-foreground" />}
                                                             </div>
                                                         </TableCell>
-                                                        <TableCell className="font-medium max-w-[250px] truncate" title={product.name}>
-                                                            {product.name}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {product.source?.name ? (
-                                                                <Badge variant="secondary" className="font-normal">
-                                                                    {product.source.name}
-                                                                </Badge>
-                                                            ) : (
-                                                                <span className="text-muted-foreground">—</span>
-                                                            )}
-                                                        </TableCell>
-                                                        <TableCell className="text-muted-foreground whitespace-nowrap">
-                                                            {product.quantity && product.unit ? `${product.quantity}${product.unit}` : "—"}
-                                                        </TableCell>
-                                                        <TableCell className="text-right font-medium whitespace-nowrap">
-                                                            {product.currency} {product.price.toLocaleString()}
-                                                        </TableCell>
+                                                        <TableCell className="font-medium max-w-[250px] truncate" title={product.name}>{product.name}</TableCell>
+                                                        <TableCell>{product.source?.name ? <Badge variant="secondary" className="font-normal">{product.source.name}</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
+                                                        <TableCell className="text-muted-foreground whitespace-nowrap">{product.quantity && product.unit ? `${product.quantity}${product.unit}` : "—"}</TableCell>
+                                                        <TableCell className="text-right font-medium whitespace-nowrap">{product.currency} {product.price.toLocaleString()}</TableCell>
                                                         <TableCell className="text-right">
                                                             <div className="flex justify-end gap-1">
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    className="h-8 px-2 text-muted-foreground hover:text-primary"
-                                                                    onClick={() => setSelectedHistoryProduct(product)}
-                                                                    title="View Price History"
-                                                                >
+                                                                <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-primary" onClick={() => setSelectedHistoryProduct(product)} title="View Price History">
                                                                     <LineChart className="h-4 w-4" />
                                                                 </Button>
                                                                 {product.source?.website && (
                                                                     <Button variant="ghost" size="sm" className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10" title="View Source">
-                                                                        <a href={product.source.website} target="_blank" rel="noopener noreferrer">
-                                                                            <ExternalLink className="h-4 w-4" />
-                                                                        </a>
+                                                                        <a href={product.source.website} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
                                                                     </Button>
                                                                 )}
                                                             </div>
@@ -585,10 +553,7 @@ export default function IngredientPage() {
                     </div>
                 )}
             </main>
-
             <Footer />
-
-            {/* Price History Modal Component */}
             <ProductHistoryModal
                 product={selectedHistoryProduct}
                 open={!!selectedHistoryProduct}
