@@ -136,7 +136,7 @@ export default function IngredientPage() {
             return;
         }
         try {
-            const res = await fetch(`/api/products?query=${encodeURIComponent(query)}&limit=15`);
+            const res = await fetch(`/api/products?query=${encodeURIComponent(query)}&limit=100`);
             if (!res.ok) return;
             const data = await res.json();
             setProductResults(data.products || []);
