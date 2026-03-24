@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { enhanceIngredientsById } from "@/services/aiService";
 import { withAuditLog } from "@/utils/logger";
+import dbConnect from "@/utils/dbConnect"; // 1. Import your dbConnect
 
 export const POST = async (req: NextRequest) => {
     try {
+        // 2. Establish connection BEFORE doing any DB operations
+        await dbConnect();
+
         const body = await req.json();
         const ids: string[] = Array.isArray(body.id) ? body.id : [body.id];
 
@@ -23,12 +27,10 @@ export const POST = async (req: NextRequest) => {
                 }
             },
             async (log) => {
-                // Update log as we move into the heavy lifting
                 log.metadata.step = 'calling_ai_service';
 
                 const result = await enhanceIngredientsById(ids);
 
-                // If the AI service returns specific usage stats, capture them!
                 if (result.usage) {
                     log.metadata.tokens = result.usage;
                 }
@@ -42,14 +44,9 @@ export const POST = async (req: NextRequest) => {
 
         return NextResponse.json({ message: "Enhancement completed", enriched });
     } catch (err: any) {
-        // Note: withAuditLog handles the database side of this failure.
-        // We just handle the HTTP response here.
         console.error("Enhancement Route Error:", err);
         return NextResponse.json(
-            {
-                error: err.message || "Server error",
-                // Don't send stack to client for security, but it's in our DB via AuditLog
-            },
+            { error: err.message || "Server error" },
             { status: 500 }
         );
     }
