@@ -49,7 +49,7 @@ jobs:
       - name: Run unified scraper
         env:
           # Ensure these match the names used in your dbConnect.ts / imageService.ts
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGO_URI: ${{ secrets.MONGO_URI }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           NODE_ENV: development
         run: npx ts-node -r tsconfig-paths/register scripts/unified_scraper.ts
