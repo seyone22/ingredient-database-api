@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
     Table,
     TableBody,
@@ -20,8 +22,10 @@ import {
 import {
     ArrowLeft, Globe, Image as ImageIcon, Info, Leaf,
     Sparkles, Utensils, TrendingDown, TrendingUp, Store,
-    ExternalLink, Calculator, Loader2
+    ExternalLink, Calculator, Loader2, Wand2, Plus, Check, LineChart
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import ProductHistoryModal from "@/components/PriceHistoryModal"; // <-- Import the new modal!
 
 export default function IngredientPage() {
     const { id } = useParams();
@@ -31,54 +35,136 @@ export default function IngredientPage() {
     const [ingredient, setIngredient] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
+    const [isEnhancing, setIsEnhancing] = useState(false);
 
     // Pricing & Product State
     const [products, setProducts] = useState<any[]>([]);
     const [loadingProducts, setLoadingProducts] = useState(true);
 
+    // Product Mapping Modal State
+    const [isMappingOpen, setIsMappingOpen] = useState(false);
+    const [productQuery, setProductQuery] = useState("");
+    const [productResults, setProductResults] = useState<any[]>([]);
+    const [selectedProduct, setSelectedProduct] = useState<any>(null);
+    const [isMappingLoading, setIsMappingLoading] = useState(false);
+
+    // History Modal State
+    const [selectedHistoryProduct, setSelectedHistoryProduct] = useState<any>(null);
+
     // 1. Fetch Core Ingredient Data
+    const fetchIngredient = async () => {
+        try {
+            const res = await fetch(`/api/ingredients/${id}`);
+            if (!res.ok) throw new Error("Failed to fetch ingredient");
+            const data = await res.json();
+            setIngredient(data.ingredient || data);
+        } catch (err) {
+            console.error(err);
+            setError(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 2. Fetch Pricing Data Independently
+    const fetchPrices = async () => {
+        try {
+            const res = await fetch(`/api/ingredients/${id}/price`);
+            if (!res.ok) throw new Error("Failed to fetch prices");
+            const data = await res.json();
+            setProducts(data.prices || []);
+        } catch (err) {
+            console.error("Pricing fetch error:", err);
+            setProducts([]);
+        } finally {
+            setLoadingProducts(false);
+        }
+    };
+
     useEffect(() => {
         if (!id) return;
-
-        const fetchIngredient = async () => {
-            try {
-                const res = await fetch(`/api/ingredients/${id}`);
-                if (!res.ok) throw new Error("Failed to fetch ingredient");
-                const data = await res.json();
-                setIngredient(data.ingredient || data);
-            } catch (err) {
-                console.error(err);
-                setError(true);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchIngredient();
     }, [id]);
 
-    // 2. Fetch Pricing Data Independently
     useEffect(() => {
         if (!id) return;
-
-        const fetchPrices = async () => {
-            try {
-                const res = await fetch(`/api/ingredients/${id}/price`);
-                if (!res.ok) throw new Error("Failed to fetch prices");
-                const data = await res.json();
-
-                // Based on your API snippet, it returns { ingredient: string, prices: [] }
-                setProducts(data.prices || []);
-            } catch (err) {
-                console.error("Pricing fetch error:", err);
-                setProducts([]);
-            } finally {
-                setLoadingProducts(false);
-            }
-        };
-
         fetchPrices();
     }, [id]);
+
+    // --- Action: Enhance Item ---
+    const handleEnhance = async () => {
+        if (!confirm(`Run AI enrichment on ${ingredient.name}?`)) return;
+        setIsEnhancing(true);
+
+        try {
+            const res = await fetch(`/api/ingredients/enhance`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: [id] }),
+            });
+
+            if (!res.ok) throw new Error("Enhancement failed");
+
+            await fetchIngredient(); // Refresh page data
+            alert("Ingredient successfully enhanced!");
+        } catch (err: any) {
+            console.error(err);
+            alert(err.message || "Enhancement failed");
+        } finally {
+            setIsEnhancing(false);
+        }
+    };
+
+    // --- Action: Search Products (for Mapping) ---
+    const searchUnmappedProducts = async (query: string) => {
+        setProductQuery(query);
+        if (!query || query.length < 2) {
+            setProductResults([]);
+            return;
+        }
+        try {
+            const res = await fetch(`/api/products?query=${encodeURIComponent(query)}&limit=15`);
+            if (!res.ok) return;
+            const data = await res.json();
+            setProductResults(data.products || []);
+        } catch (error) {
+            console.error("Product search failed", error);
+        }
+    };
+
+    // --- Action: Create Mapping ---
+    const handleCreateMapping = async () => {
+        if (!selectedProduct) return;
+        setIsMappingLoading(true);
+
+        try {
+            const res = await fetch("/api/mapping/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    productId: selectedProduct._id,
+                    ingredientId: id,
+                }),
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Failed to map product");
+            }
+
+            setIsMappingOpen(false);
+            setSelectedProduct(null);
+            setProductQuery("");
+            setLoadingProducts(true);
+            await fetchPrices(); // Refresh pricing table
+
+        } catch (error: any) {
+            console.error("Mapping failed", error);
+            alert(error.message);
+        } finally {
+            setIsMappingLoading(false);
+        }
+    };
 
     const formatAliases = (aliases: any[]) => {
         if (!aliases || aliases.length === 0) return null;
@@ -104,13 +190,24 @@ export default function IngredientPage() {
         <div className="min-h-screen flex flex-col bg-background font-sans antialiased">
             <NavBar />
 
-            <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-8 flex flex-col gap-8">
-                {/* Back Button */}
-                <div>
-                    <Button variant="ghost" onClick={() => router.back()} className="-ml-4 text-muted-foreground hover:text-foreground">
+            <main className="flex-1 w-full max-w-5xl mx-auto px-4 pb-8 pt-0 flex flex-col gap-8">
+                {/* Back Button & Top Actions */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4">
+                    <Button variant="ghost" onClick={() => router.back()} className="-ml-4 text-muted-foreground hover:text-foreground self-start">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to results
                     </Button>
+
+                    {!loading && ingredient && (
+                        <Button
+                            onClick={handleEnhance}
+                            disabled={isEnhancing}
+                            className="bg-primary hover:bg-primary/90 shadow-sm"
+                        >
+                            {isEnhancing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                            {isEnhancing ? "Enhancing..." : "Enhance with AI"}
+                        </Button>
+                    )}
                 </div>
 
                 {/* Main Loading State */}
@@ -271,13 +368,77 @@ export default function IngredientPage() {
 
                         {/* --- BOTTOM SECTION: PRICING & PRODUCTS --- */}
                         <div className="space-y-6">
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-3">
-                                    <h2 className="text-2xl font-bold tracking-tight">Retail Products & Pricing</h2>
-                                    {/* Subdued loading spinner indicator next to the title */}
-                                    {loadingProducts && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-3">
+                                        <h2 className="text-2xl font-bold tracking-tight">Retail Products & Pricing</h2>
+                                        {loadingProducts && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />}
+                                    </div>
+                                    <p className="text-muted-foreground">Compare live supermarket listings and prices for this ingredient.</p>
                                 </div>
-                                <p className="text-muted-foreground">Compare live supermarket listings and prices for this ingredient.</p>
+
+                                {/* Map Product Modal Trigger */}
+                                <Dialog open={isMappingOpen} onOpenChange={setIsMappingOpen}>
+                                    <DialogTrigger>
+                                        <Button variant="outline" className="border-primary/50 text-primary hover:bg-primary/5">
+                                            <Plus className="mr-2 h-4 w-4" /> Map Product
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="sm:max-w-[500px]">
+                                        <DialogHeader>
+                                            <DialogTitle>Map a Retail Product</DialogTitle>
+                                            <DialogDescription>
+                                                Search the database for a raw supermarket product to link to <strong className="capitalize">{ingredient.name}</strong>.
+                                            </DialogDescription>
+                                        </DialogHeader>
+
+                                        <div className="flex flex-col gap-4 py-4">
+                                            <Command className="rounded-lg border shadow-md overflow-hidden" shouldFilter={false}>
+                                                <CommandInput
+                                                    placeholder="Search scraped products (e.g., Keells Apple)..."
+                                                    value={productQuery}
+                                                    onValueChange={searchUnmappedProducts}
+                                                />
+                                                <CommandList className="max-h-[250px]">
+                                                    <CommandEmpty>
+                                                        {productQuery.length < 2 ? "Type to search..." : "No products found."}
+                                                    </CommandEmpty>
+                                                    <CommandGroup>
+                                                        {productResults.map((prod) => (
+                                                            <CommandItem
+                                                                key={prod._id}
+                                                                value={prod.name}
+                                                                onSelect={() => setSelectedProduct(prod)}
+                                                                className="flex items-center gap-3 py-3"
+                                                            >
+                                                                <Check className={cn("h-4 w-4 shrink-0", selectedProduct?._id === prod._id ? "opacity-100" : "opacity-0")} />
+                                                                {(prod.url || prod.image_url) ? (
+                                                                    <img src={prod.url || prod.image_url} alt="" className="h-8 w-8 object-cover rounded bg-muted" />
+                                                                ) : (
+                                                                    <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
+                                                                        <Store className="h-4 w-4 text-muted-foreground" />
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex flex-col truncate">
+                                                                    <span className="truncate font-medium">{prod.name}</span>
+                                                                    <span className="text-xs text-muted-foreground">{prod.source?.name || "Unknown Source"}</span>
+                                                                </div>
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+
+                                            <Button
+                                                className="w-full"
+                                                disabled={!selectedProduct || isMappingLoading}
+                                                onClick={handleCreateMapping}
+                                            >
+                                                {isMappingLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Confirm Link"}
+                                            </Button>
+                                        </div>
+                                    </DialogContent>
+                                </Dialog>
                             </div>
 
                             {/* Progressive Loading State for Products */}
@@ -360,7 +521,7 @@ export default function IngredientPage() {
                                                     <TableHead>Supermarket</TableHead>
                                                     <TableHead>Size</TableHead>
                                                     <TableHead className="text-right">Price</TableHead>
-                                                    <TableHead className="w-[100px]"></TableHead>
+                                                    <TableHead className="w-[150px]"></TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
@@ -394,13 +555,24 @@ export default function IngredientPage() {
                                                             {product.currency} {product.price.toLocaleString()}
                                                         </TableCell>
                                                         <TableCell className="text-right">
-                                                            {product.source?.website && (
-                                                                <Button variant="ghost" size="sm" className="h-8 text-primary hover:text-primary hover:bg-primary/10">
-                                                                    <a href={product.source.website} target="_blank" rel="noopener noreferrer">
-                                                                        View <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
-                                                                    </a>
+                                                            <div className="flex justify-end gap-1">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-8 px-2 text-muted-foreground hover:text-primary"
+                                                                    onClick={() => setSelectedHistoryProduct(product)}
+                                                                    title="View Price History"
+                                                                >
+                                                                    <LineChart className="h-4 w-4" />
                                                                 </Button>
-                                                            )}
+                                                                {product.source?.website && (
+                                                                    <Button variant="ghost" size="sm" className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10" title="View Source">
+                                                                        <a href={product.source.website} target="_blank" rel="noopener noreferrer">
+                                                                            <ExternalLink className="h-4 w-4" />
+                                                                        </a>
+                                                                    </Button>
+                                                                )}
+                                                            </div>
                                                         </TableCell>
                                                     </TableRow>
                                                 ))}
@@ -415,6 +587,13 @@ export default function IngredientPage() {
             </main>
 
             <Footer />
+
+            {/* Price History Modal Component */}
+            <ProductHistoryModal
+                product={selectedHistoryProduct}
+                open={!!selectedHistoryProduct}
+                onOpenChange={(open) => !open && setSelectedHistoryProduct(null)}
+            />
         </div>
     );
 }

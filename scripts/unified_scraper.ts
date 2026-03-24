@@ -53,28 +53,24 @@ async function fetchStoreData(storeName: string, FetcherClass: any, mode: string
     return { fetcher, rawProducts };
 }
 
+import { PriceHistory } from "@/models/PriceHistory";
+import {AuditLog} from "@/models/AuditLog"; // Add this to your imports
+
 async function processAndUpsert(fetcher: any, rawProducts: any[], storeName: string) {
-    if (!rawProducts.length) {
-        console.warn(`⚠️ No products from ${storeName}. Skipping.`);
-        return;
-    }
+    if (!rawProducts.length) return;
 
     console.log(`🧪 Normalizing ${storeName} products...`);
     const mappedProducts = rawProducts.map(raw => {
         const { quantity, unit } = normalizeQuantityUnit(raw);
         const price = raw.Price ? normalizePrice(raw.Price) : raw.price;
-        const normalized = fetcher.mapToProduct(raw, "000000000000000000000000");
-        return {
-            ...normalized,
-            quantity,
-            unit,
-            price,
-            raw: JSON.stringify(raw),
-        };
+        const normalized = fetcher.mapToProduct(raw);
+
+        return { ...normalized, quantity, unit, price, raw: JSON.stringify(raw) };
     });
 
     console.log(`💾 Saving/updating ${storeName} in MongoDB...`);
     try {
+        // 1. Bulk Upsert the Products
         const bulkOps = mappedProducts.map(product => ({
             updateOne: {
                 filter: { externalId: product.externalId, source: product.source },
@@ -89,8 +85,7 @@ async function processAndUpsert(fetcher: any, rawProducts: any[], storeName: str
                         currency: product.currency,
                         departmentCode: product.departmentCode,
                         raw: product.raw,
-                    },
-                    $setOnInsert: { ingredient: product.ingredient },
+                    }
                 },
                 upsert: true,
             },
@@ -98,6 +93,33 @@ async function processAndUpsert(fetcher: any, rawProducts: any[], storeName: str
 
         const result = await Product.bulkWrite(bulkOps);
         console.log(`✅ ${storeName}: ${result.upsertedCount} inserted, ${result.modifiedCount} updated.`);
+
+        // 2. Fetch the Product IDs we just touched (using externalId as the lookup)
+        const externalIds = mappedProducts.map(p => p.externalId);
+        const savedProducts = await Product.find({
+            source: fetcher.sourceId,
+            externalId: { $in: externalIds }
+        }, { _id: 1, externalId: 1, price: 1 }).lean();
+
+        // 3. Create the Price History records
+        const historyDocs = mappedProducts.map(scraped => {
+            const dbProduct = savedProducts.find(db => db.externalId === scraped.externalId);
+            if (!dbProduct) return null;
+
+            return {
+                product: dbProduct._id,
+                price: scraped.price,
+                currency: scraped.currency || "LKR",
+                timestamp: new Date()
+            };
+        }).filter(Boolean); // Drop any nulls
+
+        // 4. Bulk Insert the History
+        if (historyDocs.length > 0) {
+            await PriceHistory.insertMany(historyDocs);
+            console.log(`📈 Logged ${historyDocs.length} price history data points.`);
+        }
+
     } catch (err: any) {
         console.error(`⚠️ Bulk upsert error (${storeName}):`, err.message);
     }
@@ -118,6 +140,16 @@ async function main() {
 
     await mongoose.disconnect();
     console.log("🔻 Done. MongoDB connection closed.");
+
+    // At the very end of main() in unified_scraper.ts
+    const latestLog = await AuditLog.findOne({ type: 'SCRAPE_RUN', status: 'pending' }).sort({ startTime: -1 });
+    if (latestLog) {
+        await AuditLog.findByIdAndUpdate(latestLog._id, {
+            status: 'completed',
+            endTime: new Date(),
+            message: `Finished scraping all stores. Updated ${STORES.length} stores.`
+        });
+    }
 }
 
 main().catch(err => {

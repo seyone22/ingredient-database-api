@@ -104,7 +104,6 @@ export class KeellsFetcher extends SupermarketFetcher {
         return {
             name: raw.name,
             source: new ObjectId(this.sourceId),
-            ingredient: new ObjectId(ingredientId),
             unit: raw.uom || "unit",
             quantity: parseFloat(raw.minQty) || 1,
             price: parseFloat(raw.amount) || 0,

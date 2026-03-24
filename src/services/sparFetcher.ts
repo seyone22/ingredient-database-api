@@ -87,7 +87,6 @@ export class SparFetcher extends SupermarketFetcher {
         return {
             name: raw.title,
             source: new ObjectId(this.sourceId),
-            ingredient: new ObjectId(ingredientId),
             unit: raw.unit,
             quantity: raw.quantity,
             price: parseFloat(variant?.price || "0"),

@@ -2,7 +2,6 @@ import { Schema, model, Document, Types, models, Model } from "mongoose";
 
 export interface IProductData {
     name: string;
-    ingredient: Types.ObjectId;    // ref Ingredient
     source: Types.ObjectId;        // ref PriceSource
     brand?: string;
     unit?: string;                 // e.g., kg, liter, unit
@@ -20,7 +19,6 @@ export interface IProduct extends IProductData, Document {}
 
 const ProductSchema = new Schema<IProduct>({
     name: { type: String, required: true },
-    ingredient: { type: Schema.Types.ObjectId, ref: "Ingredient", required: true },
     source: { type: Schema.Types.ObjectId, ref: "PriceSource", required: true },
     brand: { type: String },
     unit: { type: String },

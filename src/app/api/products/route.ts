@@ -1,8 +1,38 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/utils/dbConnect";
 import { fetchProductsByIds } from "@/services/productService";
+import { Product } from "@/models/Product";
 
-export const POST = async (req: Request) => {
+// Search products by name (Useful for Comboboxes/Autocomplete)
+export async function GET(req: NextRequest) {
+    await dbConnect();
+
+    try {
+        const urlParams = new URL(req.url).searchParams;
+        const query = urlParams.get("query");
+        const limit = parseInt(urlParams.get("limit") || "10");
+
+        if (!query || query.length < 2) {
+            return NextResponse.json({ products: [] });
+        }
+
+        // Case-insensitive regex search
+        const products = await Product.find({
+            name: { $regex: query, $options: "i" }
+        })
+            .limit(limit)
+            .populate("source")
+            .lean();
+
+        return NextResponse.json({ products });
+    } catch (err: any) {
+        console.error("Error searching products:", err);
+        return NextResponse.json({ error: "Server error" }, { status: 500 });
+    }
+}
+
+// Fetch specific products by array of IDs (Your original logic)
+export async function POST(req: Request) {
     await dbConnect();
 
     try {
@@ -30,4 +60,4 @@ export const POST = async (req: Request) => {
             { status: 500 }
         );
     }
-};
+}

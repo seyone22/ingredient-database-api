@@ -152,7 +152,6 @@ export class CargillsFetcher extends SupermarketFetcher {
         return {
             name: raw.ItemName,
             source: new ObjectId(this.sourceId),
-            ingredient: new ObjectId(ingredientId),
             unit: raw.UOM || "",
             quantity: raw.UnitSize || 1,
             price: raw.Price,
