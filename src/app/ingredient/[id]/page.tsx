@@ -89,7 +89,7 @@ export default function IngredientPage() {
     const handleImageAction = async () => {
         setIsFetchingImage(true);
         try {
-            const res = await fetch(`/api/ingredients/enhance/image`, {
+            const res = await fetch(`/api/ingredients/image`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ id }), // Passing the ID in the body now

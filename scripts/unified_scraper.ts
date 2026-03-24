@@ -61,12 +61,20 @@ async function processAndUpsert(fetcher: any, rawProducts: any[], storeName: str
 
     console.log(`🧪 Normalizing ${storeName} products...`);
     const mappedProducts = rawProducts.map(raw => {
-        const { quantity, unit } = normalizeQuantityUnit(raw);
-        // Robust price check: try raw.Price, then raw.price, then fallback to 0
-        const price = raw.Price ? normalizePrice(raw.Price) : (raw.price || 0);
-        const normalized = fetcher.mapToProduct(raw);
+        // 1. Get the unified data structure from the specific store's fetcher
+        // (Passing an empty string for ingredientId since we map that later in the UI)
+        const normalized = fetcher.mapToProduct(raw, "");
 
-        return { ...normalized, quantity, unit, price, raw: JSON.stringify(raw) };
+        // 2. Apply your global quantity/unit normalizer
+        const { quantity, unit } = normalizeQuantityUnit(raw);
+
+        // 3. DO NOT overwrite the price. Just merge the normalized data with your custom raw/qty fields.
+        return {
+            ...normalized,
+            quantity: quantity || normalized.quantity,
+            unit: unit || normalized.unit,
+            raw: JSON.stringify(raw)
+        };
     });
 
     console.log(`💾 Saving/updating ${storeName} in MongoDB...`);
@@ -103,7 +111,7 @@ async function processAndUpsert(fetcher: any, rawProducts: any[], storeName: str
         const historyDocs = mappedProducts.map(scraped => {
             const dbProduct = savedProducts.find(db => db.externalId === scraped.externalId);
             // CRITICAL: Only create history if dbProduct exists AND price is a valid number > 0
-            if (!dbProduct || scraped.price === undefined || scraped.price === null) return null;
+            if (!dbProduct || scraped.price === undefined || scraped.price <= 0) return null;
 
             return {
                 product: dbProduct._id,
