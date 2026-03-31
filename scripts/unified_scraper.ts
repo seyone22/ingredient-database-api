@@ -1,21 +1,24 @@
 // scripts/scrapeAllStores.ts
 import dotenv from "dotenv";
-dotenv.config({ path: ".env.local" });
-
 import mongoose from "mongoose";
 import dbConnect from "@/utils/dbConnect";
-import { Product } from "@/models/Product";
-import { normalizePrice, normalizeQuantityUnit } from "@/utils/normalizeQtyUtil";
+import {Product} from "@/models/Product";
+import {normalizeQuantityUnit} from "@/utils/normalizeQtyUtil";
 
-import { CargillsFetcher } from "@/services/cargillsFetcher";
-import { KeellsFetcher } from "@/services/keelsFetcher";
-import { SparFetcher } from "@/services/sparFetcher";
+import {CargillsFetcher} from "@/services/cargillsFetcher";
+import {KeellsFetcher} from "@/services/keelsFetcher";
+import {SparFetcher} from "@/services/sparFetcher";
+import {PriceHistory} from "@/models/PriceHistory";
+import {AuditLog} from "@/models/AuditLog";
+import {StockHistory} from "@/models/StockHistory"; // Add this to your imports
+
+dotenv.config({path: ".env.local"});
 
 // Define supported stores
 const STORES = [
-    { name: "Cargills", fetcher: CargillsFetcher, mode: "alphabet" },
-    { name: "Keells", fetcher: KeellsFetcher, mode: "all" },
-    { name: "Spar", fetcher: SparFetcher, mode: "all" },
+    {name: "Cargills", fetcher: CargillsFetcher, mode: "alphabet"},
+    {name: "Keells", fetcher: KeellsFetcher, mode: "all"},
+    {name: "Spar", fetcher: SparFetcher, mode: "all"},
 ];
 
 async function fetchStoreData(storeName: string, FetcherClass: any, mode: string) {
@@ -46,16 +49,12 @@ async function fetchStoreData(storeName: string, FetcherClass: any, mode: string
         }
     } else {
         console.log("⚙️ Fetching all products...");
-        rawProducts = await fetcher.fetchFromSource({ itemsPerPage: 10000, ingredientName: "" });
+        rawProducts = await fetcher.fetchFromSource({itemsPerPage: 10000, ingredientName: ""});
     }
 
     console.log(`📦 Retrieved ${rawProducts.length} raw items from ${storeName}.`);
-    return { fetcher, rawProducts };
+    return {fetcher, rawProducts};
 }
-
-import { PriceHistory } from "@/models/PriceHistory";
-import {AuditLog} from "@/models/AuditLog";
-import {StockHistory} from "@/models/StockHistory"; // Add this to your imports
 
 async function processAndUpsert(fetcher: any, rawProducts: any[], storeName: string) {
     if (!rawProducts.length) return;
@@ -67,7 +66,7 @@ async function processAndUpsert(fetcher: any, rawProducts: any[], storeName: str
         const normalized = fetcher.mapToProduct(raw, "");
 
         // 2. Apply your global quantity/unit normalizer
-        const { quantity, unit } = normalizeQuantityUnit(raw);
+        const {quantity, unit} = normalizeQuantityUnit(raw);
 
         // 3. DO NOT overwrite the price. Just merge the normalized data with your custom raw/qty fields.
         return {
@@ -85,6 +84,7 @@ async function processAndUpsert(fetcher: any, rawProducts: any[], storeName: str
                 filter: { externalId: product.externalId, source: product.source },
                 update: {
                     $set: {
+                        // Existing Fields
                         name: product.name,
                         price: product.price,
                         unit: product.unit,
@@ -93,6 +93,18 @@ async function processAndUpsert(fetcher: any, rawProducts: any[], storeName: str
                         last_fetched: new Date(),
                         currency: product.currency,
                         departmentCode: product.departmentCode,
+
+                        // --- New Advanced Market Data ---
+                        brand: product.brand ?? null,
+                        stockInHand: product.stockInHand ?? null,
+                        averageSale: product.averageSale ?? null,
+                        maxQty: product.maxQty ?? null,
+                        categoryPath: product.categoryPath ?? [],
+                        subDepartmentCode: product.subDepartmentCode ?? null,
+                        isPromotionApplied: product.isPromotionApplied ?? false,
+                        promotionDiscountValue: product.promotionDiscountValue ?? 0,
+                        sku: product.itemCode ?? null, // Mapping Keells itemCode to SKU
+
                         raw: product.raw,
                     }
                 },
@@ -106,8 +118,8 @@ async function processAndUpsert(fetcher: any, rawProducts: any[], storeName: str
         const externalIds = mappedProducts.map(p => p.externalId);
         const savedProducts = await Product.find({
             source: fetcher.sourceId,
-            externalId: { $in: externalIds }
-        }, { _id: 1, externalId: 1, price: 1 }).lean();
+            externalId: {$in: externalIds}
+        }, {_id: 1, externalId: 1, price: 1}).lean();
 
         const historyDocs = mappedProducts.map(scraped => {
             const dbProduct = savedProducts.find(db => db.externalId === scraped.externalId);
@@ -155,36 +167,56 @@ async function main() {
     console.log("🔸 Starting unified store scrape...");
     await dbConnect();
 
-    for (const store of STORES) {
-        try {
-            const { fetcher, rawProducts } = await fetchStoreData(store.name, store.fetcher, store.mode);
-            await processAndUpsert(fetcher, rawProducts, store.name);
-        } catch (err) {
-            console.error(`❌ Error processing ${store.name}:`, err);
-        }
-    }
-
-    // --- MOVE AUDIT LOG UPDATE BEFORE DISCONNECT ---
-    console.log("📝 Finalizing Audit Log...");
-    const latestLog = await AuditLog.findOne({
+    // 1. Create an independent Audit Log for THIS specific execution
+    const currentLog = await AuditLog.create({
         type: 'SCRAPE_RUN',
-        status: 'pending'
-    }).sort({ startTime: -1 });
+        status: 'pending',
+        startTime: new Date(),
+        initiatedBy: 'system_scraper', // Identifies this as the script's own log
+        tag: 'AUTO_SCRAPE',
+        metadata: {
+            stores: STORES.map(s => s.name),
+            environment: process.env.NODE_ENV || 'development'
+        }
+    });
 
-    if (latestLog) {
-        await AuditLog.findByIdAndUpdate(latestLog._id, {
-            status: 'completed',
+    console.log(`📝 Audit Log created: ${currentLog._id}`);
+
+    let successCount = 0;
+    let errorMessages: string[] = [];
+
+    // 2. Wrap the loop in a try-catch to ensure the log is updated on failure
+    try {
+        for (const store of STORES) {
+            try {
+                const {fetcher, rawProducts} = await fetchStoreData(store.name, store.fetcher, store.mode);
+                await processAndUpsert(fetcher, rawProducts, store.name);
+                successCount++;
+            } catch (err: any) {
+                const msg = `❌ Error processing ${store.name}: ${err.message}`;
+                console.error(msg);
+                errorMessages.push(msg);
+            }
+        }
+
+        // 3. Finalize success
+        await AuditLog.findByIdAndUpdate(currentLog._id, {
+            status: errorMessages.length === 0 ? 'completed' : 'partial_success',
             endTime: new Date(),
-            message: `Finished scraping all stores. Updated ${STORES.length} stores.`
+            message: `Finished scraping. Successful stores: ${successCount}/${STORES.length}. ${errorMessages.join(' | ')}`
         });
-        console.log("✅ Audit Log updated to completed.");
+        console.log("✅ Audit Log finalized.");
+
+    } catch (fatalErr: any) {
+        // 4. Handle Fatal script-level crashes
+        await AuditLog.findByIdAndUpdate(currentLog._id, {
+            status: 'failed',
+            endTime: new Date(),
+            message: `Fatal Scraper Error: ${fatalErr.message}`
+        });
+        throw fatalErr; // Re-throw to trigger GitHub Action failure state
+    } finally {
+        await mongoose.disconnect();
+        console.log("🔻 Done. MongoDB connection closed.");
     }
-
-    await mongoose.disconnect();
-    console.log("🔻 Done. MongoDB connection closed.");
 }
-
-main().catch(err => {
-    console.error("❌ Fatal scrape error:", err);
-    process.exit(1);
-});
