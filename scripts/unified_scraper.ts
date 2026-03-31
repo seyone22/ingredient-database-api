@@ -54,7 +54,8 @@ async function fetchStoreData(storeName: string, FetcherClass: any, mode: string
 }
 
 import { PriceHistory } from "@/models/PriceHistory";
-import {AuditLog} from "@/models/AuditLog"; // Add this to your imports
+import {AuditLog} from "@/models/AuditLog";
+import {StockHistory} from "@/models/StockHistory"; // Add this to your imports
 
 async function processAndUpsert(fetcher: any, rawProducts: any[], storeName: string) {
     if (!rawProducts.length) return;
@@ -124,6 +125,25 @@ async function processAndUpsert(fetcher: any, rawProducts: any[], storeName: str
         if (historyDocs.length > 0) {
             await PriceHistory.insertMany(historyDocs);
             console.log(`📈 Logged ${historyDocs.length} price history data points.`);
+        }
+
+        // 2. Add inside processAndUpsert after the PriceHistory block:
+        const stockHistoryDocs = mappedProducts.map(scraped => {
+            const dbProduct = savedProducts.find(db => db.externalId === scraped.externalId);
+            // Only log if stock data exists (currently Keells)
+            if (!dbProduct || scraped.stockInHand === undefined) return null;
+
+            return {
+                product: dbProduct._id,
+                stock: scraped.stockInHand,
+                averageDailySales: scraped.averageDailySales,
+                timestamp: new Date()
+            };
+        }).filter(Boolean);
+
+        if (stockHistoryDocs.length > 0) {
+            await StockHistory.insertMany(stockHistoryDocs);
+            console.log(`📊 Logged ${stockHistoryDocs.length} stock history data points.`);
         }
 
     } catch (err: any) {
