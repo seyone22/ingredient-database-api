@@ -1,6 +1,5 @@
-import { SupermarketFetcher } from "@/services/supermarketFetcher";
-import { ObjectId } from "bson";
-import Ingredient from "@/models/Ingredient";
+import {SupermarketFetcher} from "@/services/supermarketFetcher";
+import {ObjectId} from "bson";
 
 export class KeellsFetcher extends SupermarketFetcher {
     sourceName = "Keells";
@@ -101,19 +100,39 @@ export class KeellsFetcher extends SupermarketFetcher {
     }
 
     mapToProduct(raw: any, ingredientId: string) {
+        const item = raw; // Handle both nested and flat responses
+
         return {
-            name: raw.name,
+            name: item.name,
+            brand: raw.brandDetail?.brandName || "",
             source: new ObjectId(this.sourceId),
-            unit: raw.uom || "unit",
-            quantity: parseFloat(raw.minQty) || 1,
-            price: parseFloat(raw.amount) || 0,
+            unit: item.uom || "unit",
+
+            // Pricing & Promotions
+            price: parseFloat(item.amount) || 0,
             currency: "LKR",
-            url: raw.imageUrl || "",
-            externalId: raw.itemID?.toString(),
-            itemCode: raw.itemCode?.toString(),
-            isAvailable: raw.isAvailable ?? true,
-            departmentCode: raw.departmentCode,
+            isPromotionApplied: item.isPromotionApplied ?? false,
+            promotionDiscount: parseFloat(item.promotionDiscountValue) || 0,
+
+            // Stock & Sales Analytics (The "Daily Data" requested)
+            quantity: parseFloat(item.minQty) || 1,
+            stockInHand: parseFloat(item.stockInHand) || 0,
+            averageDailySales: parseFloat(item.averageSale) || 0, // Key for your friend
+            isAvailable: item.isAvailable ?? true,
+
+            // Identifiers & Categorization
+            url: item.imageUrl || "",
+            externalId: item.itemID?.toString(),
+            itemCode: item.itemCode?.toString(),
+            departmentCode: item.departmentCode,
+            categoryPath: [
+                raw.categoryDetail?.departmentName,
+                raw.categoryDetail?.subDepartmentName,
+                raw.categoryDetail?.categoryName
+            ].filter(Boolean), // Creates an array for hierarchical filtering
+
             raw: JSON.stringify(raw),
+            lastUpdated: new Date()
         };
     }
 }
