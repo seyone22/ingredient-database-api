@@ -1,4 +1,4 @@
-// scripts/scrapeAllStores.ts
+// scripts/unified_scraper.ts
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import dbConnect from "@/utils/dbConnect";
@@ -220,3 +220,9 @@ async function main() {
         console.log("🔻 Done. MongoDB connection closed.");
     }
 }
+
+// --- Execution Entry Point ---
+main().catch(err => {
+    console.error("❌ Fatal execution error:", err);
+    process.exit(1);
+});
