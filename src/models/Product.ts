@@ -1,4 +1,5 @@
 import { Schema, model, Document, Types, models, Model } from "mongoose";
+import { PriceSource } from "@/models/PriceSource";
 
 export interface IProductData {
     name: string;
