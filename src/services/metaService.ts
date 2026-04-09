@@ -43,6 +43,9 @@ export interface DatabaseStats {
     };
 }
 
+/**
+ * Legacy stats function for basic ingredient overviews.
+ */
 export async function getIngredientStats(): Promise<any> {
     const totalIngredients = await Ingredient.countDocuments();
 
@@ -56,16 +59,10 @@ export async function getIngredientStats(): Promise<any> {
 
     const totalProducts = await Product.countDocuments();
 
-    const products = await Product.find({}, {
-
-    }).lean();
-
     const byCountry: Record<string, number> = {};
     const byCuisine: Record<string, number> = {};
     const byRegion: Record<string, number> = {};
     const byFlavor: Record<string, number> = {};
-
-    const totalMappedProducts = 0;
 
     ingredients.forEach((ing) => {
         const {country = [], cuisine = [], region = [], flavor_profile = []} = ing;
@@ -87,7 +84,6 @@ export async function getIngredientStats(): Promise<any> {
     return {
         totalIngredients,
         totalProducts,
-        totalMappedProducts,
         countries: {
             total: Object.keys(byCountry).length,
             byCountry
@@ -108,9 +104,9 @@ export async function getIngredientStats(): Promise<any> {
 }
 
 /**
- * Gathers high-level stats for FoodRepo admin dashboard.
+ * Gathers high-level stats for Cook Project admin dashboard.
+ * Includes cumulative growth and product mapping density.
  */
-
 export async function getDatabaseStats(): Promise<DatabaseStats> {
     const [
         totalIngredients,
@@ -154,64 +150,109 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
             { $group: { _id: "$flavor_profile", count: { $sum: 1 } } },
             { $sort: { count: -1 } },
         ]),
-        Ingredient.aggregate([
-            { $unwind: "$name" },
-            { $group: { _id: "$name", count: { $sum: 1 } } },
+
+        // FIXED: Using "matchedIngredients" from the Mapping model and unwinding the array
+        Mapping.aggregate([
+            { $unwind: "$matchedIngredients" },
+            { $group: { _id: "$matchedIngredients", count: { $sum: 1 } } },
             { $sort: { count: -1 } },
             { $limit: 10 },
-        ]),
-        Product.aggregate([
-            // 1. Join with the Source collection
             {
                 $lookup: {
-                    from: "price_sources",           // collection name in MongoDB (pluralized usually)
-                    localField: "source",      // field in Product
-                    foreignField: "_id",       // field in Source
+                    from: "ingredients",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "ingDetails"
+                }
+            },
+            { $unwind: "$ingDetails" },
+            {
+                $project: {
+                    name: "$ingDetails.name",
+                    count: 1
+                }
+            }
+        ]),
+
+        Product.aggregate([
+            {
+                $lookup: {
+                    from: "price_sources",
+                    localField: "source",
+                    foreignField: "_id",
                     as: "sourceData"
                 }
             },
-
-            // 2. Unwind the joined array (since lookup returns an array)
             { $unwind: "$sourceData" },
-
-            // 3. Group by source name instead of ObjectId
             {
                 $group: {
-                    _id: "$sourceData.name",   // group by the actual name
+                    _id: "$sourceData.name",
                     count: { $sum: 1 }
                 }
             },
-
-            // 4. Sort descending
             { $sort: { count: -1 } },
         ]),
+
+        // CUMULATIVE GROWTH: Ingredients
         Ingredient.aggregate([
             {
                 $group: {
                     _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-                    count: { $sum: 1 },
+                    monthly: { $sum: 1 },
                 },
             },
             { $sort: { _id: 1 } },
+            {
+                $setWindowFields: {
+                    partitionBy: null,
+                    sortBy: { _id: 1 },
+                    output: {
+                        count: { $sum: "$monthly", window: { documents: ["unbounded", "current"] } }
+                    }
+                }
+            }
         ]),
+
+        // CUMULATIVE GROWTH: Products
         Product.aggregate([
             {
                 $group: {
                     _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-                    count: { $sum: 1 },
+                    monthly: { $sum: 1 },
                 },
             },
             { $sort: { _id: 1 } },
+            {
+                $setWindowFields: {
+                    partitionBy: null,
+                    sortBy: { _id: 1 },
+                    output: {
+                        count: { $sum: "$monthly", window: { documents: ["unbounded", "current"] } }
+                    }
+                }
+            }
         ]),
+
+        // CUMULATIVE GROWTH: Mappings
         Mapping.aggregate([
             {
                 $group: {
                     _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-                    count: { $sum: 1 },
+                    monthly: { $sum: 1 },
                 },
             },
             { $sort: { _id: 1 } },
+            {
+                $setWindowFields: {
+                    partitionBy: null,
+                    sortBy: { _id: 1 },
+                    output: {
+                        count: { $sum: "$monthly", window: { documents: ["unbounded", "current"] } }
+                    }
+                }
+            }
         ]),
+
         Ingredient.countDocuments({ $or: [{ country: { $size: 0 } }, { country: { $exists: false } }] }),
         Ingredient.countDocuments({ $or: [{ cuisine: { $size: 0 } }, { cuisine: { $exists: false } }] }),
         Ingredient.countDocuments({ $or: [{ region: { $size: 0 } }, { region: { $exists: false } }] }),
@@ -243,7 +284,7 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
             byFlavor: Object.fromEntries(byFlavorAgg.map(f => [f._id, f.count])),
         },
 
-        topIngredients: topIngredientsAgg.map(i => ({ name: i._id, count: i.count })),
+        topIngredients: topIngredientsAgg.map(i => ({ name: i.name, count: i.count })),
         productsBySource: Object.fromEntries(sourceAgg.map(s => [s._id, s.count])),
         growth: {
             ingredients: ingredientGrowthAgg.map(g => ({ date: g._id, count: g.count })),

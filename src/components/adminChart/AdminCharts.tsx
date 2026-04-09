@@ -11,7 +11,7 @@ import {
     ChartLegend,
     ChartLegendContent
 } from "@/components/ui/chart";
-import { Bar, BarChart, CartesianGrid, XAxis, Pie, PieChart, Line, LineChart, Cell } from "recharts";
+import {Bar, BarChart, CartesianGrid, XAxis, Pie, PieChart, Line, LineChart, Cell, YAxis} from "recharts";
 
 interface AdminChartsProps {
     countries: DatabaseStats["countries"];
@@ -225,14 +225,22 @@ export default function AdminCharts({
                 </CardHeader>
                 <CardContent>
                     <ChartContainer config={growthConfig} className="h-[400px] w-full">
-                        <LineChart data={mergedGrowthData} margin={{ top: 20, right: 20, left: 0, bottom: 0 }}>
+                        <LineChart data={mergedGrowthData} margin={{ top: 20, right: 30, left: 10, bottom: 0 }}>
                             <CartesianGrid vertical={false} strokeDasharray="3 3" />
                             <XAxis
                                 dataKey="date"
                                 tickLine={false}
                                 tickMargin={10}
                                 axisLine={false}
-                                tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })}
+                                tickFormatter={(val) => new Date(val).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })}
+                            />
+                            {/* PROPER Y AXIS ADDED HERE */}
+                            <YAxis
+                                tickLine={false}
+                                axisLine={false}
+                                tickMargin={10}
+                                fontSize={12}
+                                tickFormatter={(val) => val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val}
                             />
                             <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
                             <ChartLegend content={<ChartLegendContent />} />

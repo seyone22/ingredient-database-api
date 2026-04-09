@@ -1,4 +1,3 @@
-// components/adminDashboard/AdminDashboard.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -35,156 +34,102 @@ export default function AdminDashboard() {
                 setLoading(false);
             })
             .catch((err) => {
-                console.error(err);
                 setError("Failed to load statistics.");
                 setLoading(false);
             });
     }, []);
 
-    // Skeleton loader for smooth transitions
     if (loading) {
         return (
-            <div className="space-y-8 animate-in fade-in duration-500">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {[1, 2, 3, 4].map((i) => (
-                        <Skeleton key={i} className="h-32 w-full rounded-xl" />
-                    ))}
+            <div className="p-8 space-y-8 animate-pulse">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-                    {[1, 2, 3, 4].map((i) => (
-                        <Skeleton key={i} className="h-24 w-full rounded-xl" />
-                    ))}
-                </div>
-                <Skeleton className="h-96 w-full rounded-xl mt-8" />
+                <Skeleton className="h-[500px] w-full rounded-xl" />
             </div>
         );
     }
 
     if (error || !stats) {
         return (
-            <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error || "No data available."}</AlertDescription>
-            </Alert>
+            <div className="p-8">
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error || "No data available."}</AlertDescription>
+                </Alert>
+            </div>
         );
     }
 
-    const mappingCoverage = stats.mappingCoverage?.toFixed(1);
-
     return (
-        <div className="space-y-8 animate-in slide-in-from-bottom-4 fade-in duration-500">
+        <div className="">
 
-            {/* ====== Top Stat Cards ====== */}
+            {/* ====== Overview Stats ====== */}
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard title="Ingredients" value={stats.totalIngredients} icon={<Database />} />
+                <StatCard title="Total Products" value={stats.totalProducts} icon={<Package />} />
+                <StatCard title="Mapped Items" value={stats.totalMappedProducts} icon={<LinkIcon />} />
+                <StatCard
+                    title="Coverage"
+                    value={`${stats.mappingCoverage.toFixed(1)}%`}
+                    icon={<Percent />}
+                    highlight
+                />
+            </section>
+
+            {/* ====== Completeness Alerts ====== */}
             <section className="space-y-4">
-                <h2 className="text-xl font-semibold tracking-tight">Overview</h2>
+                <h2 className="text-xl font-semibold">Data Completeness</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Ingredients</CardTitle>
-                            <Database className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.totalIngredients.toLocaleString()}</div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.totalProducts.toLocaleString()}</div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Mapped Products</CardTitle>
-                            <LinkIcon className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{stats.totalMappedProducts.toLocaleString()}</div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">Mapping Coverage</CardTitle>
-                            <Percent className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-primary">{mappingCoverage}%</div>
-                        </CardContent>
-                    </Card>
+                    <AlertCard label="Missing Country" value={stats.dataCompleteness.missingCountry} icon={<Globe />} />
+                    <AlertCard label="Missing Cuisine" value={stats.dataCompleteness.missingCuisine} icon={<Utensils />} />
+                    <AlertCard label="Missing Region" value={stats.dataCompleteness.missingRegion} icon={<MapPin />} />
+                    <AlertCard label="Missing Flavor" value={stats.dataCompleteness.missingFlavor} icon={<Sparkles />} />
                 </div>
             </section>
 
-            {/* ====== Data Completeness ====== */}
-            <section className="space-y-4">
-                <h2 className="text-xl font-semibold tracking-tight">Data Completeness Alerts</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card className="bg-destructive/5 border-destructive/20">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-destructive">Missing Country</CardTitle>
-                            <Globe className="h-4 w-4 text-destructive/70" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-destructive">
-                                {stats.dataCompleteness.missingCountry.toLocaleString()}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-destructive/5 border-destructive/20">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-destructive">Missing Cuisine</CardTitle>
-                            <Utensils className="h-4 w-4 text-destructive/70" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-destructive">
-                                {stats.dataCompleteness.missingCuisine.toLocaleString()}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-destructive/5 border-destructive/20">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-destructive">Missing Region</CardTitle>
-                            <MapPin className="h-4 w-4 text-destructive/70" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-destructive">
-                                {stats.dataCompleteness.missingRegion.toLocaleString()}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-destructive/5 border-destructive/20">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium text-destructive">Missing Flavor</CardTitle>
-                            <Sparkles className="h-4 w-4 text-destructive/70" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold text-destructive">
-                                {stats.dataCompleteness.missingFlavor.toLocaleString()}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            </section>
-
-            {/* ====== Distribution Charts ====== */}
+            {/* ====== Visualization Layer ====== */}
             <AdminCharts
                 countries={stats.countries}
                 cuisines={stats.cuisines}
                 regions={stats.regions}
                 flavorProfiles={stats.flavorProfiles}
-                topIngredients={stats.topIngredients}
+                topIngredients={stats.topIngredients} // Now represents product support
                 productsBySource={stats.productsBySource}
                 growth={stats.growth}
             />
         </div>
+    );
+}
+
+// Internal Sub-components for cleaner JSX
+function StatCard({ title, value, icon, highlight }: any) {
+    return (
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                <div className="text-muted-foreground w-4 h-4">{icon}</div>
+            </CardHeader>
+            <CardContent>
+                <div className={`text-2xl font-bold ${highlight ? 'text-primary' : ''}`}>
+                    {typeof value === 'number' ? value.toLocaleString() : value}
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+function AlertCard({ label, value, icon }: any) {
+    return (
+        <Card className="bg-destructive/5 border-destructive/10">
+            <CardHeader className="flex flex-row items-center justify-between pb-1">
+                <span className="text-xs font-semibold text-destructive uppercase tracking-wider">{label}</span>
+                <div className="text-destructive/60 w-4 h-4">{icon}</div>
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold text-destructive">{value.toLocaleString()}</div>
+            </CardContent>
+        </Card>
     );
 }
