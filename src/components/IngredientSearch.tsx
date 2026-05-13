@@ -35,7 +35,7 @@ export default function IngredientSearch() {
         setError(null);
 
         try {
-            const url = new URL("/api/ingredients/vector", window.location.origin);
+            const url = new URL("/api/ingredients", window.location.origin);
             url.searchParams.set("query", searchQuery);
             url.searchParams.set("page", pageNumber.toString());
             url.searchParams.set("limit", "20");
