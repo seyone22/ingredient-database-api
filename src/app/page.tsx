@@ -5,7 +5,7 @@ import IngredientSearch from "@/components/IngredientSearch";
 
 export default function Home() {
     return (
-        <div>
+        <div className="min-h-screen flex flex-col bg-background font-sans antialiased">
             <NavBar />
 
             <main>
