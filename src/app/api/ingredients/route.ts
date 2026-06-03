@@ -1,10 +1,7 @@
 import {NextResponse} from "next/server";
-import dbConnect from "@/utils/dbConnect";
 import {addIngredient, searchIngredients} from "@/services/ingredientService";
 
 export const GET = async (req: Request) => {
-    await dbConnect();
-
     const {searchParams} = new URL(req.url);
     const query = searchParams.get("query")?.trim() || "";
     const page = parseInt(searchParams.get("page") || "1", 10);
@@ -12,7 +9,6 @@ export const GET = async (req: Request) => {
     const autosuggest = searchParams.get("autosuggest") === "true";
     const includeProducts = searchParams.get("includeProducts") === "true";
 
-    // Optional structured filters
     const country = searchParams.get("country");
     const cuisine = searchParams.get("cuisine");
     const region = searchParams.get("region");
@@ -23,10 +19,9 @@ export const GET = async (req: Request) => {
     }
 
     try {
-        const data = await searchIngredients(
-            query,
-            {page, limit, autosuggest, country, cuisine, region, flavor, includeProducts}
-        );
+        const data = await searchIngredients(query, {
+            page, limit, autosuggest, country, cuisine, region, flavor, includeProducts
+        });
 
         if (!data.results || data.results.length === 0) {
             return NextResponse.json({error: "No ingredients found"}, {status: 404});
@@ -42,8 +37,6 @@ export const GET = async (req: Request) => {
 };
 
 export const POST = async (req: Request) => {
-    await dbConnect();
-
     try {
         const body = await req.json();
 

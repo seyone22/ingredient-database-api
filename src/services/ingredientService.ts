@@ -268,7 +268,9 @@ export async function fetchIngredientsByIds(ids: string[]): Promise<IngredientLi
 // -------------------------
 // Add Ingredient
 // -------------------------
-export async function addIngredient(data: IIngredientData) {
+export async function addIngredient(data: any) { // Type adjusted to accept raw frontend payload
+    await dbConnect(); // Added db connection
+
     try {
         const embeddingResponse = await openai.embeddings.create({
             model: "gemini-embedding-001",
@@ -278,15 +280,15 @@ export async function addIngredient(data: IIngredientData) {
 
         const ingredientData = {
             name: data.name.trim(),
-            aliases: Array.isArray(data.aliases) ? data.aliases.map((a) => a.trim()) : [],
-            country: Array.isArray(data.country) ? data.country.map((c) => c.trim()) : [],
-            cuisine: Array.isArray(data.cuisine) ? data.cuisine.map((c) => c.trim()) : [],
-            region: Array.isArray(data.region) ? data.region.map((r) => r.trim()) : [],
-            flavor_profile: Array.isArray(data.flavor_profile) ? data.flavor_profile.map((f) => f.trim()) : [],
+            aliases: Array.isArray(data.aliases) ? data.aliases : [],
+            country: Array.isArray(data.country) ? data.country : [],
+            cuisine: Array.isArray(data.cuisine) ? data.cuisine : [],
+            region: Array.isArray(data.region) ? data.region : [],
+            flavor_profile: Array.isArray(data.flavor_profile) ? data.flavor_profile : [],
             provenance: data.provenance?.trim() || "Unknown",
             comment: data.comment?.trim(),
             pronunciation: data.pronunciation?.trim(),
-            photo: data.image?.url?.trim(),
+            photo: data.photo?.trim(), // Fixed to match the frontend payload
             last_modified: new Date(),
             embedding: queryVector,
         };
