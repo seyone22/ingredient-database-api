@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { QueryEmbedding } from "@/models/QueryEmbedding";
 import {IProductData, Product} from "@/models/Product";
 import {ObjectId} from "bson";
+import dbConnect from "@/utils/dbConnect";
 
 export interface IngredientSearchResponse {
     results: IIngredientData[];
