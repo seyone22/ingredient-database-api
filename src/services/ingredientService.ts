@@ -161,9 +161,10 @@ export async function searchIngredients(
     }
 
     const skip = (page - 1) * limit;
+    const cleanQuery = query.trim();
 
-    const prefixRegex = new RegExp(`^${query}`, "i");
-    const containsRegex = new RegExp(query, "i");
+    const prefixRegex = new RegExp(`^${cleanQuery}`, "i");
+    const containsRegex = new RegExp(cleanQuery, "i");
 
     const baseFilter: any = {
         $or: [
@@ -177,44 +178,67 @@ export async function searchIngredients(
     if (region) baseFilter.region = region;
     if (flavor) baseFilter.flavor_profile = flavor;
 
-    // --- 1️⃣ Fetch ingredients ---
-    let ingredientsQuery = Ingredient.find(baseFilter)
-        .skip(skip)
-        .limit(limit)
-        .select("-embedding"); // always exclude embedding
-
+    // --- 1️⃣ Fetch and sort ingredients via Aggregation ---
     const [results, total] = await Promise.all([
-        ingredientsQuery.exec(),
+        Ingredient.aggregate([
+            { $match: baseFilter },
+            {
+                $addFields: {
+                    // Score 1: Is it an exact match? (e.g., "ginger" == "ginger")
+                    isExactMatch: {
+                        $cond: [
+                            { $eq: [{ $toLower: "$name" }, cleanQuery.toLowerCase()] },
+                            1,
+                            0
+                        ]
+                    },
+                    // Score 2: Does it start with the query? (e.g., "ginger root")
+                    isStartsWith: {
+                        $cond: [
+                            { $regexMatch: { input: "$name", regex: prefixRegex } },
+                            1,
+                            0
+                        ]
+                    }
+                }
+            },
+            // Sort by Exact Match (desc), then Starts With (desc), then alphabetically
+            { $sort: { isExactMatch: -1, isStartsWith: -1, name: 1 } },
+            // Paginate AFTER sorting
+            { $skip: skip },
+            { $limit: limit },
+            // Clean up temporary sorting fields and exclude embedding
+            { $project: { embedding: 0, isExactMatch: 0, isStartsWith: 0 } }
+        ]),
         Ingredient.countDocuments(baseFilter),
     ]);
 
     // --- 2️⃣ Include products if requested ---
-    // if (includeProducts && results.length > 0) {
-    //     const ingredientIds = results
-    //         .map((ing) => ing._id)
-    //
-    //     const products = await Product.find({ ingredient: { $in: ingredientIds } })
-    //         .select("-embedding")
-    //         .lean();
-    //
-    //     const productsByIngredient: Record<string, typeof products> = {};
-    //     for (const p of products) {
-    //         const key = p.ingredient?.toString();
-    //         if (!key) continue;
-    //         if (!productsByIngredient[key]) productsByIngredient[key] = [];
-    //         productsByIngredient[key].push(p);
-    //     }
-    //
-    //     // attach products safely
-    //     for (const ing of results) {
-    //         const key = ing._id?.toString();
-    //         if (!key) {
-    //             ing.products = [];
-    //         } else {
-    //             ing.products = productsByIngredient[key] || [];
-    //         }
-    //     }
-    // }
+    if (includeProducts && results.length > 0) {
+        const ingredientIds = results.map((ing) => ing._id);
+
+        const products = await Product.find({ ingredient: { $in: ingredientIds } })
+            .select("-embedding")
+            .lean();
+
+        const productsByIngredient: Record<string, typeof products> = {};
+        for (const p of products) {
+            const key = p.ingredient?.toString();
+            if (!key) continue;
+            if (!productsByIngredient[key]) productsByIngredient[key] = [];
+            productsByIngredient[key].push(p);
+        }
+
+        // attach products safely
+        for (const ing of results) {
+            const key = ing._id?.toString();
+            if (!key) {
+                ing.products = [];
+            } else {
+                ing.products = productsByIngredient[key] || [];
+            }
+        }
+    }
 
     return {
         results,

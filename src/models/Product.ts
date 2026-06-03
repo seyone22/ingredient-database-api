@@ -25,6 +25,7 @@ export interface IProductData {
     sku?: string | null;           // Store-specific SKU or itemCode
 
     raw?: string | null;
+    ingredient?: Types.ObjectId | null; // <--- ADD THIS LINE
 }
 
 export interface IProduct extends IProductData, Document {}
