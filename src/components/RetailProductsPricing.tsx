@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -17,13 +17,12 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Calculator, Check, ExternalLink, LineChart, Loader2,
-    Plus, Store, Info, Sparkles, Search
+    Plus, Store, Info, Sparkles
 } from "lucide-react";
 import ProductHistoryModal from "@/components/PriceHistoryModal";
 import { cn } from "@/lib/utils";
 
 const getUnitPriceData = (product: any) => {
-    // Attempt to extract quantity/unit from name if not explicitly provided
     const name = product.name.toLowerCase();
     const qtyMatch = name.match(/(\d+(?:\.\d+)?)\s*(g|kg|ml|l)/i);
 
@@ -35,7 +34,7 @@ const getUnitPriceData = (product: any) => {
         unit = qtyMatch[2].toLowerCase();
     }
 
-    let baseQty = qty;
+    let baseQty = qty || 1; // Prevent division by zero
     let baseUnit = unit;
 
     if (unit === 'kg' || unit === 'l') {
@@ -70,13 +69,23 @@ export default function RetailProductsPricing({
                                                   onRefreshProducts
                                               }: RetailProductsPricingProps) {
     const [isMappingOpen, setIsMappingOpen] = useState(false);
+
+    // Search State
     const [productQuery, setProductQuery] = useState("");
+    const [debouncedQuery, setDebouncedQuery] = useState("");
     const [productResults, setProductResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+
     const [selectedProduct, setSelectedProduct] = useState<any>(null);
     const [isMappingLoading, setIsMappingLoading] = useState(false);
     const [selectedHistoryProduct, setSelectedHistoryProduct] = useState<any>(null);
 
+    // Track already linked product IDs for fast O(1) lookups
+    const linkedProductIds = useMemo(() => {
+        return new Set(products.map(p => p._id));
+    }, [products]);
+
+    // Calculate Price Insights
     const insights = useMemo(() => {
         if (!products.length) return null;
         const processed = products.map(p => ({ ...p, ...getUnitPriceData(p) }));
@@ -91,26 +100,40 @@ export default function RetailProductsPricing({
         return { bestValue, cheapestAbsolute, avgPrice, hasBulkSaving: bestValue._id !== cheapestAbsolute._id, avgPricePerUnit };
     }, [products]);
 
-    const searchUnmappedProducts = async (query: string) => {
-        setProductQuery(query);
-        if (query.length < 2) {
-            setProductResults([]);
-            return;
-        }
+    // 1. Debounce the user input
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedQuery(productQuery);
+        }, 300); // Wait 300ms after user stops typing
+        return () => clearTimeout(timer);
+    }, [productQuery]);
 
-        setIsSearching(true);
-        try {
-            const res = await fetch(`/api/products?query=${encodeURIComponent(query)}&limit=100`);
-            if (res.ok) {
-                const data = await res.json();
-                setProductResults(data.results || []);
+    // 2. Fetch results when debounced query changes
+    useEffect(() => {
+        const fetchResults = async () => {
+            if (debouncedQuery.length < 2) {
+                setProductResults([]);
+                setIsSearching(false);
+                return;
             }
-        } catch (error) {
-            console.error("Search failed", error);
-        } finally {
-            setIsSearching(false);
-        }
-    };
+
+            setIsSearching(true);
+            try {
+                // Increased limit to 150 for better scrolling selection
+                const res = await fetch(`/api/products?query=${encodeURIComponent(debouncedQuery)}&limit=150`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setProductResults(data.results || []);
+                }
+            } catch (error) {
+                console.error("Search failed", error);
+            } finally {
+                setIsSearching(false);
+            }
+        };
+
+        fetchResults();
+    }, [debouncedQuery]);
 
     const handleCreateMapping = async () => {
         if (!selectedProduct) return;
@@ -122,6 +145,7 @@ export default function RetailProductsPricing({
                 body: JSON.stringify({ productId: selectedProduct._id, ingredientId }),
             });
             if (!res.ok) throw new Error("Mapping failed");
+
             setIsMappingOpen(false);
             setSelectedProduct(null);
             setProductQuery("");
@@ -147,73 +171,97 @@ export default function RetailProductsPricing({
                             <Plus className="mr-2 h-4 w-4" /> Map Product
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[500px]">
+                    {/* Increased max-width and set flex column to allow internal scrolling */}
+                    <DialogContent className="sm:max-w-[600px] flex flex-col max-h-[85vh]">
                         <DialogHeader>
                             <DialogTitle>Map a Retail Product</DialogTitle>
                             <DialogDescription>
                                 Search the database to link a retail item to this ingredient.
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="flex flex-col gap-4 py-4">
-                            <Command className="rounded-lg border shadow-md" shouldFilter={false}>
+
+                        <div className="flex flex-col gap-4 py-2 flex-1 overflow-hidden">
+                            <Command className="rounded-lg border shadow-md flex-1 overflow-hidden flex flex-col" shouldFilter={false}>
                                 <CommandInput
                                     placeholder="Search products (e.g. 'Paneer')..."
                                     value={productQuery}
-                                    onValueChange={searchUnmappedProducts}
+                                    onValueChange={setProductQuery}
                                 />
-                                <CommandList className="min-h-[200px]">
+                                {/* Increased max height for the list */}
+                                <CommandList className="max-h-[500px] overflow-y-auto flex-1">
                                     {isSearching && (
                                         <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Searching...
                                         </div>
                                     )}
-                                    {!isSearching && productQuery.length >= 2 && productResults.length === 0 && (
-                                        <CommandEmpty>No products found for "{productQuery}".</CommandEmpty>
+                                    {!isSearching && debouncedQuery.length >= 2 && productResults.length === 0 && (
+                                        <CommandEmpty>No products found for &quot;{debouncedQuery}&quot;.</CommandEmpty>
                                     )}
-                                    {!isSearching && productQuery.length < 2 && (
+                                    {!isSearching && debouncedQuery.length < 2 && (
                                         <div className="flex items-center justify-center py-6 text-sm text-muted-foreground italic">
                                             Type at least 2 characters to search...
                                         </div>
                                     )}
                                     <CommandGroup>
-                                        {productResults.map((prod) => (
-                                            <CommandItem
-                                                key={prod._id}
-                                                value={prod._id}
-                                                onSelect={() => setSelectedProduct(prod)}
-                                                className="flex items-center gap-3 py-3 cursor-pointer"
-                                            >
-                                                <div className={cn(
-                                                    "flex h-5 w-5 items-center justify-center rounded-full border border-primary",
-                                                    selectedProduct?._id === prod._id ? "bg-primary text-primary-foreground" : "opacity-50"
-                                                )}>
-                                                    {selectedProduct?._id === prod._id && <Check className="h-3 w-3" />}
-                                                </div>
-                                                <div className="h-10 w-10 rounded bg-muted flex items-center justify-center shrink-0 overflow-hidden border">
-                                                    {prod.url ? (
-                                                        <img src={prod.url} alt="" className="h-full w-full object-cover" />
-                                                    ) : (
-                                                        <Store className="h-5 w-5 text-muted-foreground" />
+                                        {productResults.map((prod) => {
+                                            const isLinked = linkedProductIds.has(prod._id);
+
+                                            return (
+                                                <CommandItem
+                                                    key={prod._id}
+                                                    value={prod._id}
+                                                    // Disable selection if already linked
+                                                    onSelect={() => !isLinked && setSelectedProduct(prod)}
+                                                    disabled={isLinked}
+                                                    className={cn(
+                                                        "flex items-center gap-3 py-3",
+                                                        isLinked ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
                                                     )}
-                                                </div>
-                                                <div className="flex flex-col truncate">
-                                                    <span className="truncate font-medium text-sm">{prod.name}</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                                                            {prod.source?.name || "Market"}
-                                                        </span>
-                                                        <span className="text-[10px] text-muted-foreground font-mono">
-                                                            {prod.currency} {prod.price}
-                                                        </span>
+                                                >
+                                                    <div className={cn(
+                                                        "flex h-5 w-5 items-center justify-center rounded-full border",
+                                                        selectedProduct?._id === prod._id
+                                                            ? "bg-primary border-primary text-primary-foreground"
+                                                            : "border-muted-foreground/30 text-transparent"
+                                                    )}>
+                                                        <Check className="h-3 w-3" />
                                                     </div>
-                                                </div>
-                                            </CommandItem>
-                                        ))}
+
+                                                    <div className="h-10 w-10 rounded bg-muted flex items-center justify-center shrink-0 overflow-hidden border">
+                                                        {prod.url ? (
+                                                            <img src={prod.url} alt="" className="h-full w-full object-cover" />
+                                                        ) : (
+                                                            <Store className="h-5 w-5 text-muted-foreground" />
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex flex-col truncate flex-1">
+                                                        <span className="truncate font-medium text-sm">{prod.name}</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                                                {prod.source?.name || "Market"}
+                                                            </span>
+                                                            <span className="text-[10px] text-muted-foreground font-mono">
+                                                                {prod.currency} {prod.price}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Badge to indicate if it's already mapped */}
+                                                    {isLinked && (
+                                                        <Badge variant="secondary" className="text-[10px] ml-auto shrink-0">
+                                                            Already Linked
+                                                        </Badge>
+                                                    )}
+                                                </CommandItem>
+                                            )
+                                        })}
                                     </CommandGroup>
                                 </CommandList>
                             </Command>
+
                             <Button
-                                className="w-full"
+                                className="w-full shrink-0"
                                 disabled={!selectedProduct || isMappingLoading}
                                 onClick={handleCreateMapping}
                             >
