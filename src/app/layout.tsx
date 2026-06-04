@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     default: 'Food Repo',
     template: '%s | Food Repo',
   },
-  description: 'Food Repo — Food Ingredient Database.',
+  description: 'Food Repo - Food Ingredient Database.',
   keywords: ['food', 'recipes', 'meal planning', 'food repo', 'culinary', 'nutrition', 'database'],
   authors: [
     {
