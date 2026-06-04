@@ -157,7 +157,7 @@ export async function searchIngredients(
         includeProducts = false,
     }: SearchOptions
 ): Promise<IngredientSearchResponse> {
-    dbConnect()
+    await dbConnect()
 
     if (!query.trim()) {
         return { results: [], page: 1, totalPages: 0, total: 0 };
