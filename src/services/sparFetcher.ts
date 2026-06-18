@@ -1,15 +1,54 @@
-// services/sparFetcher.ts
 import { SupermarketFetcher } from "@/services/supermarketFetcher";
-import { ObjectId } from "bson";
+import { db } from "@/utils/db";
+import { priceSources } from "@/utils/schema";
+import { eq } from "drizzle-orm";
 
 export class SparFetcher extends SupermarketFetcher {
     sourceName = "SPAR";
     country = "LK";
-    sourceId = "69034165c17582fc6ab77c78"; // placeholder ObjectId
+
+    // Resolved lazily from the price_sources table
+    sourceId?: string;
 
     private BASE_API = "https://spar2u.lk";
 
+    // --- Helper to resolve (or create) this source's uuid from price_sources ---
+    private async ensureSourceId() {
+        if (this.sourceId) return;
+
+        const existing = await db
+            .select({ id: priceSources.id })
+            .from(priceSources)
+            .where(eq(priceSources.name, this.sourceName))
+            .limit(1);
+
+        if (existing.length > 0) {
+            this.sourceId = existing[0].id;
+            return;
+        }
+
+        // Seed if missing
+        try {
+            const [created] = await db
+                .insert(priceSources)
+                .values({ name: this.sourceName, country: this.country, type: "api" })
+                .returning({ id: priceSources.id });
+            this.sourceId = created.id;
+        } catch (err) {
+            // Race condition fallback
+            const retry = await db
+                .select({ id: priceSources.id })
+                .from(priceSources)
+                .where(eq(priceSources.name, this.sourceName))
+                .limit(1);
+            if (retry.length === 0) throw err;
+            this.sourceId = retry[0].id;
+        }
+    }
+
     async fetchFromSource(params: { ingredientName?: string; itemsPerPage?: number, pageCount?: number } = {}): Promise<any[]> {
+        await this.ensureSourceId();
+
         const itemsPerPage = params.itemsPerPage || 250;
         const maxPages = params.pageCount || 15;
 
@@ -28,7 +67,7 @@ export class SparFetcher extends SupermarketFetcher {
             console.log(`Fetching SPAR page ${page}...`);
 
             let attempts = 0;
-            let json = null;
+            let json: any = null;
 
             while (attempts < 5) {
                 attempts++;
@@ -80,23 +119,40 @@ export class SparFetcher extends SupermarketFetcher {
         return allItems;
     }
 
-    mapToProduct(raw: any, ingredientId: string) {
-        // price is from the first available variant (fallback if none available)
+    mapToProduct(raw: any, ingredientId?: string) {
+        if (!this.sourceId) {
+            throw new Error("SparFetcher: sourceId not resolved — call fetchFromSource() first");
+        }
+
+        // Price is from the first available variant (fallback if none available)
         const variant = raw.variants?.find((v: { available: any; }) => v.available) || raw.variants?.[0];
+
+        // Safely extract the first image if available
+        const imageUrl = raw.images && raw.images.length > 0 ? raw.images[0].src : null;
 
         return {
             name: raw.title,
-            source: new ObjectId(this.sourceId),
-            unit: raw.unit,
-            quantity: raw.quantity,
-            price: parseFloat(variant?.price || "0"),
+            brand: raw.vendor || null,
+            sourceId: this.sourceId,
+            unit: raw.unit || null,
+            quantity: raw.quantity ? Number(raw.quantity) : 1,
+
+            // Respecting Postgres strict doublePrecision constraint
+            price: variant?.price != null ? parseFloat(variant.price) : 0,
             currency: "LKR",
-            url: "", // SPAR JSON has images under `images` array, can take first if exists
+
+            stockInHand: parseFloat(raw.stockInHand) || 0,
+            averageSale: parseFloat(raw.averageSale) || 0,
+
+            url: imageUrl,
             externalId: raw.id?.toString(),
-            itemCode: variant?.sku?.toString(),
-            isAvailable: variant?.available ?? true,
+            sku: variant?.sku?.toString() || null,
+
             departmentCode: raw.product_type || "Misc",
+            categoryPath: raw.product_type ? [raw.product_type] : [],
+
             raw: JSON.stringify(raw),
+            lastFetched: new Date(),
         };
     }
 }

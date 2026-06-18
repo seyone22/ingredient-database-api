@@ -1,25 +1,21 @@
 import Link from "next/link";
-import { IIngredientData } from "@/models/Ingredient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Globe, Utensils } from "lucide-react";
+import { Ingredient } from "@/types/types";
 
-export default function IngredientCard({ ingredient }: { ingredient: IIngredientData }) {
+export default function IngredientCard({ ingredient }: { ingredient: Ingredient }) {
     if (!ingredient) return null;
 
     const hasCountries = Array.isArray(ingredient.country) && ingredient.country.length > 0;
     const hasCuisines = Array.isArray(ingredient.cuisine) && ingredient.cuisine.length > 0;
-    const hasFlavors = Array.isArray(ingredient.flavor_profile) && ingredient.flavor_profile.length > 0;
+    const hasFlavors = Array.isArray(ingredient.flavorProfile) && ingredient.flavorProfile.length > 0;
     const hasImage = !!ingredient.image?.url;
     const hasComment = typeof ingredient.comment === "string" && ingredient.comment.trim().length > 0;
 
-    // Fallback to _id if using MongoDB, or name if id is missing.
-    // Adjust this to match your exact IIngredientData schema!
-    const destinationId = ingredient.id || (ingredient as any)._id;
-
     return (
         <Link
-            href={`/ingredient/${destinationId}`}
+            href={`/ingredient/${ingredient.id}`}
             className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl"
         >
             <Card className="overflow-hidden pt-0 flex flex-col h-full transition-all hover:shadow-md hover:border-primary/50 group cursor-pointer">
@@ -76,7 +72,8 @@ export default function IngredientCard({ ingredient }: { ingredient: IIngredient
                     {/* Flavor Badges */}
                     {hasFlavors && (
                         <div className="flex flex-wrap gap-1.5">
-                            {ingredient.flavor_profile!.map((flavor) => (
+                            {/* Updated to camelCase flavorProfile */}
+                            {ingredient.flavorProfile!.map((flavor) => (
                                 <Badge key={flavor} variant="secondary" className="font-normal">
                                     {flavor}
                                 </Badge>

@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Search, Loader2, AlertCircle } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { IIngredientData } from "@/models/Ingredient";
+import {useCallback, useEffect, useState} from "react";
+import {useRouter, useSearchParams} from "next/navigation";
+import {AlertCircle, Loader2, Search} from "lucide-react";
+import {Input} from "@/components/ui/input";
+import {Button} from "@/components/ui/button";
+import {Alert, AlertDescription} from "@/components/ui/alert";
 import IngredientCard from "@/components/ingredientcard/IngredientCard";
 import Pagination from "@/components/pagination/Pagination";
+import {Ingredient} from "@/types/types";
 
 export default function IngredientSearch() {
     const router = useRouter();
@@ -19,7 +19,7 @@ export default function IngredientSearch() {
     const [inputValue, setInputValue] = useState(initialQuery);
     const [activeQuery, setActiveQuery] = useState(initialQuery);
 
-    const [results, setResults] = useState<IIngredientData[]>([]);
+    const [results, setResults] = useState<Ingredient[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(1);
@@ -85,12 +85,12 @@ export default function IngredientSearch() {
         setActiveQuery(trimmed);
 
         // Update the URL without reloading the page, preserving shareable links
-        router.replace(`/?query=${encodeURIComponent(trimmed)}`, { scroll: false });
+        router.replace(`/?query=${encodeURIComponent(trimmed)}`, {scroll: false});
     };
 
     const handlePageChange = useCallback((newPage: number) => {
         fetchData(activeQuery, newPage);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        window.scrollTo({top: 0, behavior: "smooth"});
     }, [activeQuery, fetchData]);
 
     return (
@@ -109,7 +109,7 @@ export default function IngredientSearch() {
             {/* Search Bar */}
             <form onSubmit={handleSubmit} className="flex w-full max-w-2xl items-center space-x-2">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"/>
                     <Input
                         type="text"
                         placeholder="Search for ingredients (e.g., Garlic, Olive Oil)..."
@@ -119,14 +119,14 @@ export default function IngredientSearch() {
                     />
                 </div>
                 <Button type="submit" size="lg" className="h-12 px-8" disabled={loading}>
-                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Search"}
+                    {loading ? <Loader2 className="h-5 w-5 animate-spin"/> : "Search"}
                 </Button>
             </form>
 
             {/* Error Handling */}
             {error && !loading && (
                 <Alert variant="destructive" className="w-full max-w-2xl">
-                    <AlertCircle className="h-4 w-4" />
+                    <AlertCircle className="h-4 w-4"/>
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
@@ -136,7 +136,7 @@ export default function IngredientSearch() {
                 <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {results.map((ing) => (
-                            <IngredientCard key={ing.name} ingredient={ing} />
+                            <IngredientCard key={ing.id} ingredient={ing}/>
                         ))}
                     </div>
 

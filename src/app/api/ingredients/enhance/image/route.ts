@@ -1,67 +1,37 @@
-import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/utils/dbConnect";
-import Ingredient from "@/models/Ingredient";
-import { withAuditLog } from "@/utils/logger";
-import { fetchIngredientImage } from "@/services/imageIngestService";
+import {NextRequest, NextResponse} from "next/server";
+import {processIngredientImage} from "@/services/imageIngestService";
 
 export async function POST(req: NextRequest) {
-    await dbConnect();
-
     try {
         const body = await req.json();
-        const { id } = body;
+        const {id} = body;
 
-        if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 });
+        if (!id) {
+            return NextResponse.json({error: "ID required"}, {status: 400});
+        }
 
-        const ingredient = await Ingredient.findById(id);
-        if (!ingredient) return NextResponse.json({ error: "Ingredient not found" }, { status: 404 });
+        // Delegate to our new orchestration service
+        const result = await processIngredientImage(id);
 
-        const result = await withAuditLog({
-            type: 'SYSTEM_FETCH',
-            tag: 'IMAGE_WATERFALL',
-            initiatedBy: 'admin',
-            metadata: {
-                ingredientId: id,
-                ingredientName: ingredient.name
-            }
-        }, async (log) => {
-
-            // Delegate to our new Waterfall Service
-            const imageResult = await fetchIngredientImage(ingredient.name);
-
-            if (!imageResult) {
-                log.message = `Waterfall exhausted. No image found for "${ingredient.name}".`;
-                log.metadata.status = 'no_results';
-                return null;
-            }
-
-            log.metadata.sourceUsed = imageResult.source;
-            log.metadata.imageUrl = imageResult.url;
-
-            const updated = await Ingredient.findByIdAndUpdate(
-                id,
-                {
-                    $set: {
-                        image: {
-                            url: imageResult.url,
-                            author: imageResult.author,
-                            last_fetched: new Date()
-                        }
-                    }
-                },
-                { new: true }
+        if (!result) {
+            return NextResponse.json(
+                {error: "No image found across all providers."},
+                {status: 404}
             );
+        }
 
-            log.message = `Successfully mapped image via ${imageResult.source}`;
-            return updated;
-        });
-
-        if (!result) return NextResponse.json({ error: "No image found across all providers." }, { status: 404 });
-
-        return NextResponse.json({ message: "Success", ingredient: result });
+        return NextResponse.json({message: "Success", ingredient: result});
 
     } catch (err: any) {
         console.error("Image Fetch Pipeline Error:", err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+
+        if (err.message === "Ingredient not found") {
+            return NextResponse.json({error: err.message}, {status: 404});
+        }
+
+        return NextResponse.json(
+            {error: err.message || "Server Error"},
+            {status: 500}
+        );
     }
 }

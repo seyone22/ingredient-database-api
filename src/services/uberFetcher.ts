@@ -1,21 +1,62 @@
 import { chromium } from "playwright-extra";
 import stealthPlugin from "puppeteer-extra-plugin-stealth";
-import { ObjectId } from "bson"; // Assuming you have this from your codebase
+import { FetchProductParams, SupermarketFetcher } from "@/services/supermarketFetcher";
+import { db } from "@/utils/db";
+import { priceSources, products } from "@/utils/schema";
+import { eq } from "drizzle-orm";
 
 // Tell playwright to use the stealth plugin to bypass Cloudflare
 chromium.use(stealthPlugin());
 
-export class UberEatsKeellsFetcher {
+// Extend the base params to safely include UberEats specific UUIDs
+export interface UberEatsFetchParams extends FetchProductParams {
+    storeUuid?: string;
+    sectionUuid?: string;
+}
+
+export class UberEatsKeellsFetcher extends SupermarketFetcher {
     sourceName = "UberEats_Keells";
     country = "LK";
-    sourceId = "654f8b1a2b3d4e5f67890111"; // Keeping your original ID
+
+    // Resolved lazily from the price_sources table
+    sourceId?: string;
 
     private CATALOG_API = "https://www.ubereats.com/_p/api/getCatalogPresentationV2";
-
-    // The exact URL you provided, which forces the location to Malay St, Colombo
     private STORE_URL = "https://www.ubereats.com/store/keells-groceries-union-place/82Lx1HEQXIef2bjoQqrPrg?diningMode=DELIVERY&pl=JTdCJTIyYWRkcmVzcyUyMiUzQSUyMk1hbGF5JTIwU3RyZWV0JTIyJTJDJTIycmVmZXJlbmNlJTIyJTNBJTIyRWh4TllXeGhlU0JUZEN3Z1EyOXNiMjFpYnl3Z1UzSnBJRXhoYm10aElpNHFMQW9VQ2hJSmFaNUN4RDFaNGpvUjFaa09NYjhfTlZFU0ZBb1NDUU53ZWdfUlUtSTZFWTJEMHpKTkxnc3klMjIlMkMlMjJyZWZlcmVuY2VUeXBlJTIyJTNBJTIyZ29vZ2xlX3BsYWNlcyUyMiUyQyUyMmxhdGl0dWRlJTIyJTNBNi45MjU5MjM0JTJDJTIybG9uZ2l0dWRlJTIyJTNBNzkuODUwMzIzNCU3RA%3D%3D";
 
     private extractedHeaders?: Record<string, string>;
+
+    // --- Helper to resolve (or create) this source's uuid from price_sources ---
+    private async ensureSourceId() {
+        if (this.sourceId) return;
+
+        const existing = await db
+            .select({ id: priceSources.id })
+            .from(priceSources)
+            .where(eq(priceSources.name, this.sourceName))
+            .limit(1);
+
+        if (existing.length > 0) {
+            this.sourceId = existing[0].id;
+            return;
+        }
+
+        try {
+            const [created] = await db
+                .insert(priceSources)
+                .values({ name: this.sourceName, country: this.country, type: "scraper" })
+                .returning({ id: priceSources.id });
+            this.sourceId = created.id;
+        } catch (err) {
+            const retry = await db
+                .select({ id: priceSources.id })
+                .from(priceSources)
+                .where(eq(priceSources.name, this.sourceName))
+                .limit(1);
+            if (retry.length === 0) throw err;
+            this.sourceId = retry[0].id;
+        }
+    }
 
     private async ensureSession() {
         if (this.extractedHeaders) return;
@@ -27,14 +68,11 @@ export class UberEatsKeellsFetcher {
 
         const context = await browser.newContext({
             userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            // Set a viewport so it looks like a real desktop screen
             viewport: { width: 1280, height: 720 }
         });
         const page = await context.newPage();
 
-        // --- NEW: Detailed Network Logging ---
         page.on('console', msg => {
-            // Only log errors or warnings from the page to keep it clean
             if (msg.type() === 'error' || msg.type() === 'warning') {
                 console.log(`[Browser ${msg.type()}] ${msg.text()}`);
             }
@@ -42,12 +80,10 @@ export class UberEatsKeellsFetcher {
 
         page.on('request', request => {
             const url = request.url();
-            // Log the interesting requests so you can see the traffic flow
             if (url.includes('_p/api') || url.includes('cloudflare')) {
                 console.log(`[Network] -> ${request.method()} ${url.split('?')[0]}`);
             }
         });
-        // -------------------------------------
 
         const headersPromise = new Promise<Record<string, string>>((resolve) => {
             page.on('request', (request) => {
@@ -61,13 +97,10 @@ export class UberEatsKeellsFetcher {
         console.log("-> Navigating to Keells page...");
 
         try {
-            // FIX: Changed 'networkidle' to 'domcontentloaded'.
-            // We just need the DOM to exist so the React app boots up and fires the API.
             await page.goto(this.STORE_URL, { waitUntil: "domcontentloaded", timeout: 45000 });
 
             console.log("-> Base HTML loaded. Waiting for the internal API calls to fire...");
 
-            // Wait up to 15 seconds for the specific API call after the page loads
             const rawHeaders = await Promise.race([
                 headersPromise,
                 new Promise<Record<string, string>>((_, reject) =>
@@ -94,10 +127,16 @@ export class UberEatsKeellsFetcher {
         }
     }
 
-    async fetchFromSource(params: { storeUuid: string, sectionUuid: string }): Promise<any[]> {
+    async fetchFromSource(params: UberEatsFetchParams): Promise<any[]> {
+        await this.ensureSourceId();
         await this.ensureSession();
 
         if (!this.extractedHeaders) throw new Error("Failed to acquire session headers");
+
+        // UberEats requires specific UUIDs to target categories. Throw if they aren't provided.
+        if (!params.storeUuid || !params.sectionUuid) {
+            throw new Error("UberEats scraper requires 'storeUuid' and 'sectionUuid' in parameters.");
+        }
 
         let offset = 0;
         let allItems: any[] = [];
@@ -140,17 +179,15 @@ export class UberEatsKeellsFetcher {
             for (const section of catalogs) {
                 const items = section?.payload?.standardItemsPayload?.catalogItems || [];
                 for (const item of items) {
-                    allItems.push(this.mapToProduct(item));
+                    // Pass the raw item payload to be mapped
+                    allItems.push(item);
                     itemsFoundInPage++;
                 }
             }
 
             hasMore = json?.data?.meta?.hasMore || false;
-
-            // Advance the offset by the number of items we just pulled
             offset += itemsFoundInPage;
 
-            // Failsafe to prevent infinite loops if Uber returns an empty array but hasMore is true
             if (itemsFoundInPage === 0 && hasMore) {
                 console.warn("-> Warning: Uber claimed 'hasMore' but returned 0 items. Breaking loop to prevent infinite hang.");
                 break;
@@ -162,22 +199,33 @@ export class UberEatsKeellsFetcher {
         return allItems;
     }
 
-    mapToProduct(raw: any) {
+    mapToProduct(raw: any, ingredientId?: string): typeof products.$inferInsert {
+        if (!this.sourceId) {
+            throw new Error("UberEatsKeellsFetcher: sourceId not resolved — call fetchFromSource() first");
+        }
+
         // Uber Eats prices are in cents, so we divide by 100
-        const priceLKR = raw.price ? raw.price / 100 : 0;
+        const priceLKR = raw.price ? parseFloat(raw.price) / 100 : 0;
 
         return {
             name: raw.title,
-            description: raw.itemDescription || "",
-            source: new ObjectId(this.sourceId),
+            sourceId: this.sourceId,
             price: priceLKR,
             currency: "LKR",
-            isAvailable: !raw.isSoldOut,
-            url: raw.imageUrl || "",
-            externalId: raw.uuid,
-            // You can stringify the raw payload just like your old scraper for debugging
+
+            // Map `isSoldOut` to stock logic if needed. 0 means out of stock.
+            stockInHand: raw.isSoldOut ? 0 : null,
+
+            url: raw.imageUrl || null,
+            externalId: raw.uuid ? String(raw.uuid) : null,
+
+            // Default/Fallback data
+            quantity: 1,
+            unit: "unit",
+            departmentCode: "UberEats_Delivery",
+
             raw: JSON.stringify(raw),
-            lastUpdated: new Date()
+            lastFetched: new Date()
         };
     }
 }

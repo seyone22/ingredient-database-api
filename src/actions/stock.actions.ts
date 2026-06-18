@@ -1,23 +1,27 @@
 "use server";
 
-import dbConnect from "@/utils/dbConnect";
-// Adjust the import path below to where your StockHistory model is exported
-import { StockHistory } from "@/models/StockHistory";
-import { PriceSource } from "@/models/PriceSource";
+import { db } from "@/utils/db";
+import { stockHistories } from "@/utils/schema";
+import { eq, desc } from "drizzle-orm";
+import { toPgId } from "@/utils/uuid";
 
 /**
  * Fetches the last 30 days of sales history for a specific product.
  */
 export async function getProductSalesHistory(productId: string): Promise<number[]> {
     try {
-        await dbConnect();
+        // Ensure the ID is formatted as a Postgres UUID
+        const pgProductId = toPgId(productId);
 
         // 1. Fetch recent history, sorted by newest first
-        const historyData = await StockHistory.find({ product: productId })
-            .sort({ timestamp: -1 })
-            .limit(30)
-            .select("averageDailySales timestamp")
-            .lean();
+        const historyData = await db
+            .select({
+                averageDailySales: stockHistories.averageDailySales,
+            })
+            .from(stockHistories)
+            .where(eq(stockHistories.productId, pgProductId))
+            .orderBy(desc(stockHistories.timestamp))
+            .limit(30);
 
         if (!historyData || historyData.length === 0) {
             return [];
@@ -27,7 +31,8 @@ export async function getProductSalesHistory(productId: string): Promise<number[
         const chronological = historyData.reverse();
 
         // 3. Extract the numbers. Fallback to 0 if averageDailySales wasn't recorded.
-        return chronological.map((record: any) => record.averageDailySales || 0);
+        // Drizzle returns null for empty nullable columns, so we use ?? 0
+        return chronological.map((record) => record.averageDailySales ?? 0);
 
     } catch (error) {
         console.error(`[Cook Project] Error fetching history for ${productId}:`, error);

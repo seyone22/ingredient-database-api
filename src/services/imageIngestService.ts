@@ -1,5 +1,10 @@
 // src/services/imageService.ts
 
+import {auditLogs, ingredients} from "@/utils/schema";
+import {db} from "@/utils/db";
+import {eq} from "drizzle-orm";
+import {toPgId} from "@/utils/uuid";
+
 export interface ImageFetchResult {
     url: string;
     author: string;
@@ -99,4 +104,86 @@ export async function fetchIngredientImage(name: string): Promise<ImageFetchResu
 
     // If all fail, return null
     return null;
+}
+
+export async function processIngredientImage(id: string) {
+    const pgId = toPgId(id);
+
+    // 1. Fetch the ingredient to get its name
+    const ingredient = await db.query.ingredients.findFirst({
+        where: eq(ingredients.id, pgId),
+        columns: { id: true, name: true }
+    });
+
+    if (!ingredient) {
+        throw new Error("Ingredient not found");
+    }
+
+    // 2. Create the "Pending" Audit Log
+    const [log] = await db.insert(auditLogs).values({
+        type: "SYSTEM_FETCH",
+        tag: "IMAGE_WATERFALL",
+        initiatedBy: "admin",
+        status: "pending",
+        metadata: {
+            ingredientId: pgId,
+            ingredientName: ingredient.name
+        }
+    }).returning({ id: auditLogs.id });
+
+    try {
+        // 3. Delegate to the external Image Waterfall (Wikidata -> Pexels)
+        const imageResult = await fetchIngredientImage(ingredient.name);
+
+        if (!imageResult) {
+            // Update log as completed but with no results
+            await db.update(auditLogs).set({
+                status: "completed",
+                message: `Waterfall exhausted. No image found for "${ingredient.name}".`,
+                metadata: { ingredientId: pgId, ingredientName: ingredient.name, status: "no_results" },
+                endTime: new Date(),
+                updatedAt: new Date()
+            }).where(eq(auditLogs.id, log.id));
+
+            return null; // Return null so the route knows it failed to find one
+        }
+
+        // 4. Update the Ingredient with the found image
+        const [updated] = await db.update(ingredients).set({
+            image: {
+                url: imageResult.url,
+                author: imageResult.author,
+                source: imageResult.source,
+                missing: false
+            },
+            updatedAt: new Date()
+        }).where(eq(ingredients.id, pgId)).returning();
+
+        // 5. Update Audit Log to Success
+        await db.update(auditLogs).set({
+            status: "completed",
+            message: `Successfully mapped image via ${imageResult.source}`,
+            metadata: {
+                ingredientId: pgId,
+                ingredientName: ingredient.name,
+                sourceUsed: imageResult.source,
+                imageUrl: imageResult.url
+            },
+            endTime: new Date(),
+            updatedAt: new Date()
+        }).where(eq(auditLogs.id, log.id));
+
+        return updated;
+
+    } catch (err: any) {
+        // 6. Update Audit Log to Failed if an unexpected error occurs
+        await db.update(auditLogs).set({
+            status: "failed",
+            error: err.message,
+            endTime: new Date(),
+            updatedAt: new Date()
+        }).where(eq(auditLogs.id, log.id));
+
+        throw err;
+    }
 }

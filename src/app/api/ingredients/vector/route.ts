@@ -1,12 +1,11 @@
-import { NextResponse } from "next/server";
-import dbConnect from "@/utils/dbConnect";
-import { searchIngredientsVector, addIngredient } from "@/services/ingredientService";
+import { NextRequest, NextResponse } from "next/server";
+import { searchIngredientsVector } from "@/services/ingredientService";
 
-export const GET = async (req: Request) => {
-    await dbConnect();
-
+export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const query = searchParams.get("query")?.trim() || "";
+
+    // Ensure safe pagination parsing
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const autosuggest = searchParams.get("autosuggest") === "true";
@@ -23,10 +22,16 @@ export const GET = async (req: Request) => {
     }
 
     try {
-        const data = await searchIngredientsVector(
-            query,
-            { page, limit, autosuggest, country, cuisine, region, flavor, includeProducts }
-        );
+        const data = await searchIngredientsVector(query, {
+            page: isNaN(page) ? 1 : page,
+            limit: isNaN(limit) ? 20 : limit,
+            autosuggest,
+            country,
+            cuisine,
+            region,
+            flavor,
+            includeProducts
+        });
 
         if (!data.results || data.results.length === 0) {
             return NextResponse.json({ error: "No ingredients found" }, { status: 404 });
@@ -34,9 +39,10 @@ export const GET = async (req: Request) => {
 
         return NextResponse.json(data);
     } catch (err: any) {
+        console.error("Ingredient Search Error:", err);
         return NextResponse.json(
             { error: "Server error", details: err.message || err },
             { status: 500 }
         );
     }
-};
+}

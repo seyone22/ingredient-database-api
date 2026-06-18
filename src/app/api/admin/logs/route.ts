@@ -1,45 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/utils/dbConnect";
-import { AuditLog } from "@/models/AuditLog";
+import { getAuditLogs } from "@/services/auditService";
 
 export async function GET(req: NextRequest) {
-    await dbConnect();
-
     try {
-        const urlParams = new URL(req.url).searchParams;
+        // NextRequest provides a handy .nextUrl property
+        const urlParams = req.nextUrl.searchParams;
 
         // 1. Extract Filters
-        const type = urlParams.get("type"); // e.g., 'SCRAPE_RUN'
-        const tag = urlParams.get("tag");   // e.g., 'CRON_SCRAPE'
-        const status = urlParams.get("status");
-        const limit = parseInt(urlParams.get("limit") || "50");
-        const page = parseInt(urlParams.get("page") || "1");
+        const type = urlParams.get("type") || undefined;
+        const tag = urlParams.get("tag") || undefined;
+        const status = urlParams.get("status") || undefined;
 
-        // 2. Build Query Object
-        const query: any = {};
-        if (type) query.type = type;
-        if (tag) query.tag = tag;
-        if (status) query.status = status;
+        // Ensure valid numbers with fallbacks
+        const limit = parseInt(urlParams.get("limit") || "50", 10);
+        const page = parseInt(urlParams.get("page") || "1", 10);
 
-        // 3. Execute Query
-        // We sort by startTime descending so the most recent events are at the top
-        const logs = await AuditLog.find(query)
-            .sort({ startTime: -1 })
-            .skip((page - 1) * limit)
-            .limit(limit)
-            .lean();
-
-        const total = await AuditLog.countDocuments(query);
-
-        return NextResponse.json({
-            logs,
-            pagination: {
-                total,
-                page,
-                limit,
-                pages: Math.ceil(total / limit)
-            }
+        // 2. Call the Service
+        const result = await getAuditLogs({
+            type,
+            tag,
+            status,
+            page: isNaN(page) ? 1 : page,
+            limit: isNaN(limit) ? 50 : limit
         });
+
+        // 3. Return JSON
+        return NextResponse.json(result);
 
     } catch (err: any) {
         console.error("Audit Log Fetch Error:", err);

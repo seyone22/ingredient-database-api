@@ -1,46 +1,64 @@
-import { AuditLog, IAuditLog } from "@/models/AuditLog";
+import { db } from "@/utils/db";
+import { auditLogs } from "@/utils/schema";
+import { eq } from "drizzle-orm";
 
 interface LogOptions {
-    type: IAuditLog['type'];
+    type: string;
     tag: string;
     initiatedBy?: string;
     metadata?: Record<string, any>;
 }
 
+export interface AuditContext {
+    metadata: Record<string, any>;
+    message?: string;
+}
+
 export async function withAuditLog<T>(
     options: LogOptions,
-    operation: (log: IAuditLog) => Promise<T>
+    operation: (ctx: AuditContext) => Promise<T>
 ): Promise<T> {
-    const log = await AuditLog.create({
+    const initialMetadata = options.metadata || {};
+
+    // 1. Create pending log and return the generated ID
+    const [log] = await db.insert(auditLogs).values({
         ...options,
         status: 'pending',
-        startTime: new Date()
-    });
+        startTime: new Date(),
+        metadata: initialMetadata
+    }).returning({ id: auditLogs.id });
+
+    const ctx: AuditContext = {
+        metadata: { ...initialMetadata }
+    };
 
     try {
-        const result = await operation(log);
+        const result = await operation(ctx);
 
-        await AuditLog.findByIdAndUpdate(log._id, {
+        // 2. Update on success
+        await db.update(auditLogs).set({
             status: 'completed',
             endTime: new Date(),
-            metadata: log.metadata
-        });
+            message: ctx.message,
+            metadata: ctx.metadata
+        }).where(eq(auditLogs.id, log.id));
 
         return result;
+
     } catch (error: any) {
-        // Log the failure with full context
-        await AuditLog.findByIdAndUpdate(log._id, {
+        // 3. Update on failure
+        await db.update(auditLogs).set({
             status: 'failed',
             endTime: new Date(),
             error: error.message || "Unknown Error",
-            stack: error.stack, // 👈 Capture the 'where' and 'how'
+            // If your schema supports text/varchar for stack traces:
+            // stack: error.stack,
             metadata: {
-                ...log.metadata,
-                lastAttemptedStep: log.metadata?.currentStep || "unknown"
+                ...ctx.metadata,
+                lastAttemptedStep: ctx.metadata?.currentStep || "unknown"
             }
-        });
+        }).where(eq(auditLogs.id, log.id));
 
-        // Re-throw so the API/Script knows it failed
         throw error;
     }
 }

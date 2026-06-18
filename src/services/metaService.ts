@@ -1,6 +1,7 @@
-import {Ingredient} from "@/models/Ingredient";
-import {Product} from "@/models/Product";
-import {Mapping} from "@/models/Mapping";
+import { db } from "@/utils/db";
+import { ingredients, products, mappings, priceSources } from "@/utils/schema";
+import { sql } from "drizzle-orm";
+import type { PgColumn, PgTable } from "drizzle-orm/pg-core";
 
 export interface DatabaseStats {
     totalIngredients: number;
@@ -43,63 +44,102 @@ export interface DatabaseStats {
     };
 }
 
+// ---------------------------------------------------------------------------
+// Driver-agnostic helper for raw `sql` queries.
+// ---------------------------------------------------------------------------
+async function execRows<T = any>(query: ReturnType<typeof sql>): Promise<T[]> {
+    const result: any = await db.execute(query);
+    return Array.isArray(result) ? result : result.rows ?? [];
+}
+
+// ---------------------------------------------------------------------------
+// Count rows grouped by element of a text[] column (replaces $unwind + $group)
+// ---------------------------------------------------------------------------
+async function groupByArrayColumn(
+    arrayColumn: PgColumn
+): Promise<{ value: string; count: number }[]> {
+    return execRows<{ value: string; count: number }>(
+        sql`
+            SELECT elem AS value, count(*)::int AS count
+            FROM ${arrayColumn.table}, unnest(${arrayColumn}) AS elem
+            GROUP BY elem
+            ORDER BY count DESC
+        `
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Count rows where a text[] column is null or empty
+// ---------------------------------------------------------------------------
+async function countMissingArray(arrayColumn: PgColumn): Promise<number> {
+    const rows = await execRows<{ count: number }>(
+        sql`SELECT count(*)::int AS count FROM ${arrayColumn.table} WHERE coalesce(cardinality(${arrayColumn}), 0) = 0`
+    );
+    return rows[0]?.count ?? 0;
+}
+
+// ---------------------------------------------------------------------------
+// Cumulative monthly growth for a table (replaces $setWindowFields)
+// ---------------------------------------------------------------------------
+async function getCumulativeGrowth(
+    table: PgTable,
+    createdAtColumn: PgColumn
+): Promise<{ date: string; count: number }[]> {
+    return execRows<{ date: string; count: number }>(
+        sql`
+            WITH monthly AS (
+                SELECT date_trunc('month', ${createdAtColumn}) AS month, count(*)::int AS monthly_count
+                FROM ${table}
+                GROUP BY 1
+            )
+            SELECT
+                to_char(month, 'YYYY-MM') AS date,
+                sum(monthly_count) OVER (ORDER BY month)::int AS count
+            FROM monthly
+            ORDER BY month
+        `
+    );
+}
+
 /**
  * Legacy stats function for basic ingredient overviews.
  */
 export async function getIngredientStats(): Promise<any> {
-    const totalIngredients = await Ingredient.countDocuments();
-
-    const ingredients = await Ingredient.find({}, {
-        country: 1,
-        cuisine: 1,
-        region: 1,
-        flavor_profile: 1,
-        _id: 0,
-    }).lean();
-
-    const totalProducts = await Product.countDocuments();
-
-    const byCountry: Record<string, number> = {};
-    const byCuisine: Record<string, number> = {};
-    const byRegion: Record<string, number> = {};
-    const byFlavor: Record<string, number> = {};
-
-    ingredients.forEach((ing) => {
-        const {country = [], cuisine = [], region = [], flavor_profile = []} = ing;
-
-        country.forEach((c: string) => {
-            byCountry[c] = (byCountry[c] || 0) + 1;
-        });
-        cuisine.forEach((c: string) => {
-            byCuisine[c] = (byCuisine[c] || 0) + 1;
-        });
-        region.forEach((r: string) => {
-            byRegion[r] = (byRegion[r] || 0) + 1;
-        });
-        flavor_profile.forEach((f: string) => {
-            byFlavor[f] = (byFlavor[f] || 0) + 1;
-        });
-    });
+    const [
+        [{ count: totalIngredients }],
+        [{ count: totalProducts }],
+        byCountryRows,
+        byCuisineRows,
+        byRegionRows,
+        byFlavorRows,
+    ] = await Promise.all([
+        execRows<{ count: number }>(sql`SELECT count(*)::int AS count FROM ${ingredients}`),
+        execRows<{ count: number }>(sql`SELECT count(*)::int AS count FROM ${products}`),
+        groupByArrayColumn(ingredients.country),
+        groupByArrayColumn(ingredients.cuisine),
+        groupByArrayColumn(ingredients.region),
+        groupByArrayColumn(ingredients.flavorProfile),
+    ]);
 
     return {
         totalIngredients,
         totalProducts,
         countries: {
-            total: Object.keys(byCountry).length,
-            byCountry
+            total: byCountryRows.length,
+            byCountry: Object.fromEntries(byCountryRows.map((c) => [c.value, c.count])),
         },
         cuisines: {
-            total: Object.keys(byCuisine).length,
-            byCuisine
+            total: byCuisineRows.length,
+            byCuisine: Object.fromEntries(byCuisineRows.map((c) => [c.value, c.count])),
         },
         regions: {
-            total: Object.keys(byRegion).length,
-            byRegion
+            total: byRegionRows.length,
+            byRegion: Object.fromEntries(byRegionRows.map((r) => [r.value, r.count])),
         },
         flavorProfiles: {
-            total: Object.keys(byFlavor).length,
-            byFlavor
-        }
+            total: byFlavorRows.length,
+            byFlavor: Object.fromEntries(byFlavorRows.map((f) => [f.value, f.count])),
+        },
     };
 }
 
@@ -109,154 +149,69 @@ export async function getIngredientStats(): Promise<any> {
  */
 export async function getDatabaseStats(): Promise<DatabaseStats> {
     const [
-        totalIngredients,
-        totalProducts,
-        totalMappedProducts,
-        byCountryAgg,
-        byCuisineAgg,
-        byRegionAgg,
-        byFlavorAgg,
-        topIngredientsAgg,
-        sourceAgg,
-        ingredientGrowthAgg,
-        productGrowthAgg,
-        mappingGrowthAgg,
+        [{ count: totalIngredients }],
+        [{ count: totalProducts }],
+        [{ count: totalMappedProducts }],
+        byCountryRows,
+        byCuisineRows,
+        byRegionRows,
+        byFlavorRows,
+        topIngredientsRows,
+        sourceRows,
+        ingredientGrowth,
+        productGrowth,
+        mappingGrowth,
         missingCountry,
         missingCuisine,
         missingRegion,
-        missingFlavor
+        missingFlavor,
     ] = await Promise.all([
-        Ingredient.countDocuments(),
-        Product.countDocuments(),
-        Mapping.countDocuments(),
+        execRows<{ count: number }>(sql`SELECT count(*)::int AS count FROM ${ingredients}`),
+        execRows<{ count: number }>(sql`SELECT count(*)::int AS count FROM ${products}`),
 
-        Ingredient.aggregate([
-            { $unwind: "$country" },
-            { $group: { _id: "$country", count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-        ]),
-        Ingredient.aggregate([
-            { $unwind: "$cuisine" },
-            { $group: { _id: "$cuisine", count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-        ]),
-        Ingredient.aggregate([
-            { $unwind: "$region" },
-            { $group: { _id: "$region", count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-        ]),
-        Ingredient.aggregate([
-            { $unwind: "$flavor_profile" },
-            { $group: { _id: "$flavor_profile", count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-        ]),
+        // Ensure distinct product counting just in case a product has multiple mappings
+        execRows<{ count: number }>(sql`SELECT count(distinct ${mappings.productId})::int AS count FROM ${mappings}`),
 
-        // FIXED: Using "matchedIngredients" from the Mapping model and unwinding the array
-        Mapping.aggregate([
-            { $unwind: "$matchedIngredients" },
-            { $group: { _id: "$matchedIngredients", count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-            { $limit: 10 },
-            {
-                $lookup: {
-                    from: "ingredients",
-                    localField: "_id",
-                    foreignField: "_id",
-                    as: "ingDetails"
-                }
-            },
-            { $unwind: "$ingDetails" },
-            {
-                $project: {
-                    name: "$ingDetails.name",
-                    count: 1
-                }
-            }
-        ]),
+        groupByArrayColumn(ingredients.country),
+        groupByArrayColumn(ingredients.cuisine),
+        groupByArrayColumn(ingredients.region),
+        groupByArrayColumn(ingredients.flavorProfile),
 
-        Product.aggregate([
-            {
-                $lookup: {
-                    from: "price_sources",
-                    localField: "source",
-                    foreignField: "_id",
-                    as: "sourceData"
-                }
-            },
-            { $unwind: "$sourceData" },
-            {
-                $group: {
-                    _id: "$sourceData.name",
-                    count: { $sum: 1 }
-                }
-            },
-            { $sort: { count: -1 } },
-        ]),
+        // Top 10 most-matched ingredients (Safely using Drizzle column injection)
+        execRows<{ name: string; count: number }>(
+            sql`
+                SELECT i.${ingredients.name} AS name, counts.count AS count
+                FROM (
+                         SELECT elem AS ingredient_id, count(*)::int AS count
+                         FROM ${mappings}, unnest(${mappings.matchedIngredients}) AS elem
+                         GROUP BY elem
+                         ORDER BY count DESC
+                         LIMIT 10
+                     ) AS counts
+                         JOIN ${ingredients} AS i ON i.${ingredients.id} = counts.ingredient_id
+                ORDER BY counts.count DESC
+            `
+        ),
 
-        // CUMULATIVE GROWTH: Ingredients
-        Ingredient.aggregate([
-            {
-                $group: {
-                    _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-                    monthly: { $sum: 1 },
-                },
-            },
-            { $sort: { _id: 1 } },
-            {
-                $setWindowFields: {
-                    partitionBy: null,
-                    sortBy: { _id: 1 },
-                    output: {
-                        count: { $sum: "$monthly", window: { documents: ["unbounded", "current"] } }
-                    }
-                }
-            }
-        ]),
+        // Products grouped by source name (Safely using Drizzle column injection)
+        execRows<{ name: string; count: number }>(
+            sql`
+                SELECT ps.${priceSources.name} AS name, count(*)::int AS count
+                FROM ${products} AS p
+                         JOIN ${priceSources} AS ps ON ps.${priceSources.id} = p.${products.sourceId}
+                GROUP BY ps.${priceSources.name}
+                ORDER BY count DESC
+            `
+        ),
 
-        // CUMULATIVE GROWTH: Products
-        Product.aggregate([
-            {
-                $group: {
-                    _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-                    monthly: { $sum: 1 },
-                },
-            },
-            { $sort: { _id: 1 } },
-            {
-                $setWindowFields: {
-                    partitionBy: null,
-                    sortBy: { _id: 1 },
-                    output: {
-                        count: { $sum: "$monthly", window: { documents: ["unbounded", "current"] } }
-                    }
-                }
-            }
-        ]),
+        getCumulativeGrowth(ingredients, ingredients.createdAt),
+        getCumulativeGrowth(products, products.createdAt),
+        getCumulativeGrowth(mappings, mappings.createdAt),
 
-        // CUMULATIVE GROWTH: Mappings
-        Mapping.aggregate([
-            {
-                $group: {
-                    _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-                    monthly: { $sum: 1 },
-                },
-            },
-            { $sort: { _id: 1 } },
-            {
-                $setWindowFields: {
-                    partitionBy: null,
-                    sortBy: { _id: 1 },
-                    output: {
-                        count: { $sum: "$monthly", window: { documents: ["unbounded", "current"] } }
-                    }
-                }
-            }
-        ]),
-
-        Ingredient.countDocuments({ $or: [{ country: { $size: 0 } }, { country: { $exists: false } }] }),
-        Ingredient.countDocuments({ $or: [{ cuisine: { $size: 0 } }, { cuisine: { $exists: false } }] }),
-        Ingredient.countDocuments({ $or: [{ region: { $size: 0 } }, { region: { $exists: false } }] }),
-        Ingredient.countDocuments({ $or: [{ flavor_profile: { $size: 0 } }, { flavor_profile: { $exists: false } }] }),
+        countMissingArray(ingredients.country),
+        countMissingArray(ingredients.cuisine),
+        countMissingArray(ingredients.region),
+        countMissingArray(ingredients.flavorProfile),
     ]);
 
     const mappingCoverage = totalProducts > 0 ? (totalMappedProducts / totalProducts) * 100 : 0;
@@ -268,28 +223,28 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
         mappingCoverage,
 
         countries: {
-            total: byCountryAgg.length,
-            byCountry: Object.fromEntries(byCountryAgg.map(c => [c._id, c.count])),
+            total: byCountryRows.length,
+            byCountry: Object.fromEntries(byCountryRows.map((c) => [c.value, c.count])),
         },
         cuisines: {
-            total: byCuisineAgg.length,
-            byCuisine: Object.fromEntries(byCuisineAgg.map(c => [c._id, c.count])),
+            total: byCuisineRows.length,
+            byCuisine: Object.fromEntries(byCuisineRows.map((c) => [c.value, c.count])),
         },
         regions: {
-            total: byRegionAgg.length,
-            byRegion: Object.fromEntries(byRegionAgg.map(r => [r._id, r.count])),
+            total: byRegionRows.length,
+            byRegion: Object.fromEntries(byRegionRows.map((r) => [r.value, r.count])),
         },
         flavorProfiles: {
-            total: byFlavorAgg.length,
-            byFlavor: Object.fromEntries(byFlavorAgg.map(f => [f._id, f.count])),
+            total: byFlavorRows.length,
+            byFlavor: Object.fromEntries(byFlavorRows.map((f) => [f.value, f.count])),
         },
 
-        topIngredients: topIngredientsAgg.map(i => ({ name: i.name, count: i.count })),
-        productsBySource: Object.fromEntries(sourceAgg.map(s => [s._id, s.count])),
+        topIngredients: topIngredientsRows.map((i) => ({ name: i.name, count: i.count })),
+        productsBySource: Object.fromEntries(sourceRows.map((s) => [s.name, s.count])),
         growth: {
-            ingredients: ingredientGrowthAgg.map(g => ({ date: g._id, count: g.count })),
-            products: productGrowthAgg.map(g => ({ date: g._id, count: g.count })),
-            mappings: mappingGrowthAgg.map(g => ({ date: g._id, count: g.count })),
+            ingredients: ingredientGrowth,
+            products: productGrowth,
+            mappings: mappingGrowth,
         },
         dataCompleteness: {
             missingCountry,

@@ -1,42 +1,36 @@
-import {NextRequest, NextResponse} from "next/server";
-import dbConnect from "@/utils/dbConnect";
-import { Ingredient } from "@/models/Ingredient";
-import { Product } from "@/models/Product";
-import { Types } from "mongoose";
-import {req} from "agent-base";
+import { NextRequest, NextResponse } from "next/server";
+import { getIngredientById, updateIngredient, deleteIngredient } from "@/services/ingredientService";
 
 export async function GET(
     request: NextRequest,
     { params }: { params: any }
 ): Promise<NextResponse> {
-    await dbConnect();
-
-    const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const includeProducts = searchParams.get("includeProducts") === "true";
-
-    if (!Types.ObjectId.isValid(id)) {
-        return NextResponse.json({ error: "Invalid ingredient ID" }, { status: 400 });
-    }
-
     try {
-        // Fetch ingredient without embedding
-        const ingredient = await Ingredient.findById(id).select("-embedding").lean();
+        // Await params for Next.js 15+ compatibility
+        const { id } = await params;
+        const { searchParams } = new URL(request.url);
+        const includeProducts = searchParams.get("includeProducts") === "true";
 
-        if (!ingredient) {
+        if (!id) {
+            return NextResponse.json({ error: "Invalid ingredient ID" }, { status: 400 });
+        }
+
+        const data = await getIngredientById(id, includeProducts);
+
+        if (!data) {
             return NextResponse.json({ error: "Ingredient not found" }, { status: 404 });
         }
 
-        let products: any[] = [];
-        if (includeProducts) {
-            products = await Product.find({ ingredient: id }).lean();
-        }
+        // To maintain backward compatibility with your frontend payload structure
+        const { products, ...ingredient } = data;
 
         return NextResponse.json({
             ingredient,
-            ...(includeProducts && { products }),
+            ...(includeProducts && { products: products || [] }),
         });
+
     } catch (err: any) {
+        console.error("GET Ingredient Error:", err);
         return NextResponse.json(
             { error: "Server error", details: err.message || err },
             { status: 500 }
@@ -44,35 +38,57 @@ export async function GET(
     }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: any }) {
-    await dbConnect();
-    const { id } = await params;
-    if (!Types.ObjectId.isValid(id)) {
-        return NextResponse.json({ error: "Invalid ingredient ID" }, { status: 400 });
-    }
-
+export async function PATCH(
+    req: NextRequest,
+    { params }: { params: any }
+) {
     try {
+        const { id } = await params;
+        if (!id) {
+            return NextResponse.json({ error: "Invalid ingredient ID" }, { status: 400 });
+        }
+
         const body = await req.json();
-        const updated = await Ingredient.findByIdAndUpdate(id, body, { new: true }).lean();
-        if (!updated) return NextResponse.json({ error: "Ingredient not found" }, { status: 404 });
+        const updated = await updateIngredient(id, body);
+
+        if (!updated) {
+            return NextResponse.json({ error: "Ingredient not found" }, { status: 404 });
+        }
+
         return NextResponse.json({ message: "Updated", ingredient: updated });
+
     } catch (err: any) {
-        return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
+        console.error("PATCH Ingredient Error:", err);
+        return NextResponse.json(
+            { error: err.message || "Server error" },
+            { status: 500 }
+        );
     }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: any }) {
-    await dbConnect();
-    const { id } = params;
-    if (!Types.ObjectId.isValid(id)) {
-        return NextResponse.json({ error: "Invalid ingredient ID" }, { status: 400 });
-    }
-
+export async function DELETE(
+    req: NextRequest,
+    { params }: { params: any }
+) {
     try {
-        const deleted = await Ingredient.findByIdAndDelete(id).lean();
-        if (!deleted) return NextResponse.json({ error: "Ingredient not found" }, { status: 404 });
+        const { id } = await params;
+        if (!id) {
+            return NextResponse.json({ error: "Invalid ingredient ID" }, { status: 400 });
+        }
+
+        const deleted = await deleteIngredient(id);
+
+        if (!deleted) {
+            return NextResponse.json({ error: "Ingredient not found" }, { status: 404 });
+        }
+
         return NextResponse.json({ message: "Deleted", ingredient: deleted });
+
     } catch (err: any) {
-        return NextResponse.json({ error: err.message || "Server error" }, { status: 500 });
+        console.error("DELETE Ingredient Error:", err);
+        return NextResponse.json(
+            { error: err.message || "Server error" },
+            { status: 500 }
+        );
     }
 }

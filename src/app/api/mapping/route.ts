@@ -1,13 +1,8 @@
-import { NextResponse } from "next/server";
-import dbConnect from "@/utils/dbConnect";
-import { Product } from "@/models/Product";
-import { Mapping } from "@/models/Mapping";
-import { fetchProductsByIds } from "@/services/productService";
+import { NextRequest, NextResponse } from "next/server";
+import { fetchProductsByIds, getRandomUnmappedProduct } from "@/services/productService";
 
 // POST: Fetch specific product IDs
-export const POST = async (req: Request) => {
-    await dbConnect();
-
+export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
         const ids: string[] = body.ids;
@@ -33,25 +28,22 @@ export const POST = async (req: Request) => {
             { status: 500 }
         );
     }
-};
+}
 
 // GET: Fetch a random unmapped product
-export const GET = async () => {
-    await dbConnect();
-
+export async function GET(req: NextRequest) {
     try {
-        // Find one product that isn't mapped yet
-        const mappedIds = await Mapping.distinct("product");
-        const product = await Product.aggregate([
-            { $match: { _id: { $nin: mappedIds } } },
-            { $sample: { size: 1 } }
-        ]);
+        // Delegate the complex relational logic to our service
+        const { product } = await getRandomUnmappedProduct();
 
-        if (!product || product.length === 0) {
-            return NextResponse.json({ error: "No unmapped products found" }, { status: 404 });
+        if (!product) {
+            return NextResponse.json(
+                { error: "No unmapped products found" },
+                { status: 404 }
+            );
         }
 
-        return NextResponse.json({ product: product[0] });
+        return NextResponse.json({ product });
     } catch (err: any) {
         console.error("Error fetching random product:", err);
         return NextResponse.json(
@@ -59,4 +51,4 @@ export const GET = async () => {
             { status: 500 }
         );
     }
-};
+}

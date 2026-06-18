@@ -4,8 +4,8 @@ on:
   schedule:
     - cron: '0 2 * * *' # Runs daily at 2:00 AM UTC
   workflow_dispatch: # Manual trigger
-  repository_dispatch: # 👈 Add this
-      types: [manual_ingest] # 👈 This is the "event_type" we will send from Next.js
+  repository_dispatch:
+    types: [manual_ingest]
 
 jobs:
   scrape:
@@ -48,8 +48,9 @@ jobs:
       # Run the script directly with ts-node and alias support
       - name: Run unified scraper
         env:
-          # Ensure these match the names used in your dbConnect.ts / imageService.ts
-          MONGO_URI: ${{ secrets.MONGO_URI }}
+          # 🚨 UPDATED: Passing the PostgreSQL Database URL instead of Mongo!
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           NODE_ENV: development
+        # Adjust the -r flag below if you are still using tsconfig-paths instead of module-alias
         run: npx ts-node -r tsconfig-paths/register scripts/unified_scraper.ts

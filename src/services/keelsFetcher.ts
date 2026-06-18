@@ -1,10 +1,14 @@
-import {SupermarketFetcher} from "@/services/supermarketFetcher";
-import {ObjectId} from "bson";
+import { SupermarketFetcher } from "@/services/supermarketFetcher";
+import { db } from "@/utils/db";
+import { priceSources } from "@/utils/schema";
+import { eq } from "drizzle-orm";
 
 export class KeellsFetcher extends SupermarketFetcher {
     sourceName = "Keells";
     country = "LK";
-    sourceId = "654f8b1a2b3d4e5f67890111";
+
+    // Resolved lazily from the price_sources table — see ensureSourceId()
+    sourceId?: string;
 
     private BASE_API = "https://zebraliveback.keellssuper.com";
     private LOGIN_URL = `${this.BASE_API}/1.0/Login/GuestLogin`;
@@ -12,6 +16,41 @@ export class KeellsFetcher extends SupermarketFetcher {
 
     private userSessionID?: string;
     private sessionCookies?: string;
+
+    // --- helper to resolve (or create) this source's uuid from price_sources ---
+    private async ensureSourceId() {
+        if (this.sourceId) return;
+
+        const existing = await db
+            .select({ id: priceSources.id })
+            .from(priceSources)
+            .where(eq(priceSources.name, this.sourceName))
+            .limit(1);
+
+        if (existing.length > 0) {
+            this.sourceId = existing[0].id;
+            return;
+        }
+
+        // Not seeded yet — create it once. If you'd rather manage sources only
+        // via a seed script, replace this block with a thrown error instead.
+        try {
+            const [created] = await db
+                .insert(priceSources)
+                .values({ name: this.sourceName, country: this.country, type: "api" })
+                .returning({ id: priceSources.id });
+            this.sourceId = created.id;
+        } catch (err) {
+            // Race condition: another process inserted it first — re-fetch.
+            const retry = await db
+                .select({ id: priceSources.id })
+                .from(priceSources)
+                .where(eq(priceSources.name, this.sourceName))
+                .limit(1);
+            if (retry.length === 0) throw err;
+            this.sourceId = retry[0].id;
+        }
+    }
 
     // --- helper to login and store session + cookies ---
     private async ensureSession() {
@@ -25,22 +64,19 @@ export class KeellsFetcher extends SupermarketFetcher {
         if (!sessionID) throw new Error("Keells login failed: no userSessionID in body");
         this.userSessionID = sessionID;
 
-        // Grab all Set-Cookie headers
-        const rawSetCookies = res.headers.get("set-cookie"); // fetch returns them concatenated, sometimes comma separated
+        const rawSetCookies = res.headers.get("set-cookie");
         if (!rawSetCookies) throw new Error("Keells login failed: no cookies returned");
 
-        // Split on comma but be careful: cookie values can contain commas
-        // A safer approach: split on `;` and take key=value pairs
         const cookiesArray = rawSetCookies
-            .split(",") // crude split, usually works
-            .map(c => c.split(";")[0].trim()) // get only key=value
+            .split(",")
+            .map(c => c.split(";")[0].trim())
             .filter(Boolean);
 
-        // Join into a single Cookie header string
         this.sessionCookies = cookiesArray.join("; ");
     }
 
     async fetchFromSource(params: { ingredientName?: string, itemsPerPage?: number }): Promise<any[]> {
+        await this.ensureSourceId();
         await this.ensureSession();
 
         const itemDescription = params.ingredientName || "";
@@ -52,7 +88,6 @@ export class KeellsFetcher extends SupermarketFetcher {
         do {
             const url = new URL(this.PRODUCTS_URL);
 
-            // --- mandatory parameters ---
             url.searchParams.set("pageNo", pageNo.toString());
             url.searchParams.set("itemsPerPage", itemsPerPage.toString());
             url.searchParams.set("itemDescription", itemDescription);
@@ -76,18 +111,13 @@ export class KeellsFetcher extends SupermarketFetcher {
                 headers: {
                     "usersessionid": this.userSessionID!,
                     "Accept": "application/json",
-                    "Cookie": this.sessionCookies!, // pass all cookies
+                    "Cookie": this.sessionCookies!,
                 },
             });
-
-            // console.log(response.statusText, response.status, url.toString());
 
             if (!response.ok) throw new Error(`Keells fetch failed: ${response.statusText}`);
 
             const json = await response.json();
-
-            // console.log(json);
-
 
             const items = json?.result?.itemDetailResult?.itemDetails || [];
             allItems.push(...items);
@@ -99,40 +129,44 @@ export class KeellsFetcher extends SupermarketFetcher {
         return allItems;
     }
 
-    mapToProduct(raw: any, ingredientId: string) {
-        const item = raw; // Handle both nested and flat responses
+    mapToProduct(raw: any, ingredientId?: string) {
+        if (!this.sourceId) {
+            throw new Error("KeellsFetcher: sourceId not resolved — call fetchFromSource() first");
+        }
+
+        const item = raw;
 
         return {
             name: item.name,
             brand: raw.brandDetail?.brandName || "",
-            source: new ObjectId(this.sourceId),
+            sourceId: this.sourceId,
             unit: item.uom || "unit",
 
             // Pricing & Promotions
             price: parseFloat(item.amount) || 0,
             currency: "LKR",
             isPromotionApplied: item.isPromotionApplied ?? false,
-            promotionDiscount: parseFloat(item.promotionDiscountValue) || 0,
+            promotionDiscountValue: parseFloat(item.promotionDiscountValue) || 0,
 
-            // Stock & Sales Analytics (The "Daily Data" requested)
+            // Stock & Sales Analytics
             quantity: parseFloat(item.minQty) || 1,
             stockInHand: parseFloat(item.stockInHand) || 0,
-            averageDailySales: parseFloat(item.averageSale) || 0, // Key for your friend
-            isAvailable: item.isAvailable ?? true,
+            averageSale: parseFloat(item.averageSale) || 0,
 
             // Identifiers & Categorization
             url: item.imageUrl || "",
             externalId: item.itemID?.toString(),
-            itemCode: item.itemCode?.toString(),
+            sku: item.itemCode?.toString(),
             departmentCode: item.departmentCode,
+            subDepartmentCode: raw.categoryDetail?.subDepartmentCode,
             categoryPath: [
                 raw.categoryDetail?.departmentName,
                 raw.categoryDetail?.subDepartmentName,
                 raw.categoryDetail?.categoryName
-            ].filter(Boolean), // Creates an array for hierarchical filtering
+            ].filter(Boolean),
 
             raw: JSON.stringify(raw),
-            lastUpdated: new Date()
+            lastFetched: new Date(),
         };
     }
 }

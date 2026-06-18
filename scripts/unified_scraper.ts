@@ -1,24 +1,20 @@
-// scripts/unified_scraper.ts
 import dotenv from "dotenv";
-import mongoose from "mongoose";
-import dbConnect from "@/utils/dbConnect";
-import {Product} from "@/models/Product";
-import {normalizeQuantityUnit} from "@/utils/normalizeQtyUtil";
+import { db } from "@/utils/db";
+import { products, priceHistories, stockHistories, auditLogs } from "@/utils/schema";
+import { eq } from "drizzle-orm"; // Removed 'and' since we don't need the complex SELECT anymore
+import { normalizeQuantityUnit } from "@/utils/normalizeQtyUtil";
 
-import {CargillsFetcher} from "@/services/cargillsFetcher";
-import {KeellsFetcher} from "@/services/keelsFetcher";
-import {SparFetcher} from "@/services/sparFetcher";
-import {PriceHistory} from "@/models/PriceHistory";
-import {AuditLog} from "@/models/AuditLog";
-import {StockHistory} from "@/models/StockHistory"; // Add this to your imports
+import { CargillsFetcher } from "@/services/cargillsFetcher";
+import { KeellsFetcher } from "@/services/keelsFetcher";
+import { SparFetcher } from "@/services/sparFetcher";
 
-dotenv.config({path: ".env.local"});
+dotenv.config({ path: ".env.local" });
 
 // Define supported stores
 const STORES = [
-    {name: "Cargills", fetcher: CargillsFetcher, mode: "alphabet"},
-    {name: "Keells", fetcher: KeellsFetcher, mode: "all"},
-    {name: "Spar", fetcher: SparFetcher, mode: "all"},
+    { name: "Cargills", fetcher: CargillsFetcher, mode: "alphabet" },
+    { name: "Keells", fetcher: KeellsFetcher, mode: "all" },
+    { name: "Spar", fetcher: SparFetcher, mode: "all" },
 ];
 
 async function fetchStoreData(storeName: string, FetcherClass: any, mode: string) {
@@ -49,11 +45,11 @@ async function fetchStoreData(storeName: string, FetcherClass: any, mode: string
         }
     } else {
         console.log("⚙️ Fetching all products...");
-        rawProducts = await fetcher.fetchFromSource({itemsPerPage: 10000, ingredientName: ""});
+        rawProducts = await fetcher.fetchFromSource({ itemsPerPage: 10000, ingredientName: "" });
     }
 
     console.log(`📦 Retrieved ${rawProducts.length} raw items from ${storeName}.`);
-    return {fetcher, rawProducts};
+    return { fetcher, rawProducts };
 }
 
 async function processAndUpsert(fetcher: any, rawProducts: any[], storeName: string) {
@@ -62,125 +58,95 @@ async function processAndUpsert(fetcher: any, rawProducts: any[], storeName: str
     console.log(`🧪 Normalizing ${storeName} products...`);
     const mappedProducts = rawProducts.map(raw => {
         // 1. Get the unified data structure from the specific store's fetcher
-        // (Passing an empty string for ingredientId since we map that later in the UI)
         const normalized = fetcher.mapToProduct(raw, "");
 
         // 2. Apply your global quantity/unit normalizer
-        const {quantity, unit} = normalizeQuantityUnit(raw);
+        const { quantity, unit } = normalizeQuantityUnit(raw);
 
-        // 3. DO NOT overwrite the price. Just merge the normalized data with your custom raw/qty fields.
+        // 3. Merge data cleanly for PostgreSQL
         return {
             ...normalized,
             quantity: quantity || normalized.quantity,
             unit: unit || normalized.unit,
-            raw: JSON.stringify(raw)
+            sourceId: normalized.sourceId || fetcher.sourceId,
+            sku: normalized.itemCode || normalized.sku || null,
+            raw: raw
         };
     });
 
-    console.log(`💾 Saving/updating ${storeName} in MongoDB...`);
+    console.log(`💾 Saving/updating ${storeName} in PostgreSQL...`);
+    let upsertCount = 0;
+    let dailyPricePoints = 0;
+    let dailyStockPoints = 0;
+
     try {
-        const bulkOps = mappedProducts.map(product => ({
-            updateOne: {
-                filter: { externalId: product.externalId, source: product.source },
-                update: {
-                    $set: {
-                        // Existing Fields
-                        name: product.name,
-                        price: product.price,
-                        unit: product.unit,
-                        quantity: product.quantity,
-                        url: product.url,
-                        last_fetched: new Date(),
-                        currency: product.currency,
-                        departmentCode: product.departmentCode,
+        // Process sequentially to manage relationships safely
+        for (const scraped of mappedProducts) {
+            if (!scraped.externalId || !scraped.sourceId) continue;
 
-                        // --- New Advanced Market Data ---
-                        brand: product.brand ?? null,
-                        stockInHand: product.stockInHand ?? null,
-                        averageSale: product.averageSale ?? null,
-                        maxQty: product.maxQty ?? null,
-                        categoryPath: product.categoryPath ?? [],
-                        subDepartmentCode: product.subDepartmentCode ?? null,
-                        isPromotionApplied: product.isPromotionApplied ?? false,
-                        promotionDiscountValue: product.promotionDiscountValue ?? 0,
-                        sku: product.itemCode ?? null, // Mapping Keells itemCode to SKU
+            // 1. Upsert the core product data
+            // (We no longer need to SELECT the previous state first!)
+            const [upserted] = await db
+                .insert(products)
+                .values({
+                    ...scraped,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                })
+                .onConflictDoUpdate({
+                    target: [products.externalId, products.sourceId],
+                    set: { ...scraped, updatedAt: new Date() },
+                })
+                .returning({ id: products.id });
 
-                        raw: product.raw,
-                    }
-                },
-                upsert: true,
-            },
-        }));
+            upsertCount++;
 
-        const result = await Product.bulkWrite(bulkOps);
-        console.log(`✅ ${storeName}: ${result.upsertedCount} inserted, ${result.modifiedCount} updated.`);
+            // 2. Record Daily Price History (Every time, if valid)
+            if (scraped.price !== undefined && scraped.price > 0) {
+                await db.insert(priceHistories).values({
+                    productId: upserted.id,
+                    price: scraped.price,
+                    currency: scraped.currency || "LKR",
+                });
+                dailyPricePoints++;
+            }
 
-        const externalIds = mappedProducts.map(p => p.externalId);
-        const savedProducts = await Product.find({
-            source: fetcher.sourceId,
-            externalId: {$in: externalIds}
-        }, {_id: 1, externalId: 1, price: 1}).lean();
-
-        const historyDocs = mappedProducts.map(scraped => {
-            const dbProduct = savedProducts.find(db => db.externalId === scraped.externalId);
-            // CRITICAL: Only create history if dbProduct exists AND price is a valid number > 0
-            if (!dbProduct || scraped.price === undefined || scraped.price <= 0) return null;
-
-            return {
-                product: dbProduct._id,
-                price: scraped.price,
-                currency: scraped.currency || "LKR",
-                timestamp: new Date()
-            };
-        }).filter(Boolean);
-
-        if (historyDocs.length > 0) {
-            await PriceHistory.insertMany(historyDocs);
-            console.log(`📈 Logged ${historyDocs.length} price history data points.`);
+            // 3. Record Daily Stock History (Every time, if valid)
+            if (scraped.stockInHand !== undefined && scraped.stockInHand !== null) {
+                await db.insert(stockHistories).values({
+                    productId: upserted.id,
+                    stock: scraped.stockInHand,
+                    averageDailySales: scraped.averageSale,
+                });
+                dailyStockPoints++;
+            }
         }
 
-        // 2. Add inside processAndUpsert after the PriceHistory block:
-        const stockHistoryDocs = mappedProducts.map(scraped => {
-            const dbProduct = savedProducts.find(db => db.externalId === scraped.externalId);
-            // Only log if stock data exists (currently Keells)
-            if (!dbProduct || scraped.stockInHand === undefined) return null;
-
-            return {
-                product: dbProduct._id,
-                stock: scraped.stockInHand,
-                averageDailySales: scraped.averageDailySales,
-                timestamp: new Date()
-            };
-        }).filter(Boolean);
-
-        if (stockHistoryDocs.length > 0) {
-            await StockHistory.insertMany(stockHistoryDocs);
-            console.log(`📊 Logged ${stockHistoryDocs.length} stock history data points.`);
-        }
+        console.log(`✅ ${storeName}: ${upsertCount} products processed.`);
+        console.log(`📈 Logged ${dailyPricePoints} daily price history data points.`);
+        console.log(`📊 Logged ${dailyStockPoints} daily stock history data points.`);
 
     } catch (err: any) {
-        console.error(`⚠️ Bulk upsert error (${storeName}):`, err.message);
+        console.error(`⚠️ Database error (${storeName}):`, err.message);
     }
 }
 
 async function main() {
     console.log("🔸 Starting unified store scrape...");
-    await dbConnect();
 
     // 1. Create an independent Audit Log for THIS specific execution
-    const currentLog = await AuditLog.create({
+    const [currentLog] = await db.insert(auditLogs).values({
         type: 'SCRAPE_RUN',
         status: 'pending',
-        startTime: new Date(),
-        initiatedBy: 'system_scraper', // Identifies this as the script's own log
         tag: 'AUTO_SCRAPE',
+        initiatedBy: 'system_scraper',
         metadata: {
             stores: STORES.map(s => s.name),
             environment: process.env.NODE_ENV || 'development'
         }
-    });
+    }).returning({ id: auditLogs.id });
 
-    console.log(`📝 Audit Log created: ${currentLog._id}`);
+    console.log(`📝 Audit Log created: ${currentLog.id}`);
 
     let successCount = 0;
     let errorMessages: string[] = [];
@@ -189,7 +155,7 @@ async function main() {
     try {
         for (const store of STORES) {
             try {
-                const {fetcher, rawProducts} = await fetchStoreData(store.name, store.fetcher, store.mode);
+                const { fetcher, rawProducts } = await fetchStoreData(store.name, store.fetcher, store.mode);
                 await processAndUpsert(fetcher, rawProducts, store.name);
                 successCount++;
             } catch (err: any) {
@@ -200,29 +166,33 @@ async function main() {
         }
 
         // 3. Finalize success
-        await AuditLog.findByIdAndUpdate(currentLog._id, {
+        await db.update(auditLogs).set({
             status: errorMessages.length === 0 ? 'completed' : 'partial_success',
             endTime: new Date(),
+            updatedAt: new Date(),
             message: `Finished scraping. Successful stores: ${successCount}/${STORES.length}. ${errorMessages.join(' | ')}`
-        });
+        }).where(eq(auditLogs.id, currentLog.id));
+
         console.log("✅ Audit Log finalized.");
 
     } catch (fatalErr: any) {
         // 4. Handle Fatal script-level crashes
-        await AuditLog.findByIdAndUpdate(currentLog._id, {
+        await db.update(auditLogs).set({
             status: 'failed',
             endTime: new Date(),
+            updatedAt: new Date(),
             message: `Fatal Scraper Error: ${fatalErr.message}`
-        });
+        }).where(eq(auditLogs.id, currentLog.id));
+
         throw fatalErr; // Re-throw to trigger GitHub Action failure state
-    } finally {
-        await mongoose.disconnect();
-        console.log("🔻 Done. MongoDB connection closed.");
     }
 }
 
 // --- Execution Entry Point ---
-main().catch(err => {
+main().then(() => {
+    console.log("🔻 Done. Exiting process.");
+    process.exit(0);
+}).catch(err => {
     console.error("❌ Fatal execution error:", err);
     process.exit(1);
 });

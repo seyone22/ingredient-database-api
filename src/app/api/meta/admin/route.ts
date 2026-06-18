@@ -1,28 +1,19 @@
-import {NextResponse} from "next/server";
-import dbConnect from "@/utils/dbConnect";
-import {getDatabaseStats} from "@/services/metaService";
+import { NextRequest, NextResponse } from "next/server";
+import { getDatabaseStats } from "@/services/metaService";
 
 /**
  * GET /api/meta
- * Returns high-level FoodRepo statistics:
- * - ingredientCount
- * - productCount
- * - mappedProducts
- * - tagDistribution
- * - sourceDistribution
- * - growth timeline
+ * Returns high-level FoodRepo statistics.
  */
-export const GET = async () => {
-    await dbConnect();
-
+export async function GET(req: NextRequest) {
     try {
         const stats = await getDatabaseStats();
-        return NextResponse.json(stats, {status: 200});
+        return NextResponse.json(stats, { status: 200 });
     } catch (err: any) {
         console.error("Error fetching meta stats:", err);
         return NextResponse.json(
-            {error: "Failed to fetch stats", details: err.message || String(err)},
-            {status: 500}
+            { error: "Failed to fetch stats", details: err.message || String(err) },
+            { status: 500 }
         );
     }
-};
+}

@@ -1,11 +1,9 @@
-// scripts/refreshProductByTerm.ts
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
-import mongoose from "mongoose";
-import dbConnect from "@/utils/dbConnect";
-import { Product } from "@/models/Product";
-import { normalizePrice, normalizeQuantityUnit } from "@/utils/normalizeQtyUtil";
+import { db } from "@/utils/db";
+import { products, priceHistories, stockHistories } from "@/utils/schema";
+import { normalizeQuantityUnit } from "@/utils/normalizeQtyUtil";
 
 import { CargillsFetcher } from "@/services/cargillsFetcher";
 import { KeellsFetcher } from "@/services/keelsFetcher";
@@ -24,7 +22,6 @@ const STORES: Store[] = [
 
 async function refreshProductsByTerm(searchTerm: string) {
     console.log(`🔸 Refreshing products for term: "${searchTerm}"`);
-    await dbConnect();
 
     for (const { name, fetcher: FetcherClass } of STORES) {
         const fetcher = new FetcherClass();
@@ -44,46 +41,72 @@ async function refreshProductsByTerm(searchTerm: string) {
             console.log(`📦 ${name}: ${rawProducts.length} raw items found.`);
 
             // Normalize + map
-            const mappedProducts = rawProducts.map(raw => {
+            const mappedProducts = rawProducts.map((raw: any) => {
+                // Get the unified data structure from the specific store's fetcher
+                const normalized = fetcher.mapToProduct(raw, "");
+
+                // Apply your global quantity/unit normalizer
                 const { quantity, unit } = normalizeQuantityUnit(raw);
-                const price = raw.Price ? normalizePrice(raw.Price) : raw.price;
-                const normalized = fetcher.mapToProduct(raw, "000000000000000000000000");
 
                 return {
                     ...normalized,
-                    quantity,
-                    unit,
-                    price,
-                    raw: JSON.stringify(raw),
+                    quantity: quantity || normalized.quantity,
+                    unit: unit || normalized.unit,
+                    sourceId: normalized.sourceId || fetcher.sourceId,
+                    sku: normalized.itemCode || normalized.sku || null,
+                    raw: raw // Native JSONB parsing in Postgres
                 };
             });
 
-            // Upsert
-            const bulkOps = mappedProducts.map(product => ({
-                updateOne: {
-                    filter: { externalId: product.externalId, source: product.source },
-                    update: {
-                        $set: {
-                            name: product.name,
-                            price: product.price,
-                            unit: product.unit,
-                            quantity: product.quantity,
-                            url: product.url,
-                            last_fetched: new Date(),
-                            currency: product.currency,
-                            departmentCode: product.departmentCode,
-                            raw: product.raw,
-                        },
-                        $setOnInsert: { ingredient: product.ingredient },
-                    },
-                    upsert: true,
-                },
-            }));
+            let upsertCount = 0;
+            let dailyPricePoints = 0;
+            let dailyStockPoints = 0;
 
-            const result = await Product.bulkWrite(bulkOps);
-            console.log(
-                `✅ ${name}: ${result.upsertedCount} inserted, ${result.modifiedCount} updated.`
-            );
+            // Upsert sequentially and log history
+            for (const scraped of mappedProducts) {
+                if (!scraped.externalId || !scraped.sourceId) continue;
+
+                // 1. Upsert the core product data
+                const [upserted] = await db
+                    .insert(products)
+                    .values({
+                        ...scraped,
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                    })
+                    .onConflictDoUpdate({
+                        target: [products.externalId, products.sourceId],
+                        set: { ...scraped, updatedAt: new Date() },
+                    })
+                    .returning({ id: products.id });
+
+                upsertCount++;
+
+                // 2. Record Price History
+                if (scraped.price !== undefined && scraped.price > 0) {
+                    await db.insert(priceHistories).values({
+                        productId: upserted.id,
+                        price: scraped.price,
+                        currency: scraped.currency || "LKR",
+                    });
+                    dailyPricePoints++;
+                }
+
+                // 3. Record Stock History
+                if (scraped.stockInHand !== undefined && scraped.stockInHand !== null) {
+                    await db.insert(stockHistories).values({
+                        productId: upserted.id,
+                        stock: scraped.stockInHand,
+                        averageDailySales: scraped.averageSale,
+                    });
+                    dailyStockPoints++;
+                }
+            }
+
+            console.log(`✅ ${name}: ${upsertCount} products processed.`);
+            console.log(`📈 Logged ${dailyPricePoints} daily price history points.`);
+            console.log(`📊 Logged ${dailyStockPoints} daily stock history points.`);
+
         } catch (err: any) {
             console.error(`❌ Error refreshing ${name}:`, err.message);
         }
@@ -92,8 +115,7 @@ async function refreshProductsByTerm(searchTerm: string) {
         await new Promise(r => setTimeout(r, 500));
     }
 
-    await mongoose.disconnect();
-    console.log("\n🔻 Done. MongoDB connection closed.");
+    console.log("\n🔻 Done. Process completed.");
 }
 
 // Run directly if executed as a script
@@ -105,7 +127,9 @@ if (require.main === module) {
         process.exit(1);
     }
 
-    refreshProductsByTerm(term).catch(err => {
+    refreshProductsByTerm(term).then(() => {
+        process.exit(0);
+    }).catch(err => {
         console.error("❌ Fatal error:", err);
         process.exit(1);
     });
