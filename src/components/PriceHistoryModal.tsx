@@ -7,6 +7,7 @@ import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { TrendingUp, AlertCircle } from "lucide-react";
 import {IProductData} from "@/services/productService";
+import { Area, AreaChart } from "recharts";
 
 interface ProductHistoryModalProps {
     product: IProductData; // The product object passed from the table
@@ -25,6 +26,17 @@ export default function ProductHistoryModal({ product, open, onOpenChange }: Pro
     const [history, setHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(false);
+
+    // 1. Add a small Metrics row
+    const calculateStats = (data: any[]) => {
+        const prices = data.map(d => d.price);
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+        const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+        return { min, max, avg: avg.toFixed(2) };
+    };
+
+    const stats = history.length > 0 ? calculateStats(history) : null;
 
     useEffect(() => {
         if (!open || !product?.id) return;
@@ -61,50 +73,50 @@ export default function ProductHistoryModal({ product, open, onOpenChange }: Pro
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="py-4">
-                    {loading ? (
-                        <Skeleton className="h-[300px] w-full rounded-xl" />
-                    ) : error ? (
-                        <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
-                            <AlertCircle className="h-8 w-8 mb-2 opacity-50" />
-                            <p>Failed to load price history.</p>
+                {/* New Insight Section */}
+                {stats && (
+                    <div className="grid grid-cols-3 gap-4 py-4 border-b">
+                        <div>
+                            <p className="text-xs text-muted-foreground uppercase">Average</p>
+                            <p className="text-lg font-bold">LKR {stats.avg}</p>
                         </div>
-                    ) : history.length < 2 ? (
-                        <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground border border-dashed rounded-xl bg-muted/20">
-                            <TrendingUp className="h-8 w-8 mb-2 opacity-50" />
-                            <p>Not enough data points yet.</p>
-                            <p className="text-sm">Check back after the next scrape!</p>
+                        <div>
+                            <p className="text-xs text-muted-foreground uppercase">High</p>
+                            <p className="text-lg font-bold text-red-500">LKR {stats.max}</p>
                         </div>
-                    ) : (
-                        <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                            <LineChart data={history} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
-                                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                                <XAxis
-                                    dataKey="date"
-                                    tickLine={false}
-                                    tickMargin={10}
-                                    axisLine={false}
-                                />
-                                {/* Setting domain to 'dataMin', 'dataMax' keeps the line from flattening out if prices are high */}
-                                <YAxis
-                                    domain={['dataMin', 'dataMax']}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickFormatter={(val) => `${product?.currency} ${val}`}
-                                />
-                                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                                <Line
-                                    type="monotone"
-                                    dataKey="price"
-                                    stroke="var(--color-price)"
-                                    strokeWidth={3}
-                                    dot={{ r: 4, fill: "var(--color-price)" }}
-                                    activeDot={{ r: 6 }}
-                                />
-                            </LineChart>
-                        </ChartContainer>
-                    )}
-                </div>
+                        <div>
+                            <p className="text-xs text-muted-foreground uppercase">Low</p>
+                            <p className="text-lg font-bold text-green-600">LKR {stats.min}</p>
+                        </div>
+                    </div>
+                )}
+
+                <ChartContainer config={chartConfig} className="h-[300px] w-full pt-4">
+                    <AreaChart data={history} margin={{ left: -20 }}>
+                        <defs>
+                            <linearGradient id="fillPrice" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="var(--color-price)" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="var(--color-price)" stopOpacity={0.05} />
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                        <XAxis dataKey="date" tickLine={false} axisLine={false} />
+                        <YAxis
+                            domain={['auto', 'auto']} // Let the chart define the bounds naturally
+                            tickLine={false}
+                            axisLine={false}
+                            tickFormatter={(val) => `LKR ${val}`}
+                        />
+                        <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                        <Area
+                            type="natural" // Smoother curve
+                            dataKey="price"
+                            stroke="var(--color-price)"
+                            fill="url(#fillPrice)"
+                            strokeWidth={2}
+                        />
+                    </AreaChart>
+                </ChartContainer>
             </DialogContent>
         </Dialog>
     );
