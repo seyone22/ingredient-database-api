@@ -48,7 +48,13 @@ export default function ProductHistoryModal({ product, open, onOpenChange }: Pro
                 const res = await fetch(`/api/products/${product.id}/history`);
                 if (!res.ok) throw new Error("Failed to fetch history");
                 const data = await res.json();
-                setHistory(data.history || []);
+
+                // 👈 Add this filter to remove any price entries that are 0 or null
+                const cleanHistory = (data.history || []).filter(
+                    (h: any) => h.price !== null && h.price > 0
+                );
+
+                setHistory(cleanHistory);
             } catch (err) {
                 console.error(err);
                 setError(true);
@@ -62,7 +68,7 @@ export default function ProductHistoryModal({ product, open, onOpenChange }: Pro
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="w-[95vw] sm:max-w-200 p-4 sm:p-6">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <TrendingUp className="h-5 w-5 text-primary" />
@@ -91,12 +97,12 @@ export default function ProductHistoryModal({ product, open, onOpenChange }: Pro
                     </div>
                 )}
 
-                <ChartContainer config={chartConfig} className="h-[300px] w-full pt-4">
+                <ChartContainer config={chartConfig} className="h-75 w-full pt-4">
                     <AreaChart data={history} margin={{ left: -20 }}>
                         <defs>
                             <linearGradient id="fillPrice" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="var(--color-price)" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="var(--color-price)" stopOpacity={0.05} />
+                                <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
+                                <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.05} />
                             </linearGradient>
                         </defs>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" />
@@ -111,7 +117,7 @@ export default function ProductHistoryModal({ product, open, onOpenChange }: Pro
                         <Area
                             type="natural" // Smoother curve
                             dataKey="price"
-                            stroke="var(--color-price)"
+                            stroke="var(--primary)"
                             fill="url(#fillPrice)"
                             strokeWidth={2}
                         />
