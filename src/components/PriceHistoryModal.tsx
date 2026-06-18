@@ -6,9 +6,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { TrendingUp, AlertCircle } from "lucide-react";
+import {IProductData} from "@/services/productService";
 
 interface ProductHistoryModalProps {
-    product: any | null; // The product object passed from the table
+    product: IProductData; // The product object passed from the table
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }
@@ -26,13 +27,13 @@ export default function ProductHistoryModal({ product, open, onOpenChange }: Pro
     const [error, setError] = useState(false);
 
     useEffect(() => {
-        if (!open || !product?._id) return;
+        if (!open || !product?.id) return;
 
         const fetchHistory = async () => {
             setLoading(true);
             setError(false);
             try {
-                const res = await fetch(`/api/products/${product._id}/history`);
+                const res = await fetch(`/api/products/${product.id}/history`);
                 if (!res.ok) throw new Error("Failed to fetch history");
                 const data = await res.json();
                 setHistory(data.history || []);
