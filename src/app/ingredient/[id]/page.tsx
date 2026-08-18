@@ -200,8 +200,8 @@ export default function IngredientPage() {
         )}
 
         {!loading && ingredient && (() => {
-          const dietaryFlags: string[] = ingredient.dietaryFlags || ingredient.dietary_flags || [];
-          const flavorProfile: string[] = ingredient.flavorProfile || ingredient.flavor_profile || [];
+          const rawDiet: string[] = ingredient.dietaryFlags || ingredient.dietary_flags || [];
+          const rawFlavor: string[] = ingredient.flavorProfile || ingredient.flavor_profile || [];
           const country: string[] = ingredient.country || [];
           const region: string[] = ingredient.region || [];
           const cuisine: string[] = ingredient.cuisine || ingredient.cuisines || [];
@@ -225,6 +225,11 @@ export default function IngredientPage() {
               .replace(/_/g, " ")
               .replace(/\b\w/g, (char) => char.toUpperCase());
           };
+
+          // Case-insensitive deduplication
+          const dietaryFlags = Array.from(new Set(rawDiet.map((d) => d.trim().toLowerCase()))).map(formatLabel);
+          const flavorProfile = Array.from(new Set(rawFlavor.map((f) => f.trim().toLowerCase()))).map(formatLabel);
+          const cleanVarieties = Array.from(new Set(varieties.map((v) => v.trim()))).filter((v) => v.toLowerCase() !== ingredient.name.toLowerCase());
 
           return (
             <div className="animate-in slide-in-from-bottom-4 fade-in duration-500 flex flex-col gap-12">
@@ -464,15 +469,15 @@ export default function IngredientPage() {
                         </div>
                       )}
 
-                      {/* Varieties */}
-                      {varieties.length > 0 && (
-                        <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
+                      {/* Known Varieties */}
+                      {cleanVarieties.length > 0 && (
+                        <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3 sm:col-span-2">
                           <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                            <Info className="h-4 w-4" /> Known Varieties
+                            <Info className="h-4 w-4" /> Known Varieties ({cleanVarieties.length})
                           </h3>
-                          <div className="flex flex-wrap gap-1.5">
-                            {varieties.map((v: string) => (
-                              <Badge key={v} variant="secondary" className="text-xs px-2.5 py-0.5">
+                          <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
+                            {cleanVarieties.map((v: string) => (
+                              <Badge key={v} variant="secondary" className="text-xs px-2.5 py-0.5 capitalize">
                                 {v}
                               </Badge>
                             ))}
