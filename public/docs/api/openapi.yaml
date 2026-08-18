@@ -1,40 +1,75 @@
 openapi: 3.1.0
 info:
-  title: FoodRepo API
-  description: API for FoodRepo, a culinary ingredient knowledge base and API
-  version: 1.0.0
+  title: FoodRepo Culinary Knowledge Base & Ingredient API
+  description: |
+    Comprehensive, multi-regional culinary ingredient intelligence API. 
+    Provides multi-tiered regional hierarchies, state-level sub-cuisines, organoleptic flavor profiles, dietary compliance flags, and product mapping metadata across 20,800+ canonical ingredients.
+  version: 2.0.0
 servers:
   - url: http://localhost:3000
     description: Local development server
+  - url: https://ingredient-database-api.vercel.app
+    description: Production API server
+
 paths:
   /api/ingredients:
     get:
-      summary: Search Ingredients
-      description: Search ingredients by name or aliases with pagination.
+      summary: Search & Filter Canonical Ingredients
+      description: Query canonical culinary ingredients with multi-dimensional faceted filtering across country, region, sub-region state hierarchy, cuisine, flavor profile, and dietary compliance.
       parameters:
         - name: query
           in: query
-          required: true
+          required: false
           schema:
             type: string
-          description: Search term
+          description: Search term matching ingredient name, aliases, or synonyms (e.g., "star anise", "basmati", "turmeric")
+        - name: country
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by country of origin (e.g., "India", "Sri Lanka", "Italy", "Mexico")
+        - name: region
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by geographic region or state sub-region (e.g., "South Asia", "North India", "Tamil Nadu", "Kerala", "Tuscany")
+        - name: cuisine
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by culinary tradition or sub-cuisine (e.g., "Indian", "Chettinad", "Mughlai", "Bengali", "Italian")
+        - name: flavorProfile
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by taste characteristic (e.g., "Spicy", "Umami", "Sweet", "Sour", "Aromatic")
+        - name: dietaryFlags
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by dietary compliance (e.g., "Vegan", "Gluten-Free", "Halal", "Kosher", "Vegetarian")
         - name: page
           in: query
           required: false
           schema:
             type: integer
             default: 1
-          description: Page number
+          description: Page number for pagination
         - name: limit
           in: query
           required: false
           schema:
             type: integer
             default: 20
-          description: Items per page
+          description: Number of items per page (max 100)
       responses:
         '200':
-          description: Paginated list of ingredients
+          description: Paginated search results with metadata
           content:
             application/json:
               schema:
@@ -52,7 +87,7 @@ paths:
                     type: integer
     post:
       summary: Contribute Ingredient
-      description: Add a new ingredient to the database.
+      description: Submit a new canonical ingredient to the database.
       requestBody:
         required: true
         content:
@@ -66,49 +101,112 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Ingredient'
-        '400':
-          description: Invalid request
-  /api/meta:
+
+  /api/ingredients/{id}:
     get:
-      summary: Database Metadata
-      description: Retrieve statistics about the ingredient database.
+      summary: Get Single Ingredient Details
+      description: Retrieve complete 23-field record for a single canonical ingredient by UUID, including image, derivatives, part_of, and product mappings.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique UUID of the ingredient
       responses:
         '200':
-          description: Metadata response
+          description: Detailed ingredient record
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Metadata'
+                $ref: '#/components/schemas/Ingredient'
+        '404':
+          description: Ingredient not found
+
+  /api/admin/quality:
+    get:
+      summary: Data Quality & Anomaly Detector Metrics
+      description: Enterprise data quality metrics, health score, potential duplicate candidate pairs, and orphan ingredients list.
+      responses:
+        '200':
+          description: Real-time database quality metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QualityMetrics'
+
+  /api/admin/analytics:
+    get:
+      summary: Regional & Culinary Intelligence Analytics
+      description: Distribution metrics across macro-regions, state-level sub-regions, cuisines, flavor matrices, and dietary compliance.
+      responses:
+        '200':
+          description: Market intelligence analytics data
+
+  /api/ingredients/enhance/image:
+    post:
+      summary: Trigger 6-Tier Image Ingestion Waterfall
+      description: Process missing ingredient image through 6 open-source APIs (Wikidata SPARQL, Wikipedia Lead, Wikimedia Commons Search, Open Food Facts, Unsplash, Pexels).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ingredientId:
+                  type: string
+              required:
+                - ingredientId
+      responses:
+        '200':
+          description: Updated ingredient record with mapped high-resolution food image
+
 components:
   schemas:
     Ingredient:
       type: object
       properties:
+        id:
+          type: string
+          format: uuid
         name:
           type: string
+          example: "Star Anise"
+        pronunciation:
+          type: string
+          example: "star AN-iss"
         aliases:
           type: array
           items:
             type: string
+          example: ["Chakra Phool", "Chinese Star Anise"]
         country:
           type: array
           items:
             type: string
+          example: ["China", "Vietnam", "India"]
+        region:
+          type: array
+          items:
+            type: string
+          example: ["South Asia", "East Asia", "Pan-Asian"]
         cuisine:
           type: array
           items:
             type: string
-        provenance:
-          type: string
-        flavor_profile:
+          example: ["Chinese", "Sichuan", "Indian", "Vietnamese"]
+        flavorProfile:
           type: array
           items:
             type: string
+          example: ["Aromatic", "Sweet", "Pungent", "Licorice"]
+        dietaryFlags:
+          type: array
+          items:
+            type: string
+          example: ["Vegan", "Gluten-Free", "Vegetarian", "Halal", "Kosher"]
         partOf:
-          type: array
-          items:
-            type: string
-        varieties:
           type: array
           items:
             type: string
@@ -116,29 +214,30 @@ components:
           type: array
           items:
             type: string
-        usedIn:
-          type: array
-          items:
-            type: string
-        substitutes:
-          type: array
-          items:
-            type: string
-        pairsWith:
-          type: array
-          items:
-            type: string
+          example: ["Five Spice Powder", "Anise Oil"]
+        image:
+          type: object
+          properties:
+            url:
+              type: string
+            author:
+              type: string
+            source:
+              type: string
+            missing:
+              type: boolean
+        provenance:
+          type: string
+          example: "AI_ENRICHED_GEMINI_INDIAN_HIERARCHY"
+
     IngredientInput:
       type: object
       required:
-        - name
+        - name:
+          type: string
       properties:
         name:
           type: string
-        aliases:
-          type: array
-          items:
-            type: string
         country:
           type: array
           items:
@@ -147,50 +246,21 @@ components:
           type: array
           items:
             type: string
-        provenance:
-          type: string
-        flavor_profile:
-          type: array
-          items:
-            type: string
-    Metadata:
+
+    QualityMetrics:
       type: object
       properties:
-        entryCount:
+        totalIngredients:
           type: integer
-        countries:
+        healthScore:
+          type: integer
+          example: 88
+        metrics:
           type: object
           properties:
-            count:
+            orphanCount:
               type: integer
-            byCountry:
-              type: object
-              additionalProperties:
-                type: integer
-        cuisines:
-          type: object
-          properties:
-            count:
+            potentialDuplicatesCount:
               type: integer
-            byCuisine:
-              type: object
-              additionalProperties:
-                type: integer
-        regions:
-          type: object
-          properties:
-            count:
+            missingImageCount:
               type: integer
-            byRegion:
-              type: object
-              additionalProperties:
-                type: integer
-        flavorProfiles:
-          type: object
-          properties:
-            count:
-              type: integer
-            byFlavor:
-              type: object
-              additionalProperties:
-                type: integer
