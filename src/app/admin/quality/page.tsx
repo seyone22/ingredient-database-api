@@ -126,7 +126,7 @@ export default function DataQualityPage() {
           {/* Missing Product Images KPI */}
           <div style={{ background: "rgba(15, 23, 42, 0.8)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "14px", padding: "1.5rem" }}>
             <div style={{ fontSize: "0.85rem", color: "#94a3b8", fontWeight: 600 }}>MISSING IMAGES</div>
-            <div style={{ fontSize: "2.8rem", fontWeight 900, color: "#38bdf8", margin: "0.4rem 0" }}>
+            <div style={{ fontSize: "2.8rem", fontWeight: 900, color: "#38bdf8", margin: "0.4rem 0" }}>
               {loading ? "..." : metrics?.missingImageCount.toLocaleString()}
             </div>
             <div style={{ fontSize: "0.8rem", color: "#64748b" }}>
