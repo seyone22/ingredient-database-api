@@ -2,6 +2,19 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import NavBar from "@/components/navbar/NavBar";
+import Footer from "@/components/footer/Footer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  BarChart3,
+  Globe,
+  Utensils,
+  MapPin,
+  Sparkles,
+  ShieldCheck,
+  Database,
+} from "lucide-react";
 
 interface ChartItem {
   label: string;
@@ -45,188 +58,222 @@ export default function CulinaryAnalyticsPage() {
   const maxSouthAsian = southAsianSubregions[0]?.count || 1;
 
   return (
-    <main style={{ minHeight: "100vh", background: "#0b0f19", color: "#f8fafc", fontFamily: "Inter, system-ui, sans-serif", padding: "2rem" }}>
-      <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
+    <div className="min-h-screen flex flex-col bg-background font-sans antialiased">
+      <NavBar />
 
-        {/* Header Title */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-          <div>
-            <span style={{ fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "1px", color: "#38bdf8", fontWeight: 600 }}>
-              MARKET INTELLIGENCE & ANALYTICS
-            </span>
-            <h1 style={{ fontSize: "2.2rem", fontWeight: 800, margin: "0.2rem 0 0.5rem 0", background: "linear-gradient(90deg, #ffffff, #94a3b8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              📈 Regional & Culinary Intelligence Dashboard
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 flex flex-col gap-8">
+        
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20">
+                Market Intelligence
+              </span>
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <BarChart3 className="w-8 h-8 text-primary" /> Regional & Culinary Analytics Dashboard
             </h1>
-            <p style={{ color: "#94a3b8", fontSize: "0.95rem", margin: 0 }}>
+            <p className="text-muted-foreground text-sm">
               Visualizing regional hierarchies, sub-cuisines, flavor matrices, and dietary distribution across {total.toLocaleString()} ingredients.
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: "1rem" }}>
-            <Link href="/admin/quality" style={{ padding: "0.65rem 1.2rem", borderRadius: "8px", background: "rgba(56, 189, 248, 0.15)", color: "#38bdf8", textDecoration: "none", fontSize: "0.9rem", fontWeight: 600, border: "1px solid rgba(56, 189, 248, 0.3)" }}>
-              🛡️ Data Quality & Anomalies
+          <div className="flex items-center gap-3">
+            <Link
+              href="/admin/quality"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              <ShieldCheck className="w-4 h-4 text-primary" /> Data Quality Detector
             </Link>
-            <Link href="/admin/all" style={{ padding: "0.65rem 1.2rem", borderRadius: "8px", background: "rgba(255, 255, 255, 0.05)", border: "1px solid rgba(255, 255, 255, 0.1)", color: "#e2e8f0", textDecoration: "none", fontSize: "0.9rem", fontWeight: 600 }}>
-              🔍 All Ingredients Grid
+            <Link
+              href="/admin/all"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
+            >
+              <Database className="w-4 h-4" /> All Ingredients Grid
             </Link>
           </div>
         </div>
 
-        {/* Visual Charts Layout Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(620px, 1fr))", gap: "1.75rem", marginBottom: "2rem" }}>
-
-          {/* CHART 1: MACRO-REGIONAL DISTRIBUTION */}
-          <div style={{ background: "rgba(15, 23, 42, 0.8)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "16px", padding: "1.75rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
-              <div>
-                <h3 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0, color: "#f8fafc" }}>
-                  🌍 Macro-Regional Distribution
-                </h3>
-                <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Global ingredient origins</span>
-              </div>
-              <span style={{ fontSize: "0.8rem", padding: "0.25rem 0.6rem", borderRadius: "4px", background: "rgba(56, 189, 248, 0.15)", color: "#38bdf8", fontWeight: 600 }}>
-                100% Coverage
-              </span>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-              {macroRegions.slice(0, 8).map((item) => {
-                const pct = Math.round((item.count / maxMacro) * 100);
-                return (
-                  <div key={item.label}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "0.3rem" }}>
-                      <span style={{ fontWeight: 600, color: "#e2e8f0" }}>{item.label}</span>
-                      <span style={{ color: "#94a3b8" }}>{item.count.toLocaleString()} items</span>
-                    </div>
-                    <div style={{ height: "8px", background: "#1e293b", borderRadius: "4px", overflow: "hidden" }}>
-                      <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg, #38bdf8, #0284c7)", borderRadius: "4px", transition: "width 0.6s ease" }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* CHART 2: SOUTH ASIAN & INDIAN SUB-REGION STATE BREAKDOWN */}
-          <div style={{ background: "rgba(15, 23, 42, 0.8)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "16px", padding: "1.75rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
-              <div>
-                <h3 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0, color: "#f8fafc" }}>
-                  🌶️ South Asian & Indian Sub-Region State Hierarchy
-                </h3>
-                <span style={{ fontSize: "0.8rem", color: "#64748b" }}>State & micro-regional breakdown (1,354 SKUs)</span>
-              </div>
-              <span style={{ fontSize: "0.8rem", padding: "0.25rem 0.6rem", borderRadius: "4px", background: "rgba(251, 146, 60, 0.15)", color: "#fb923c", fontWeight: 600 }}>
-                State Tiered
-              </span>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-              {southAsianSubregions.slice(0, 8).map((item) => {
-                const pct = Math.round((item.count / maxSouthAsian) * 100);
-                return (
-                  <div key={item.label}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "0.3rem" }}>
-                      <span style={{ fontWeight: 600, color: "#e2e8f0" }}>{item.label}</span>
-                      <span style={{ color: "#94a3b8" }}>{item.count.toLocaleString()} items</span>
-                    </div>
-                    <div style={{ height: "8px", background: "#1e293b", borderRadius: "4px", overflow: "hidden" }}>
-                      <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg, #fb923c, #ea580c)", borderRadius: "4px", transition: "width 0.6s ease" }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* CHART 3: TOP GLOBAL CUISINES */}
-          <div style={{ background: "rgba(15, 23, 42, 0.8)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "16px", padding: "1.75rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
-              <div>
-                <h3 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0, color: "#f8fafc" }}>
-                  🍳 Top Global Culinary Traditions
-                </h3>
-                <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Cuisine tagging distribution</span>
-              </div>
-              <span style={{ fontSize: "0.8rem", padding: "0.25rem 0.6rem", borderRadius: "4px", background: "rgba(74, 222, 128, 0.15)", color: "#4ade80", fontWeight: 600 }}>
-                100% Mapped
-              </span>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-              {cuisines.slice(0, 8).map((item) => {
-                const pct = Math.round((item.count / maxCuisine) * 100);
-                return (
-                  <div key={item.label}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "0.3rem" }}>
-                      <span style={{ fontWeight: 600, color: "#e2e8f0" }}>{item.label}</span>
-                      <span style={{ color: "#94a3b8" }}>{item.count.toLocaleString()} items</span>
-                    </div>
-                    <div style={{ height: "8px", background: "#1e293b", borderRadius: "4px", overflow: "hidden" }}>
-                      <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg, #4ade80, #16a34a)", borderRadius: "4px", transition: "width 0.6s ease" }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* CHART 4: FLAVOR PROFILE MATRIX */}
-          <div style={{ background: "rgba(15, 23, 42, 0.8)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "16px", padding: "1.75rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
-              <div>
-                <h3 style={{ fontSize: "1.15rem", fontWeight: 700, margin: 0, color: "#f8fafc" }}>
-                  👅 Flavor Profile Composition Matrix
-                </h3>
-                <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Taste notes & organoleptic attributes</span>
-              </div>
-              <span style={{ fontSize: "0.8rem", padding: "0.25rem 0.6rem", borderRadius: "4px", background: "rgba(168, 85, 247, 0.15)", color: "#c084fc", fontWeight: 600 }}>
-                Multi-Tag
-              </span>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-              {flavors.slice(0, 8).map((item) => {
-                const pct = Math.round((item.count / maxFlavor) * 100);
-                return (
-                  <div key={item.label}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "0.3rem" }}>
-                      <span style={{ fontWeight: 600, color: "#e2e8f0" }}>{item.label}</span>
-                      <span style={{ color: "#94a3b8" }}>{item.count.toLocaleString()} items</span>
-                    </div>
-                    <div style={{ height: "8px", background: "#1e293b", borderRadius: "4px", overflow: "hidden" }}>
-                      <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg, #c084fc, #9333ea)", borderRadius: "4px", transition: "width 0.6s ease" }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-        </div>
-
-        {/* DIETARY COMPLIANCE GAUGES */}
-        <div style={{ background: "rgba(15, 23, 42, 0.8)", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: "16px", padding: "1.75rem" }}>
-          <h3 style={{ fontSize: "1.15rem", fontWeight: 700, margin: "0 0 1.25rem 0", color: "#f8fafc" }}>
-            🥗 Dietary Compliance & Allergen Distribution
-          </h3>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1.25rem" }}>
-            {dietary.map((item) => (
-              <div key={item.label} style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "12px", padding: "1.25rem" }}>
-                <div style={{ fontSize: "0.85rem", color: "#94a3b8", fontWeight: 600 }}>{item.label}</div>
-                <div style={{ fontSize: "1.8rem", fontWeight: 800, color: "#38bdf8", margin: "0.3rem 0" }}>
-                  {item.count.toLocaleString()}
-                </div>
-                <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
-                  {((item.count / total) * 100).toFixed(1)}% of total database
-                </div>
-              </div>
+        {/* Loading State */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-64 rounded-xl" />
             ))}
           </div>
-        </div>
+        ) : (
+          <>
+            {/* Visual Charts Layout Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-      </div>
-    </main>
+              {/* CHART 1: MACRO-REGIONAL DISTRIBUTION */}
+              <Card className="border-border/60 bg-card/50 backdrop-blur-sm">
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
+                  <div>
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <Globe className="w-5 h-5 text-sky-500" /> Macro-Regional Distribution
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">Global ingredient origins</p>
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-500 border border-sky-500/20">
+                    100% Coverage
+                  </span>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {macroRegions.slice(0, 8).map((item) => {
+                    const pct = Math.round((item.count / maxMacro) * 100);
+                    return (
+                      <div key={item.label} className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="font-medium text-foreground">{item.label}</span>
+                          <span className="text-muted-foreground">{item.count.toLocaleString()} items</span>
+                        </div>
+                        <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
+                          <div
+                            className="bg-sky-500 h-full rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+
+              {/* CHART 2: SOUTH ASIAN & INDIAN SUB-REGION STATE BREAKDOWN */}
+              <Card className="border-border/60 bg-card/50 backdrop-blur-sm">
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
+                  <div>
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-orange-500" /> South Asian State-Level Sub-Region Hierarchy
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">State & micro-regional breakdown (1,354 SKUs)</p>
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-orange-500/10 text-orange-500 border border-orange-500/20">
+                    State Tiered
+                  </span>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {southAsianSubregions.slice(0, 8).map((item) => {
+                    const pct = Math.round((item.count / maxSouthAsian) * 100);
+                    return (
+                      <div key={item.label} className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="font-medium text-foreground">{item.label}</span>
+                          <span className="text-muted-foreground">{item.count.toLocaleString()} items</span>
+                        </div>
+                        <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
+                          <div
+                            className="bg-orange-500 h-full rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+
+              {/* CHART 3: TOP GLOBAL CUISINES */}
+              <Card className="border-border/60 bg-card/50 backdrop-blur-sm">
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
+                  <div>
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <Utensils className="w-5 h-5 text-emerald-500" /> Top Global Culinary Traditions
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">Cuisine tagging distribution</p>
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    100% Mapped
+                  </span>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {cuisines.slice(0, 8).map((item) => {
+                    const pct = Math.round((item.count / maxCuisine) * 100);
+                    return (
+                      <div key={item.label} className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="font-medium text-foreground">{item.label}</span>
+                          <span className="text-muted-foreground">{item.count.toLocaleString()} items</span>
+                        </div>
+                        <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
+                          <div
+                            className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+
+              {/* CHART 4: FLAVOR PROFILE MATRIX */}
+              <Card className="border-border/60 bg-card/50 backdrop-blur-sm">
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
+                  <div>
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-purple-500" /> Flavor Profile Composition Matrix
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">Taste notes & organoleptic attributes</p>
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                    Multi-Tag
+                  </span>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {flavors.slice(0, 8).map((item) => {
+                    const pct = Math.round((item.count / maxFlavor) * 100);
+                    return (
+                      <div key={item.label} className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span className="font-medium text-foreground">{item.label}</span>
+                          <span className="text-muted-foreground">{item.count.toLocaleString()} items</span>
+                        </div>
+                        <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
+                          <div
+                            className="bg-purple-500 h-full rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+
+            </div>
+
+            {/* DIETARY COMPLIANCE GAUGES */}
+            <Card className="border-border/60 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">
+                  🥗 Dietary Compliance & Allergen Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                  {dietary.map((item) => (
+                    <div key={item.label} className="p-4 rounded-xl border border-border bg-muted/20 flex flex-col justify-between">
+                      <div className="text-xs font-semibold text-muted-foreground">{item.label}</div>
+                      <div className="text-2xl font-bold text-foreground my-2">
+                        {item.count.toLocaleString()}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {((item.count / total) * 100).toFixed(1)}% of database
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+      </main>
+
+      <Footer />
+    </div>
   );
 }
