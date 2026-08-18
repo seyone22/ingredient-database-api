@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
+import fs from "fs";
+import path from "path";
 import { db } from "../src/utils/db";
 import { ingredients } from "../src/utils/schema";
 import { sql } from "drizzle-orm";
@@ -9,42 +11,97 @@ import { getDatabaseStats } from "../src/services/metaService";
 const CONFIG = {
   GEMINI_MODEL: "gemini-flash-latest",
   BATCH_SIZE: 50,
-  TARGET_COUNT: 1000,
-  CONCURRENCY: 4,
+  TARGET_COUNT: 5000,
+  CONCURRENCY: 6,
   MAX_BUDGET_USD: 2.00,
 };
 
-let totalInputTokens = 0;
-let totalOutputTokens = 0;
-let cumulativeCostUSD = 0;
+const COST_FILE = path.join(process.cwd(), ".gemini_cumulative_cost.json");
+
+let historicalInputTokens = 0;
+let historicalOutputTokens = 0;
+let historicalCostUSD = 0;
+
+let sessionInputTokens = 0;
+let sessionOutputTokens = 0;
+let sessionCostUSD = 0;
+
+let grandTotalCostUSD = 0;
+
+function loadCostState() {
+  if (fs.existsSync(COST_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(COST_FILE, "utf-8"));
+      historicalInputTokens = data.totalInputTokens || 0;
+      historicalOutputTokens = data.totalOutputTokens || 0;
+      historicalCostUSD = data.cumulativeCostUSD || 0;
+      grandTotalCostUSD = historicalCostUSD;
+    } catch (e) {
+      console.warn("⚠️ Could not parse cost file, starting fresh.");
+    }
+  }
+}
 
 function trackCostAndEnforceBudget(promptTokens: number, candidateTokens: number) {
-  totalInputTokens += promptTokens;
-  totalOutputTokens += candidateTokens;
+  sessionInputTokens += promptTokens;
+  sessionOutputTokens += candidateTokens;
 
-  const inputCost = (totalInputTokens / 1_000_000) * 0.075;
-  const outputCost = (totalOutputTokens / 1_000_000) * 0.30;
-  cumulativeCostUSD = inputCost + outputCost;
+  const sessionInputCost = (sessionInputTokens / 1_000_000) * 0.075;
+  const sessionOutputCost = (sessionOutputTokens / 1_000_000) * 0.30;
+  sessionCostUSD = sessionInputCost + sessionOutputCost;
 
-  if (cumulativeCostUSD >= CONFIG.MAX_BUDGET_USD) {
-    console.error(`\n🚨 BUDGET CIRCUIT BREAKER TRIGGERED! Cost reached $${cumulativeCostUSD.toFixed(4)} USD (Limit: $${CONFIG.MAX_BUDGET_USD.toFixed(2)} USD). Stopping execution.`);
+  grandTotalCostUSD = historicalCostUSD + sessionCostUSD;
+
+  // Persist updated cost state
+  const costState = {
+    totalInputTokens: historicalInputTokens + sessionInputTokens,
+    totalOutputTokens: historicalOutputTokens + sessionOutputTokens,
+    cumulativeCostUSD: grandTotalCostUSD,
+    lastUpdated: new Date().toISOString(),
+  };
+
+  try {
+    fs.writeFileSync(COST_FILE, JSON.stringify(costState, null, 2));
+  } catch (e) {
+    // Ignore write issues
+  }
+
+  if (grandTotalCostUSD >= CONFIG.MAX_BUDGET_USD) {
+    console.error(`\n🚨 BUDGET CIRCUIT BREAKER TRIGGERED! Cumulative API Cost reached $${grandTotalCostUSD.toFixed(4)} USD (Limit: $${CONFIG.MAX_BUDGET_USD.toFixed(2)} USD). Stopping execution.`);
     process.exit(1);
   }
 }
 
+function cleanJsonText(rawText: string): string {
+  let cleaned = rawText.trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```[a-z]*\s*/i, "").replace(/\s*```$/, "").trim();
+  }
+  const firstBracket = cleaned.indexOf("[");
+  const lastBracket = cleaned.lastIndexOf("]");
+  if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+    cleaned = cleaned.slice(firstBracket, lastBracket + 1);
+  }
+  return cleaned;
+}
+
 function toSqlArray(arr: string[] | undefined) {
-  if (!arr || arr.length === 0) return sql`ARRAY[]::text[]`;
+  if (!arr || !Array.isArray(arr) || arr.length === 0) return sql`ARRAY[]::text[]`;
   return sql`ARRAY[${sql.join(arr.map((x) => sql`${String(x)}`), sql`, `)}]::text[]`;
 }
 
 async function runEnrichment() {
+  loadCostState();
+
   console.log("==========================================================================================");
-  console.log(`🌐 HIGH-SPEED ENRICHMENT: 500 RANDOM INGREDIENTS METADATA POPULATION`);
+  console.log(`🌐 HIGH-SPEED ENRICHMENT: ${CONFIG.TARGET_COUNT.toLocaleString()} RANDOM INGREDIENTS METADATA POPULATION`);
+  console.log(`💰 HISTORICAL CUMULATIVE SPEND : $${historicalCostUSD.toFixed(4)} USD`);
+  console.log(`🛡️ HARD STOP BUDGET CIRCUIT BREAKER: $${CONFIG.MAX_BUDGET_USD.toFixed(2)} USD`);
   console.log("==========================================================================================");
 
   const apiKey = process.env.GEMINI_API_KEY!;
 
-  // Fetch 500 random ingredients missing metadata
+  // Fetch TARGET_COUNT random ingredients missing metadata
   const targetIngredients = await db.execute(sql`
     SELECT id, name, aliases
     FROM ${ingredients}
@@ -56,7 +113,7 @@ async function runEnrichment() {
     LIMIT ${CONFIG.TARGET_COUNT};
   `);
 
-  console.log(`📦 Pulled ${targetIngredients.length} random ingredients missing metadata from DB.\n`);
+  console.log(`📦 Pulled ${targetIngredients.length.toLocaleString()} random ingredients missing metadata from DB.\n`);
 
   if (targetIngredients.length === 0) {
     console.log("🎉 All ingredients already have metadata!");
@@ -120,7 +177,8 @@ ${JSON.stringify(payload, null, 2)}
       const text = responseData?.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (text) {
-        const enrichedItems = JSON.parse(text);
+        const cleanedText = cleanJsonText(text);
+        const enrichedItems = JSON.parse(cleanedText);
 
         // Parallel DB Updates for the batch
         await Promise.all(
@@ -140,7 +198,7 @@ ${JSON.stringify(payload, null, 2)}
 
         totalEnrichedCount += enrichedItems.length;
         completedBatches++;
-        console.log(` ✅ Batch [${completedBatches}/${batches.length}] (${enrichedItems.length} items) enriched! Cumulative Cost: $${cumulativeCostUSD.toFixed(4)} USD`);
+        console.log(` ✅ Batch [${completedBatches}/${batches.length}] (${enrichedItems.length} items) enriched! Session: $${sessionCostUSD.toFixed(4)} USD | Grand Total: $${grandTotalCostUSD.toFixed(4)} USD`);
       }
     } catch (err: any) {
       console.error(` ❌ Batch #${batchIdx + 1} error:`, err.message || err);
@@ -159,7 +217,9 @@ ${JSON.stringify(payload, null, 2)}
   const workers = Array.from({ length: CONFIG.CONCURRENCY }, () => worker());
   await Promise.all(workers);
 
-  console.log(`\n🎉 Successfully populated metadata for ${totalEnrichedCount} ingredients! Total API Cost: $${cumulativeCostUSD.toFixed(4)} USD`);
+  console.log(`\n🎉 Successfully populated metadata for ${totalEnrichedCount.toLocaleString()} ingredients!`);
+  console.log(` 💡 Session API Cost      : $${sessionCostUSD.toFixed(4)} USD`);
+  console.log(` 🏆 Grand Cumulative Cost : $${grandTotalCostUSD.toFixed(4)} USD / $${CONFIG.MAX_BUDGET_USD.toFixed(2)} USD limit`);
 
   // Fetch updated stats
   const stats = await getDatabaseStats();

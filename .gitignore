@@ -42,3 +42,4 @@ next-env.d.ts
 
 # large datasets
 public/FoodData_Central_*.json
+.gemini_cumulative_cost.json
