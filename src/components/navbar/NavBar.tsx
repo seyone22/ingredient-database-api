@@ -9,9 +9,9 @@ import {
   Link2,
   Package,
   ArrowDownToLine,
-  FileText,
-  HelpCircle,
   ShieldAlert,
+  ShieldCheck,
+  BarChart3,
 } from "lucide-react";
 import styles from "./NavBar.module.css";
 
@@ -28,6 +28,8 @@ export default function NavBar() {
   const adminLinks = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/all", label: "All Ingredients", icon: Database },
+    { href: "/admin/quality", label: "Data Quality", icon: ShieldCheck },
+    { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
     { href: "/admin/mapper", label: "Product Mapper", icon: Link2 },
     { href: "/admin/product", label: "Products Catalog", icon: Package },
     { href: "/admin/ingest", label: "Ingest Pipeline", icon: ArrowDownToLine },
