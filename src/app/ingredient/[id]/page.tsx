@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import NavBar from "@/components/navbar/NavBar";
 import Footer from "@/components/footer/Footer";
 import { Button } from "@/components/ui/button";
@@ -261,84 +262,175 @@ export default function IngredientPage() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
-                  {/* Left Column: Image Management */}
-                  <div className="lg:col-span-1 space-y-3">
-                    {ingredient.image?.url ? (
-                      <div className="relative group">
-                        <div className="rounded-2xl overflow-hidden border bg-muted shadow-sm ring-1 ring-border/50">
-                          <img
-                            src={ingredient.image.url}
-                            alt={ingredient.name}
-                            className="w-full h-auto object-cover aspect-square lg:aspect-[4/3]"
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                  {/* Left Column: Image, Origin, Cuisines & Classification */}
+                  <div className="lg:col-span-1 space-y-6">
+                    {/* Image Card */}
+                    <div className="space-y-2">
+                      {ingredient.image?.url ? (
+                        <div className="relative group">
+                          <div className="rounded-2xl overflow-hidden border bg-muted shadow-sm ring-1 ring-border/50">
+                            <img
+                              src={ingredient.image.url}
+                              alt={ingredient.name}
+                              className="w-full h-auto object-cover aspect-square lg:aspect-[4/3]"
+                            />
+                          </div>
+                          {/* Refresh Overlay Button */}
+                          <Button
+                            variant="secondary"
+                            size="icon"
+                            onClick={handleImageAction}
+                            disabled={isFetchingImage}
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm"
+                          >
+                            {isFetchingImage ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl border-2 border-dashed flex flex-col items-center justify-center aspect-square lg:aspect-[4/3] bg-muted/30 gap-4 p-6 text-center">
+                          <ImageIcon className="h-10 w-10 text-muted-foreground/50" />
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-muted-foreground">
+                              No image available
+                            </p>
+                            <p className="text-xs text-muted-foreground/70">
+                              Fetch a context-aware image from Wikidata.
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleImageAction}
+                            disabled={isFetchingImage}
+                            className="mt-2"
+                          >
+                            {isFetchingImage ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <Search className="mr-2 h-4 w-4" />
+                            )}
+                            Fetch Image
+                          </Button>
+                        </div>
+                      )}
+                      {ingredient.image?.author && (
+                        <div className="flex items-start gap-2 text-xs text-muted-foreground px-1">
+                          <ImageIcon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                          <span
+                            className="[&>a]:text-primary [&>a]:hover:underline"
+                            dangerouslySetInnerHTML={{
+                              __html: `Photo by ${ingredient.image.author}`,
+                            }}
                           />
                         </div>
-                        {/* Refresh Overlay Button */}
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          onClick={handleImageAction}
-                          disabled={isFetchingImage}
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 backdrop-blur-sm"
-                        >
-                          {isFetchingImage ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-4 w-4" />
+                      )}
+                    </div>
+
+                    {/* Origin & Geography Card */}
+                    {(country.length > 0 || region.length > 0 || provenance) && (
+                      <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                          <Globe className="h-4 w-4 text-primary" /> Origin & Geography
+                        </h3>
+                        <div className="flex flex-col gap-2 text-sm">
+                          {country.length > 0 && (
+                            <div>
+                              <span className="font-semibold text-foreground block text-xs mb-1">Countries:</span>
+                              <div className="flex flex-wrap gap-1">
+                                {country.map((c: string) => (
+                                  <Badge key={c} variant="secondary" className="text-xs px-2 py-0.5 font-normal">
+                                    {c}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
                           )}
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl border-2 border-dashed flex flex-col items-center justify-center aspect-square lg:aspect-[4/3] bg-muted/30 gap-4 p-6 text-center">
-                        <ImageIcon className="h-10 w-10 text-muted-foreground/50" />
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-muted-foreground">
-                            No image available
-                          </p>
-                          <p className="text-xs text-muted-foreground/70">
-                            Fetch a context-aware image from Wikidata.
-                          </p>
+                          {region.length > 0 && (
+                            <div>
+                              <span className="font-semibold text-foreground block text-xs mb-1">Regions:</span>
+                              <div className="flex flex-wrap gap-1">
+                                {region.map((r: string) => (
+                                  <Badge key={r} variant="outline" className="text-xs px-2 py-0.5 font-normal">
+                                    {r}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {provenance && (
+                            <p className="text-xs text-muted-foreground pt-1 border-t">
+                              <span className="font-medium text-foreground">Provenance:</span> {provenance}
+                            </p>
+                          )}
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleImageAction}
-                          disabled={isFetchingImage}
-                          className="mt-2"
-                        >
-                          {isFetchingImage ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            <Search className="mr-2 h-4 w-4" />
-                          )}
-                          Fetch Image
-                        </Button>
                       </div>
                     )}
-                    {ingredient.image?.author && (
-                      <div className="flex items-start gap-2 text-xs text-muted-foreground px-1">
-                        <ImageIcon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                        <span
-                          className="[&>a]:text-primary [&>a]:hover:underline"
-                          dangerouslySetInnerHTML={{
-                            __html: `Photo by ${ingredient.image.author}`,
-                          }}
-                        />
+
+                    {/* Cuisines Card */}
+                    {cuisine.length > 0 && (
+                      <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                          <Utensils className="h-4 w-4 text-primary" /> Cuisines
+                        </h3>
+                        <div className="flex flex-wrap gap-1.5">
+                          {cuisine.map((c: string) => (
+                            <Badge
+                              key={c}
+                              variant="outline"
+                              className="bg-background text-xs px-2.5 py-0.5"
+                            >
+                              {c}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Classification Card */}
+                    {partOf.length > 0 && (
+                      <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                          <Info className="h-4 w-4 text-primary" /> Category & Classification
+                        </h3>
+                        <div className="flex flex-wrap gap-1.5">
+                          {partOf.map((p: string) => (
+                            <Link
+                              key={p}
+                              href={`/?query=${encodeURIComponent(p)}`}
+                              className="inline-block transition-transform hover:scale-[1.03]"
+                              title={`Explore ${p}`}
+                            >
+                              <Badge
+                                variant="outline"
+                                className="text-xs px-2.5 py-0.5 capitalize cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                              >
+                                {p}
+                              </Badge>
+                            </Link>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Right Column: Details & Cards */}
-                  <div className="lg:col-span-2 space-y-8">
+                  {/* Right Column: Description, Dietary, Flavor, Varieties, Substitutes */}
+                  <div className="lg:col-span-2 space-y-6">
+                    {/* Description Paragraph */}
                     {ingredient.comment && (
                       <div
                         className="text-base text-foreground/90 leading-relaxed
                                               [&>p]:mb-4 last:[&>p]:mb-0
-                                              [&>a]:text-primary [&>a]:font-medium [&>a]:hover:underline"
+                                              [&>a]:text-primary [&>a]:font-medium [&>a]:hover:underline bg-muted/20 p-5 rounded-2xl border"
                         dangerouslySetInnerHTML={{ __html: ingredient.comment }}
                       />
                     )}
 
+                    {/* Dietary Info & Flavor Profile */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Dietary Info */}
                       {dietaryFlags.length > 0 && (
@@ -351,9 +443,9 @@ export default function IngredientPage() {
                               <Badge
                                 key={d}
                                 variant="default"
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium border-none shadow-none text-xs px-2.5 py-0.5"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium border-none shadow-none text-xs px-2.5 py-0.5 capitalize"
                               >
-                                {formatLabel(d)}
+                                {d}
                               </Badge>
                             ))}
                           </div>
@@ -371,168 +463,159 @@ export default function IngredientPage() {
                               <Badge
                                 key={f}
                                 variant="secondary"
-                                className="bg-purple-500/10 text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 border-none font-medium text-xs px-2.5 py-0.5"
+                                className="bg-purple-500/10 text-purple-700 dark:text-purple-300 hover:bg-purple-500/20 border-none font-medium text-xs px-2.5 py-0.5 capitalize"
                               >
-                                {formatLabel(f)}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Origin & Geography */}
-                      {(country.length > 0 || region.length > 0 || provenance) && (
-                        <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
-                          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                            <Globe className="h-4 w-4" /> Origin & Geography
-                          </h3>
-                          <div className="flex flex-col gap-1.5 text-sm">
-                            {country.length > 0 && (
-                              <p>
-                                <span className="font-medium text-foreground">Country:</span>{" "}
-                                {country.join(", ")}
-                              </p>
-                            )}
-                            {region.length > 0 && (
-                              <p>
-                                <span className="font-medium text-foreground">Region:</span>{" "}
-                                {region.join(", ")}
-                              </p>
-                            )}
-                            {provenance && (
-                              <p>
-                                <span className="font-medium text-foreground">Provenance:</span>{" "}
-                                {provenance}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Cuisines */}
-                      {cuisine.length > 0 && (
-                        <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
-                          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                            <Utensils className="h-4 w-4" /> Cuisines
-                          </h3>
-                          <div className="flex flex-wrap gap-1.5">
-                            {cuisine.map((c: string) => (
-                              <Badge
-                                key={c}
-                                variant="outline"
-                                className="bg-background text-xs px-2.5 py-0.5"
-                              >
-                                {c}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Substitutes */}
-                      {substitutes.length > 0 && (
-                        <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
-                          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                            <Wand2 className="h-4 w-4" /> Substitutes
-                          </h3>
-                          <div className="flex flex-wrap gap-1.5">
-                            {substitutes.map((s: string) => (
-                              <Badge
-                                key={s}
-                                variant="secondary"
-                                className="bg-amber-500/10 text-amber-700 dark:text-amber-300 font-medium border-none text-xs px-2.5 py-0.5"
-                              >
-                                {s}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Pairs With */}
-                      {pairsWith.length > 0 && (
-                        <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
-                          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                            <Utensils className="h-4 w-4" /> Pairs Well With
-                          </h3>
-                          <div className="flex flex-wrap gap-1.5">
-                            {pairsWith.map((pw: string) => (
-                              <Badge
-                                key={pw}
-                                variant="outline"
-                                className="bg-primary/5 text-primary border-primary/20 text-xs px-2.5 py-0.5"
-                              >
-                                {pw}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Known Varieties */}
-                      {cleanVarieties.length > 0 && (
-                        <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3 sm:col-span-2">
-                          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                            <Info className="h-4 w-4" /> Known Varieties ({cleanVarieties.length})
-                          </h3>
-                          <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
-                            {cleanVarieties.map((v: string) => (
-                              <Badge key={v} variant="secondary" className="text-xs px-2.5 py-0.5 capitalize">
-                                {v}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Derivatives */}
-                      {derivatives.length > 0 && (
-                        <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
-                          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                            <Info className="h-4 w-4" /> Derivatives & Forms
-                          </h3>
-                          <div className="flex flex-wrap gap-1.5">
-                            {derivatives.map((d: string) => (
-                              <Badge key={d} variant="outline" className="text-xs px-2.5 py-0.5">
-                                {d}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Used In */}
-                      {usedIn.length > 0 && (
-                        <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
-                          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                            <Utensils className="h-4 w-4" /> Common Uses
-                          </h3>
-                          <div className="flex flex-wrap gap-1.5">
-                            {usedIn.map((u: string) => (
-                              <Badge key={u} variant="secondary" className="text-xs px-2.5 py-0.5">
-                                {u}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Part Of */}
-                      {partOf.length > 0 && (
-                        <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
-                          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                            <Info className="h-4 w-4" /> Category / Classification
-                          </h3>
-                          <div className="flex flex-wrap gap-1.5">
-                            {partOf.map((p: string) => (
-                              <Badge key={p} variant="outline" className="text-xs px-2.5 py-0.5">
-                                {p}
+                                {f}
                               </Badge>
                             ))}
                           </div>
                         </div>
                       )}
                     </div>
+
+                    {/* Substitutes & Pairings */}
+                    {(substitutes.length > 0 || pairsWith.length > 0) && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Substitutes */}
+                        {substitutes.length > 0 && (
+                          <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                              <Wand2 className="h-4 w-4 text-amber-500" /> Substitutes
+                            </h3>
+                            <div className="flex flex-wrap gap-1.5">
+                              {substitutes.map((s: string) => (
+                                <Link
+                                  key={s}
+                                  href={`/?query=${encodeURIComponent(s)}`}
+                                  className="inline-block transition-transform hover:scale-[1.03]"
+                                  title={`Explore substitute ${s}`}
+                                >
+                                  <Badge
+                                    variant="secondary"
+                                    className="bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500 hover:text-white font-medium border-none text-xs px-2.5 py-0.5 cursor-pointer transition-colors"
+                                  >
+                                    {s}
+                                  </Badge>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Pairs With */}
+                        {pairsWith.length > 0 && (
+                          <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                              <Utensils className="h-4 w-4 text-primary" /> Pairs Well With
+                            </h3>
+                            <div className="flex flex-wrap gap-1.5">
+                              {pairsWith.map((pw: string) => (
+                                <Link
+                                  key={pw}
+                                  href={`/?query=${encodeURIComponent(pw)}`}
+                                  className="inline-block transition-transform hover:scale-[1.03]"
+                                  title={`Explore pairing ${pw}`}
+                                >
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-primary/5 text-primary border-primary/20 hover:bg-primary hover:text-primary-foreground text-xs px-2.5 py-0.5 cursor-pointer transition-colors"
+                                  >
+                                    {pw}
+                                  </Badge>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Known Varieties Section Card */}
+                    {cleanVarieties.length > 0 && (
+                      <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                            <Info className="h-4 w-4 text-primary" /> Known Varieties ({cleanVarieties.length})
+                          </h3>
+                          <span className="text-xs text-muted-foreground">Click to discover</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto pr-1">
+                          {cleanVarieties.map((v: string) => (
+                            <Link
+                              key={v}
+                              href={`/?query=${encodeURIComponent(v)}`}
+                              className="inline-block transition-transform hover:scale-[1.03]"
+                              title={`Explore variety ${v}`}
+                            >
+                              <Badge
+                                variant="secondary"
+                                className="text-xs px-2.5 py-1 capitalize cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                              >
+                                {v}
+                              </Badge>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Derivatives & Common Uses */}
+                    {(derivatives.length > 0 || usedIn.length > 0) && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Derivatives */}
+                        {derivatives.length > 0 && (
+                          <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                              <Info className="h-4 w-4 text-primary" /> Derivatives & Forms
+                            </h3>
+                            <div className="flex flex-wrap gap-1.5">
+                              {derivatives.map((d: string) => (
+                                <Link
+                                  key={d}
+                                  href={`/?query=${encodeURIComponent(d)}`}
+                                  className="inline-block transition-transform hover:scale-[1.03]"
+                                  title={`Explore derivative ${d}`}
+                                >
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs px-2.5 py-0.5 cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                                  >
+                                    {d}
+                                  </Badge>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Common Uses */}
+                        {usedIn.length > 0 && (
+                          <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                              <Utensils className="h-4 w-4 text-primary" /> Common Uses
+                            </h3>
+                            <div className="flex flex-wrap gap-1.5">
+                              {usedIn.map((u: string) => (
+                                <Link
+                                  key={u}
+                                  href={`/?query=${encodeURIComponent(u)}`}
+                                  className="inline-block transition-transform hover:scale-[1.03]"
+                                  title={`Explore use ${u}`}
+                                >
+                                  <Badge
+                                    key={u}
+                                    variant="secondary"
+                                    className="text-xs px-2.5 py-0.5 cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                                  >
+                                    {u}
+                                  </Badge>
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
