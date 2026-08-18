@@ -81,7 +81,7 @@ async function queryWikidataForIngredients(sampleNames: string[]): Promise<Recor
       if (b.madeFromLabel?.value && !results[name].madeFrom?.includes(b.madeFromLabel.value)) {
         results[name].madeFrom?.push(b.madeFromLabel.value);
       }
-      if (b.substituteLabel?.value && !results[name].substituteLabel?.includes(b.substituteLabel.value)) {
+      if (b.substituteLabel?.value && !results[name].substitutes?.includes(b.substituteLabel.value)) {
         results[name].substitutes?.push(b.substituteLabel.value);
       }
     }
