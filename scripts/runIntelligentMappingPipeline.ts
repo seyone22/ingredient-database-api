@@ -14,7 +14,29 @@ const CONFIG = {
   GEMINI_MODEL: "gemini-2.5-flash",
   BATCH_SIZE: 50,
   CONCURRENCY: 4, // 4 parallel batch workers
+  MAX_BUDGET_USD: 2.00, // Hard stop limit requested by user
 };
+
+let totalInputTokens = 0;
+let totalOutputTokens = 0;
+let cumulativeCostUSD = 0;
+
+function trackCostAndEnforceBudget(promptTokens: number, candidateTokens: number) {
+  totalInputTokens += promptTokens;
+  totalOutputTokens += candidateTokens;
+
+  // Gemini 2.5 Flash pricing: $0.075 / 1M input, $0.30 / 1M output
+  const inputCost = (totalInputTokens / 1_000_000) * 0.075;
+  const outputCost = (totalOutputTokens / 1_000_000) * 0.30;
+  cumulativeCostUSD = inputCost + outputCost;
+
+  if (cumulativeCostUSD >= CONFIG.MAX_BUDGET_USD) {
+    console.error(`\n🚨 BUDGET CIRCUIT BREAKER TRIGGERED!`);
+    console.error(` Total API Cost reached $${cumulativeCostUSD.toFixed(4)} USD (Limit: $${CONFIG.MAX_BUDGET_USD.toFixed(2)} USD).`);
+    console.error(` Terminating AI pipeline immediately to prevent cost overrun.\n`);
+    process.exit(1);
+  }
+}
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
@@ -301,6 +323,13 @@ ${JSON.stringify(payload, null, 2)}
         },
       });
 
+      if (response.usageMetadata) {
+        trackCostAndEnforceBudget(
+          response.usageMetadata.promptTokenCount || 0,
+          response.usageMetadata.candidatesTokenCount || 0
+        );
+      }
+
       if (response.text) {
         const results: z.infer<typeof batchResultSchema> = JSON.parse(response.text);
 
@@ -330,7 +359,7 @@ ${JSON.stringify(payload, null, 2)}
 
         completedBatches++;
         if (completedBatches % 5 === 0 || completedBatches === batches.length) {
-          console.log(` Progress: [${completedBatches}/${batches.length} batches] | Mapped Food SKUs: ${totalMappedFoodSkus}`);
+          console.log(` Progress: [${completedBatches}/${batches.length} batches] | Mapped Food SKUs: ${totalMappedFoodSkus} | AI Cost: $${cumulativeCostUSD.toFixed(4)} USD`);
         }
       }
     } catch (err: any) {
