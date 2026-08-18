@@ -11,7 +11,7 @@ import fs from "fs";
 import path from "path";
 
 const CONFIG = {
-  GEMINI_MODEL: "gemini-2.5-flash",
+  GEMINI_MODEL: "gemini-flash-latest",
   BATCH_SIZE: 50,
   CONCURRENCY: 4, // 4 parallel batch workers
   MAX_BUDGET_USD: 2.00, // Hard stop limit requested by user
