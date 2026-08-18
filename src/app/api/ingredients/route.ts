@@ -17,9 +17,12 @@ export async function GET(req: NextRequest) {
   const region = searchParams.get("region");
   const flavor = searchParams.get("flavor");
 
-  if (!query) {
+  // Allow search when query is empty if structured filters are provided
+  const searchQuery = query || (country || cuisine || region || flavor ? "%" : "");
+
+  if (!searchQuery && !country && !cuisine && !region && !flavor) {
     return NextResponse.json(
-      { error: "Missing query parameter" },
+      { error: "Missing search parameters (provide 'query', 'region', 'cuisine', or 'country')" },
       { status: 400 },
     );
   }

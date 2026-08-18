@@ -6,16 +6,13 @@ import Footer from "@/components/footer/Footer";
 import { RedocStandalone } from "redoc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Code,
   Terminal,
   Play,
   Copy,
   Check,
   BookOpen,
   FileCode,
-  Layers,
-  Sparkles,
-  ExternalLink,
+  Sliders,
 } from "lucide-react";
 
 interface EndpointInfo {
@@ -24,11 +21,11 @@ interface EndpointInfo {
   path: string;
   title: string;
   description: string;
-  params: { name: string; type: string; required: boolean; desc: string }[];
-  curl: string;
-  tsSnippet: string;
-  dartSnippet: string;
-  pythonSnippet: string;
+  params: { name: string; type: string; required: boolean; defaultVal: string; desc: string }[];
+  curlFn: (params: Record<string, string>) => string;
+  tsFn: (params: Record<string, string>) => string;
+  dartFn: (params: Record<string, string>) => string;
+  pythonFn: (params: Record<string, string>) => string;
 }
 
 const ENDPOINTS: EndpointInfo[] = [
@@ -39,31 +36,39 @@ const ENDPOINTS: EndpointInfo[] = [
     title: "Search & Faceted Filter Ingredients",
     description: "Query 20,800+ canonical ingredients with multi-dimensional filtering across country, state sub-regions, cuisines, flavor profiles, and dietary compliance flags.",
     params: [
-      { name: "query", type: "string", required: false, desc: "Search term matching ingredient name or aliases (e.g., 'star anise', 'turmeric')" },
-      { name: "country", type: "string", required: false, desc: "Filter by country of origin (e.g., 'India', 'Italy')" },
-      { name: "region", type: "string", required: false, desc: "Filter by sub-region state hierarchy (e.g., 'Tamil Nadu', 'Punjab', 'Kerala')" },
-      { name: "cuisine", type: "string", required: false, desc: "Filter by culinary tradition (e.g., 'Chettinad', 'Mughlai', 'Bengali')" },
-      { name: "flavorProfile", type: "string", required: false, desc: "Filter by flavor note (e.g., 'Spicy', 'Umami', 'Aromatic')" },
-      { name: "dietaryFlags", type: "string", required: false, desc: "Filter by dietary compliance (e.g., 'Vegan', 'Gluten-Free')" },
-      { name: "page", type: "number", required: false, desc: "Page number (default: 1)" },
-      { name: "limit", type: "number", required: false, desc: "Items per page (default: 20)" },
+      { name: "query", type: "string", required: true, defaultVal: "turmeric", desc: "Search term matching ingredient name or aliases" },
+      { name: "region", type: "string", required: false, defaultVal: "South Asia", desc: "Filter by sub-region state hierarchy (e.g., 'Tamil Nadu', 'Punjab')" },
+      { name: "cuisine", type: "string", required: false, defaultVal: "", desc: "Filter by culinary tradition (e.g., 'Chettinad', 'Mughlai')" },
+      { name: "limit", type: "number", required: false, defaultVal: "10", desc: "Items per page (default: 20)" },
     ],
-    curl: `curl -X GET "http://localhost:3000/api/ingredients?query=turmeric&region=South%20Asia&limit=10"`,
-    tsSnippet: `const response = await fetch('/api/ingredients?query=turmeric&limit=10');
+    curlFn: (p) => {
+      const q = new URLSearchParams(p).toString();
+      return `curl -X GET "http://localhost:3000/api/ingredients?${q}"`;
+    },
+    tsFn: (p) => {
+      const q = new URLSearchParams(p).toString();
+      return `const response = await fetch('/api/ingredients?${q}');
 const data = await response.json();
-console.log(data.results);`,
-    dartSnippet: `import 'package:http/http.dart' as http;
+console.log(data.results);`;
+    },
+    dartFn: (p) => {
+      const q = new URLSearchParams(p).toString();
+      return `import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-final url = Uri.parse('https://your-api-domain.com/api/ingredients?query=turmeric');
+final url = Uri.parse('https://your-api-domain.com/api/ingredients?${q}');
 final response = await http.get(url);
 final data = jsonDecode(response.body);
-print(data['results']);`,
-    pythonSnippet: `import requests
+print(data['results']);`;
+    },
+    pythonFn: (p) => {
+      const q = new URLSearchParams(p).toString();
+      return `import requests
 
-response = requests.get('http://localhost:3000/api/ingredients', params={'query': 'turmeric', 'limit': 10})
+response = requests.get('http://localhost:3000/api/ingredients?${q}')
 data = response.json()
-print(data['results'])`,
+print(data['results'])`;
+    },
   },
   {
     id: "quality-metrics",
@@ -72,15 +77,15 @@ print(data['results'])`,
     title: "Data Quality & Anomaly Detector Metrics",
     description: "Retrieve real-time database health score, potential duplicate candidate pairs, orphan ingredient lists, and un-enriched metadata stats.",
     params: [],
-    curl: `curl -X GET "http://localhost:3000/api/admin/quality"`,
-    tsSnippet: `const res = await fetch('/api/admin/quality');
+    curlFn: () => `curl -X GET "http://localhost:3000/api/admin/quality"`,
+    tsFn: () => `const res = await fetch('/api/admin/quality');
 const quality = await res.json();
 console.log('Health Score:', quality.healthScore);`,
-    dartSnippet: `final url = Uri.parse('https://your-api-domain.com/api/admin/quality');
+    dartFn: () => `final url = Uri.parse('https://your-api-domain.com/api/admin/quality');
 final response = await http.get(url);
 final quality = jsonDecode(response.body);
 print('Health Score: \${quality['healthScore']}');`,
-    pythonSnippet: `import requests
+    pythonFn: () => `import requests
 
 res = requests.get('http://localhost:3000/api/admin/quality')
 print('Health Score:', res.json()['healthScore'])`,
@@ -92,15 +97,15 @@ print('Health Score:', res.json()['healthScore'])`,
     title: "Culinary & Regional Intelligence Analytics",
     description: "Fetch market distribution across Macro-Regions, South Asian State Hierarchies (Punjab, Kerala, Tamil Nadu, etc.), Cuisines, and Flavor Profiles.",
     params: [],
-    curl: `curl -X GET "http://localhost:3000/api/admin/analytics"`,
-    tsSnippet: `const res = await fetch('/api/admin/analytics');
+    curlFn: () => `curl -X GET "http://localhost:3000/api/admin/analytics"`,
+    tsFn: () => `const res = await fetch('/api/admin/analytics');
 const analytics = await res.json();
 console.log(analytics.southAsianSubregions);`,
-    dartSnippet: `final url = Uri.parse('https://your-api-domain.com/api/admin/analytics');
+    dartFn: () => `final url = Uri.parse('https://your-api-domain.com/api/admin/analytics');
 final response = await http.get(url);
 final analytics = jsonDecode(response.body);
 print(analytics['southAsianSubregions']);`,
-    pythonSnippet: `import requests
+    pythonFn: () => `import requests
 
 res = requests.get('http://localhost:3000/api/admin/analytics')
 print(res.json()['southAsianSubregions'])`,
@@ -112,37 +117,54 @@ print(res.json()['southAsianSubregions'])`,
     title: "Trigger 6-Tier Image Ingestion Waterfall",
     description: "Enrich missing ingredient image using culinary-scored 6-tier open-source waterfall (Wikidata SPARQL, Wikipedia Lead, Wikimedia Search, Open Food Facts, Unsplash, Pexels).",
     params: [
-      { name: "ingredientId", type: "string (UUID)", required: true, desc: "Target ingredient UUID" },
+      { name: "ingredientId", type: "string (UUID)", required: true, defaultVal: "d3b07384-d113-40e4-a74d-5c628e08d660", desc: "Target ingredient UUID" },
     ],
-    curl: `curl -X POST "http://localhost:3000/api/ingredients/enhance/image" \\
+    curlFn: (p) => `curl -X POST "http://localhost:3000/api/ingredients/enhance/image" \\
   -H "Content-Type: application/json" \\
-  -d '{"ingredientId": "d3b07384-d113-40e4-a74d-5c628e08d660"}'`,
-    tsSnippet: `const res = await fetch('/api/ingredients/enhance/image', {
+  -d '{"ingredientId": "${p.ingredientId || "UUID"}"}'`,
+    tsFn: (p) => `const res = await fetch('/api/ingredients/enhance/image', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ ingredientId: 'UUID_HERE' })
+  body: JSON.stringify({ ingredientId: '${p.ingredientId || "UUID"}' })
 });
 const updated = await res.json();`,
-    dartSnippet: `final url = Uri.parse('https://your-api-domain.com/api/ingredients/enhance/image');
+    dartFn: (p) => `final url = Uri.parse('https://your-api-domain.com/api/ingredients/enhance/image');
 final response = await http.post(
   url,
   headers: {'Content-Type': 'application/json'},
-  body: jsonEncode({'ingredientId': 'UUID_HERE'}),
+  body: jsonEncode({'ingredientId': '${p.ingredientId || "UUID"}'}),
 );`,
-    pythonSnippet: `import requests
+    pythonFn: (p) => `import requests
 
-res = requests.post('http://localhost:3000/api/ingredients/enhance/image', json={'ingredientId': 'UUID_HERE'})
+res = requests.post('http://localhost:3000/api/ingredients/enhance/image', json={'ingredientId': '${p.ingredientId || "UUID"}'})
 print(res.json())`,
   },
 ];
 
 export default function DocumentationPage() {
   const [selectedEndpoint, setSelectedEndpoint] = useState<EndpointInfo>(ENDPOINTS[0]);
+  const [paramValues, setParamValues] = useState<Record<string, string>>({ query: "turmeric", region: "South Asia", limit: "10" });
   const [codeLang, setCodeLang] = useState<"curl" | "ts" | "dart" | "python">("curl");
   const [copied, setCopied] = useState(false);
   const [viewMode, setViewMode] = useState<"interactive" | "redoc">("interactive");
   const [testResult, setTestResult] = useState<string | null>(null);
   const [testLoading, setTestLoading] = useState(false);
+  const [testStatus, setTestStatus] = useState<number | null>(null);
+
+  const handleSelectEndpoint = (ep: EndpointInfo) => {
+    setSelectedEndpoint(ep);
+    setTestResult(null);
+    setTestStatus(null);
+    const initial: Record<string, string> = {};
+    ep.params.forEach((p) => {
+      if (p.defaultVal) initial[p.name] = p.defaultVal;
+    });
+    setParamValues(initial);
+  };
+
+  const handleParamChange = (name: string, val: string) => {
+    setParamValues((prev) => ({ ...prev, [name]: val }));
+  };
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -153,11 +175,32 @@ export default function DocumentationPage() {
   const handleTryItOut = async () => {
     setTestLoading(true);
     setTestResult(null);
+    setTestStatus(null);
     try {
-      const res = await fetch(selectedEndpoint.path);
+      let url = selectedEndpoint.path;
+      let options: RequestInit = { method: selectedEndpoint.method };
+
+      if (selectedEndpoint.method === "GET") {
+        const activeParams: Record<string, string> = {};
+        Object.entries(paramValues).forEach(([k, v]) => {
+          if (v.trim()) activeParams[k] = v.trim();
+        });
+        const q = new URLSearchParams(activeParams).toString();
+        if (q) url += `?${q}`;
+      } else if (selectedEndpoint.method === "POST") {
+        options = {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(paramValues),
+        };
+      }
+
+      const res = await fetch(url, options);
+      setTestStatus(res.status);
       const data = await res.json();
       setTestResult(JSON.stringify(data, null, 2));
     } catch (err: any) {
+      setTestStatus(500);
       setTestResult(JSON.stringify({ error: err.message }, null, 2));
     } finally {
       setTestLoading(false);
@@ -165,11 +208,16 @@ export default function DocumentationPage() {
   };
 
   const getActiveSnippet = () => {
+    const activeParams: Record<string, string> = {};
+    Object.entries(paramValues).forEach(([k, v]) => {
+      if (v.trim()) activeParams[k] = v.trim();
+    });
+
     switch (codeLang) {
-      case "curl": return selectedEndpoint.curl;
-      case "ts": return selectedEndpoint.tsSnippet;
-      case "dart": return selectedEndpoint.dartSnippet;
-      case "python": return selectedEndpoint.pythonSnippet;
+      case "curl": return selectedEndpoint.curlFn(activeParams);
+      case "ts": return selectedEndpoint.tsFn(activeParams);
+      case "dart": return selectedEndpoint.dartFn(activeParams);
+      case "python": return selectedEndpoint.pythonFn(activeParams);
     }
   };
 
@@ -188,10 +236,10 @@ export default function DocumentationPage() {
               </span>
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <BookOpen className="w-8 h-8 text-primary" /> FoodRepo Developer Documentation & API Explorer
+              <BookOpen className="w-8 h-8 text-primary" /> FoodRepo Developer Documentation & Interactive API Playground
             </h1>
             <p className="text-muted-foreground text-sm">
-              Explore interactive endpoints, copy-paste production SDK snippets, and test live queries against 20,800+ culinary ingredients.
+              Explore interactive parameters, copy production SDK snippets, and test live queries against 20,800+ culinary ingredients.
             </p>
           </div>
 
@@ -250,10 +298,7 @@ export default function DocumentationPage() {
                 {ENDPOINTS.map((ep) => (
                   <button
                     key={ep.id}
-                    onClick={() => {
-                      setSelectedEndpoint(ep);
-                      setTestResult(null);
-                    }}
+                    onClick={() => handleSelectEndpoint(ep)}
                     className={`w-full text-left p-3.5 rounded-xl border transition-all ${
                       selectedEndpoint.id === ep.id
                         ? "bg-primary/10 border-primary/40 text-foreground shadow-sm"
@@ -297,31 +342,29 @@ export default function DocumentationPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   
-                  {/* Query Parameters Table */}
+                  {/* Interactive Parameter Inputs */}
                   {selectedEndpoint.params.length > 0 && (
-                    <div>
-                      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                        Parameters ({selectedEndpoint.params.length})
-                      </h4>
-                      <div className="overflow-x-auto rounded-lg border border-border">
-                        <table className="w-full text-left text-xs">
-                          <thead className="bg-muted/50 text-muted-foreground font-semibold border-b border-border">
-                            <tr>
-                              <th className="p-2.5">Name</th>
-                              <th className="p-2.5">Type</th>
-                              <th className="p-2.5">Description</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-border">
-                            {selectedEndpoint.params.map((p) => (
-                              <tr key={p.name}>
-                                <td className="p-2.5 font-mono font-semibold text-primary">{p.name}</td>
-                                <td className="p-2.5 text-muted-foreground">{p.type}</td>
-                                <td className="p-2.5 text-muted-foreground">{p.desc}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        <Sliders className="w-4 h-4 text-primary" /> Interactive Query Parameters
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 rounded-xl border border-border bg-muted/20">
+                        {selectedEndpoint.params.map((p) => (
+                          <div key={p.name} className="space-y-1">
+                            <label className="text-xs font-mono font-semibold text-foreground flex items-center justify-between">
+                              <span>{p.name} {p.required && <span className="text-rose-500">*</span>}</span>
+                              <span className="text-[10px] text-muted-foreground">{p.type}</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={paramValues[p.name] ?? ""}
+                              onChange={(e) => handleParamChange(p.name, e.target.value)}
+                              placeholder={p.defaultVal || p.desc}
+                              className="w-full px-3 py-1.5 rounded-md border border-input bg-background text-sm font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                            />
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -370,8 +413,10 @@ export default function DocumentationPage() {
                     {testResult && (
                       <div className="mt-4 space-y-2">
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span className="font-semibold text-emerald-500">200 OK — Live API Response</span>
-                          <span>Response JSON</span>
+                          <span className={`font-semibold ${testStatus === 200 ? "text-emerald-500" : "text-rose-500"}`}>
+                            {testStatus} {testStatus === 200 ? "OK" : "Response"} — Live API Result
+                          </span>
+                          <span>JSON Payload</span>
                         </div>
                         <pre className="p-4 rounded-xl bg-slate-950 text-emerald-400 font-mono text-xs max-h-80 overflow-y-auto border border-border/40">
                           <code>{testResult}</code>
