@@ -52,13 +52,37 @@ export async function getIngredientsByIds(ids: string[]) {
 }
 
 /**
- * Merge arrays and remove duplicates
+ * Merge arrays and remove duplicates, ensuring strictly clean strings
  */
 function mergeArrays(existing: any[] = [], incoming: any[] = []) {
-  const set = new Set(
-    [...(existing || []), ...(incoming || [])].map((i) => JSON.stringify(i)),
-  );
-  return Array.from(set).map((s) => JSON.parse(s));
+  const set = new Set<string>();
+  const result: string[] = [];
+
+  for (const item of [...(existing || []), ...(incoming || [])]) {
+    if (!item) continue;
+    let str = "";
+
+    if (typeof item === "string") {
+      str = item.trim();
+    } else if (typeof item === "object") {
+      const extracted = item.alias || item.name || item.value || item.text || item.label || item.title;
+      if (typeof extracted === "string") {
+        str = extracted.trim();
+      }
+    }
+
+    if (
+      str &&
+      str !== "[object Object]" &&
+      !str.includes("[object Object]") &&
+      !set.has(str.toLowerCase())
+    ) {
+      set.add(str.toLowerCase());
+      result.push(str);
+    }
+  }
+
+  return result;
 }
 
 /**

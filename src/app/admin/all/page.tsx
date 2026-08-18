@@ -224,8 +224,29 @@ export default function IngredientsPage() {
   };
 
   // Helper to format arrays for display
-  const formatValue = (val: any) =>
-    Array.isArray(val) ? val.join(", ") : val || "—";
+  const formatValue = (val: any) => {
+    if (!val) return "—";
+    if (Array.isArray(val)) {
+      const cleaned = val
+        .map((v) => {
+          if (!v) return "";
+          if (typeof v === "string") {
+            return v === "[object Object]" || v.includes("[object Object]") ? "" : v.trim();
+          }
+          if (typeof v === "object") {
+            const str = v.name || v.alias || v.value || v.text || v.label || v.title;
+            return typeof str === "string" && str !== "[object Object]" ? str.trim() : "";
+          }
+          return String(v);
+        })
+        .filter((v) => Boolean(v) && v !== "[object Object]");
+      return cleaned.length > 0 ? cleaned.join(", ") : "—";
+    }
+    if (typeof val === "string" && (val === "[object Object]" || val.includes("[object Object]"))) {
+      return "—";
+    }
+    return val;
+  };
 
   const getFlavorValue = (row: Ingredient) =>
     formatValue(row.flavorProfile || row.flavor_profile);
