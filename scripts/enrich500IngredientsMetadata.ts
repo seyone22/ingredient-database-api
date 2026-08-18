@@ -9,8 +9,8 @@ import { getDatabaseStats } from "../src/services/metaService";
 const CONFIG = {
   GEMINI_MODEL: "gemini-flash-latest",
   BATCH_SIZE: 50,
-  TARGET_COUNT: 500,
-  CONCURRENCY: 3,
+  TARGET_COUNT: 1000,
+  CONCURRENCY: 4,
   MAX_BUDGET_USD: 2.00,
 };
 
