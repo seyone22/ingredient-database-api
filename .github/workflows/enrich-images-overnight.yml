@@ -1,0 +1,40 @@
+name: Overnight Ingredient Image Enrichment
+
+on:
+  schedule:
+    # Runs every night at 2:00 AM UTC (7:30 AM IST)
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      max_items:
+        description: 'Maximum number of missing items to process (default: 20000)'
+        required: false
+        default: '20000'
+
+jobs:
+  enrich-images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360 # 6 hours max execution
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Run Overnight Image Enrichment Pipeline
+        env:
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          MAX_ITEMS: ${{ github.event.inputs.max_items || '20000' }}
+        run: |
+          npx tsx scripts/enrichIngredientImagesBatch.ts
