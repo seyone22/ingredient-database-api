@@ -1,68 +1,77 @@
-import {NextRequest, NextResponse} from "next/server";
-import {addIngredient, searchIngredients} from "@/services/ingredientService";
+import { NextRequest, NextResponse } from "next/server";
+import { addIngredient, searchIngredients } from "@/services/ingredientService";
 
 export async function GET(req: NextRequest) {
-    const {searchParams} = new URL(req.url);
-    const query = searchParams.get("query")?.trim() || "";
+  const { searchParams } = new URL(req.url);
+  const query = searchParams.get("query")?.trim() || "";
 
-    // Ensure safe pagination parsing
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "20", 10);
-    const autosuggest = searchParams.get("autosuggest") === "true";
-    const includeProducts = searchParams.get("includeProducts") === "true";
+  // Ensure safe pagination parsing
+  const page = parseInt(searchParams.get("page") || "1", 10);
+  const limit = parseInt(searchParams.get("limit") || "20", 10);
+  const autosuggest = searchParams.get("autosuggest") === "true";
+  const includeProducts = searchParams.get("includeProducts") === "true";
 
-    // Optional structured filters
-    const country = searchParams.get("country");
-    const cuisine = searchParams.get("cuisine");
-    const region = searchParams.get("region");
-    const flavor = searchParams.get("flavor");
+  // Optional structured filters
+  const country = searchParams.get("country");
+  const cuisine = searchParams.get("cuisine");
+  const region = searchParams.get("region");
+  const flavor = searchParams.get("flavor");
 
-    if (!query) {
-        return NextResponse.json({error: "Missing query parameter"}, {status: 400});
+  if (!query) {
+    return NextResponse.json(
+      { error: "Missing query parameter" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const data = await searchIngredients(query, {
+      page: isNaN(page) ? 1 : page,
+      limit: isNaN(limit) ? 20 : limit,
+      autosuggest,
+      country,
+      cuisine,
+      region,
+      flavor,
+      includeProducts,
+    });
+
+    if (!data.results || data.results.length === 0) {
+      return NextResponse.json(
+        { error: "No ingredients found" },
+        { status: 404 },
+      );
     }
 
-    try {
-        const data = await searchIngredients(query, {
-            page: isNaN(page) ? 1 : page,
-            limit: isNaN(limit) ? 20 : limit,
-            autosuggest,
-            country,
-            cuisine,
-            region,
-            flavor,
-            includeProducts
-        });
-
-        if (!data.results || data.results.length === 0) {
-            return NextResponse.json({error: "No ingredients found"}, {status: 404});
-        }
-
-        return NextResponse.json(data);
-    } catch (err: any) {
-        console.error("Text Search Error:", err);
-        return NextResponse.json(
-            {error: "Server error", details: err.message || err},
-            {status: 500}
-        );
-    }
+    return NextResponse.json(data);
+  } catch (err: any) {
+    console.error("Text Search Error:", err);
+    return NextResponse.json(
+      { error: "Server error", details: err.message || err },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(req: NextRequest) {
-    try {
-        const body = await req.json();
+  try {
+    const body = await req.json();
 
-        if (!body.name || !body.name.trim()) {
-            return NextResponse.json({error: "Name is required"}, {status: 400});
-        }
-
-        const ingredient = await addIngredient(body);
-
-        return NextResponse.json({message: "Ingredient added", ingredient}, {status: 201});
-    } catch (err: any) {
-        console.error("Add Ingredient Error:", err);
-        return NextResponse.json(
-            {error: err.message || "Server error"},
-            {status: 500}
-        );
+    if (!body.name || !body.name.trim()) {
+      return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
+
+    const ingredient = await addIngredient(body);
+
+    return NextResponse.json(
+      { message: "Ingredient added", ingredient },
+      { status: 201 },
+    );
+  } catch (err: any) {
+    console.error("Add Ingredient Error:", err);
+    return NextResponse.json(
+      { error: err.message || "Server error" },
+      { status: 500 },
+    );
+  }
 }

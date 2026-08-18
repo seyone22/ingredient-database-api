@@ -6,13 +6,13 @@ import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 
 export default defineConfig({
-    dialect: "postgresql",
-    schema: "./src/utils/schema.ts",
-    out: "./drizzle",
-    dbCredentials: {
-        // Now this will correctly read the loaded variable
-        url: process.env.DATABASE_URL!,
-    },
-    schemaFilter: ["foodrepo"],
-    extensionsFilters: ["postgis"],
+  dialect: "postgresql",
+  schema: "./src/utils/schema.ts",
+  out: "./drizzle",
+  dbCredentials: {
+    // Now this will correctly read the loaded variable
+    url: process.env.DATABASE_URL!,
+  },
+  schemaFilter: ["foodrepo"],
+  extensionsFilters: ["postgis"],
 });

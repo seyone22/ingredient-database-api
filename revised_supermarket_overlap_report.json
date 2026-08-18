@@ -1,0 +1,45 @@
+{
+  "timestamp": "2026-08-18T15:09:08.982Z",
+  "totalRawSkus": 17907,
+  "totalClusters": 16438,
+  "storeDistribution": {
+    "1": 15854,
+    "2": 383,
+    "3": 184,
+    "4": 16,
+    "5": 1
+  },
+  "multiStoreClustersCount": 584,
+  "storeStats": {
+    "Arpico": {
+      "totalMatchedPrice": 254742.15097999998,
+      "count": 418,
+      "cheapestCount": 263,
+      "expensiveCount": 40
+    },
+    "Keells": {
+      "totalMatchedPrice": 329833,
+      "count": 508,
+      "cheapestCount": 97,
+      "expensiveCount": 65
+    },
+    "SPAR": {
+      "totalMatchedPrice": 234207,
+      "count": 374,
+      "cheapestCount": 173,
+      "expensiveCount": 57
+    },
+    "Glomark": {
+      "totalMatchedPrice": 56728.75,
+      "count": 77,
+      "cheapestCount": 51,
+      "expensiveCount": 11
+    },
+    "Cargills": {
+      "totalMatchedPrice": 6100,
+      "count": 10,
+      "cheapestCount": 0,
+      "expensiveCount": 9
+    }
+  }
+}

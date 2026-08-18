@@ -1,0 +1,128 @@
+{
+  "timestamp": "2026-08-18T15:30:37.018Z",
+  "totalIngredients": "20839",
+  "totalProducts": "17907",
+  "totalMappings": "17907",
+  "mappedProductsCount": "10841",
+  "unmappedProductsCount": 7066,
+  "coveragePct": 60.5,
+  "storeBreakdown": [
+    {
+      "storeName": "Arpico",
+      "totalProducts": "4820",
+      "mappedProducts": "2724"
+    },
+    {
+      "storeName": "Cargills",
+      "totalProducts": "1192",
+      "mappedProducts": "599"
+    },
+    {
+      "storeName": "Glomark",
+      "totalProducts": "1420",
+      "mappedProducts": "854"
+    },
+    {
+      "storeName": "Keells",
+      "totalProducts": "7513",
+      "mappedProducts": "4654"
+    },
+    {
+      "storeName": "SPAR",
+      "totalProducts": "2962",
+      "mappedProducts": "2010"
+    }
+  ],
+  "methodStats": [
+    {
+      "method": "chunked_precision_curation",
+      "count": "17907",
+      "avgConfidence": 0.9800000190734863,
+      "highConfCount": "17907",
+      "medConfCount": "0",
+      "lowConfCount": "0"
+    }
+  ],
+  "topIngredients": [
+    {
+      "ingredient_name": "tea",
+      "linked_product_count": "429"
+    },
+    {
+      "ingredient_name": "chicken",
+      "linked_product_count": "381"
+    },
+    {
+      "ingredient_name": "Chocolate",
+      "linked_product_count": "355"
+    },
+    {
+      "ingredient_name": "cream",
+      "linked_product_count": "303"
+    },
+    {
+      "ingredient_name": "cheese",
+      "linked_product_count": "295"
+    },
+    {
+      "ingredient_name": "milk",
+      "linked_product_count": "292"
+    },
+    {
+      "ingredient_name": "Rice",
+      "linked_product_count": "243"
+    },
+    {
+      "ingredient_name": "baby",
+      "linked_product_count": "234"
+    },
+    {
+      "ingredient_name": "biscuit",
+      "linked_product_count": "178"
+    },
+    {
+      "ingredient_name": "coffee",
+      "linked_product_count": "174"
+    },
+    {
+      "ingredient_name": "elephant",
+      "linked_product_count": "157"
+    },
+    {
+      "ingredient_name": "coconut",
+      "linked_product_count": "142"
+    },
+    {
+      "ingredient_name": "fish",
+      "linked_product_count": "135"
+    },
+    {
+      "ingredient_name": "yoghurt",
+      "linked_product_count": "135"
+    },
+    {
+      "ingredient_name": "curry",
+      "linked_product_count": "134"
+    },
+    {
+      "ingredient_name": "drink",
+      "linked_product_count": "131"
+    },
+    {
+      "ingredient_name": "fruit",
+      "linked_product_count": "130"
+    },
+    {
+      "ingredient_name": "butter",
+      "linked_product_count": "111"
+    },
+    {
+      "ingredient_name": "plastic",
+      "linked_product_count": "110"
+    },
+    {
+      "ingredient_name": "vanilla",
+      "linked_product_count": "102"
+    }
+  ]
+}

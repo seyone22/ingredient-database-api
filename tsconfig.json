@@ -2,20 +2,14 @@
   "compilerOptions": {
     /* ------------ Core Setup ------------ */
     "target": "es2020",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     /* ------------ Module System ------------ */
     "module": "commonjs",
     "moduleResolution": "node",
     /* ------------ Paths / Aliases ------------ */
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     },
     /* ------------ Quality Settings ------------ */
     "strict": true,
@@ -37,17 +31,8 @@
     ]
   },
   "ts-node": {
-    "require": [
-      "tsconfig-paths/register"
-    ]
+    "require": ["tsconfig-paths/register"]
   },
-  "include": [
-    "scripts",
-    "src",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["scripts", "src", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

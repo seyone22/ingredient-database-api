@@ -1,8 +1,8 @@
 // utils/normalizeQuantityUnit.ts
 
 export interface NormalizedQtyUnit {
-    quantity: number;
-    unit: string;
+  quantity: number;
+  unit: string;
 }
 
 /**
@@ -11,105 +11,111 @@ export interface NormalizedQtyUnit {
  * Normalizes all weights to grams, volumes to milliliters, and units to "unit" for pieces.
  */
 export function normalizeQuantityUnit(raw: any): NormalizedQtyUnit {
-    let quantity = 1;
-    let unit = raw.unit?.toLowerCase() || "";
+  let quantity = 1;
+  let unit = (typeof raw === "object" && raw?.unit) ? raw.unit.toLowerCase() : "";
 
-    if (!raw?.name && !raw?.title && !raw?.ItemName) {
-        throw new Error(
-            `❌ Missing name or title in raw object! Received:\n${JSON.stringify(raw, null, 2)}`
-        );
-    }
+  const nameStr = typeof raw === "string" ? raw : (raw?.name || raw?.title || raw?.ItemName);
 
-    const name = (raw.name || raw.title || raw.ItemName).toLowerCase();
+  if (!nameStr) {
+    throw new Error(
+      `❌ Missing name or title in raw object! Received:\n${JSON.stringify(raw, null, 2)}`,
+    );
+  }
 
-    // 1️⃣ Handle multi-packs, e.g., "2x400g", "6 pack of 330ml"
-    const multiPackMatch = name.match(/(\d+)\s*[xX*]\s*(\d+(?:\.\d+)?)\s*(g|kg|ml|l)/i);
-    if (multiPackMatch) {
-        const packCount = parseFloat(multiPackMatch[1]);
-        const packQty = parseFloat(multiPackMatch[2]);
-        const packUnit = multiPackMatch[3].toLowerCase();
+  const name = nameStr.toLowerCase();
 
-        switch (packUnit) {
-            case "g":
-                quantity = packCount * packQty;
-                unit = "g";
-                break;
-            case "kg":
-                quantity = packCount * packQty * 1000;
-                unit = "g";
-                break;
-            case "ml":
-                quantity = packCount * packQty;
-                unit = "ml";
-                break;
-            case "l":
-                quantity = packCount * packQty * 1000;
-                unit = "ml";
-                break;
-            default:
-                quantity = packCount * packQty;
-                unit = packUnit;
-        }
-        return { quantity, unit };
-    }
+  // 1️⃣ Handle multi-packs, e.g., "2x400g", "6 pack of 330ml"
+  const multiPackMatch = name.match(
+    /(\d+)\s*[xX*]\s*(\d+(?:\.\d+)?)\s*(g|kg|ml|l)/i,
+  );
+  if (multiPackMatch) {
+    const packCount = parseFloat(multiPackMatch[1]);
+    const packQty = parseFloat(multiPackMatch[2]);
+    const packUnit = multiPackMatch[3].toLowerCase();
 
-    // 2️⃣ Match simple quantity in name, e.g., "400g", "1kg", "500ml"
-    const qtyMatch = name.match(/(\d+(?:\.\d+)?)\s*(g|kg|ml|l|ltrs?|pack|pcs|piece|bottle|bag)/i);
-    if (qtyMatch) {
-        const parsedQty = parseFloat(qtyMatch[1]);
-        const parsedUnit = qtyMatch[2].toLowerCase();
-
-        switch (parsedUnit) {
-            case "g":
-                quantity = parsedQty;
-                unit = "g";
-                break;
-            case "kg":
-                quantity = parsedQty * 1000;
-                unit = "g";
-                break;
-            case "ml":
-                quantity = parsedQty;
-                unit = "ml";
-                break;
-            case "l":
-            case "ltr":
-            case "ltrs":
-                quantity = parsedQty * 1000;
-                unit = "ml";
-                break;
-            case "pack":
-            case "pcs":
-            case "piece":
-            case "bottle":
-            case "bag":
-                quantity = parsedQty;
-                unit = "unit";
-                break;
-            default:
-                quantity = parsedQty;
-                unit = parsedUnit;
-        }
-        return { quantity, unit };
-    }
-
-    // 3️⃣ Heuristics for broken fields
-    if ((unit === "kg" || unit === "") && raw.quantity) {
-        // Assume kg → grams
-        quantity = raw.quantity * 1000;
+    switch (packUnit) {
+      case "g":
+        quantity = packCount * packQty;
         unit = "g";
-    } else if (unit === "no" || unit === "ea") {
-        quantity = 1;
-        unit = "unit";
+        break;
+      case "kg":
+        quantity = packCount * packQty * 1000;
+        unit = "g";
+        break;
+      case "ml":
+        quantity = packCount * packQty;
+        unit = "ml";
+        break;
+      case "l":
+        quantity = packCount * packQty * 1000;
+        unit = "ml";
+        break;
+      default:
+        quantity = packCount * packQty;
+        unit = packUnit;
     }
-
-    // 4️⃣ Fallback for completely missing or empty unit
-    if (!unit || unit === "") {
-        unit = "kg";
-        quantity = quantity * 1; // normalize to grams
-    }
-
     return { quantity, unit };
+  }
+
+  // 2️⃣ Match simple quantity in name, e.g., "400g", "1kg", "500ml"
+  const qtyMatch = name.match(
+    /(\d+(?:\.\d+)?)\s*(g|kg|ml|l|ltrs?|pack|pcs|piece|bottle|bag)/i,
+  );
+  if (qtyMatch) {
+    const parsedQty = parseFloat(qtyMatch[1]);
+    const parsedUnit = qtyMatch[2].toLowerCase();
+
+    switch (parsedUnit) {
+      case "g":
+        quantity = parsedQty;
+        unit = "g";
+        break;
+      case "kg":
+        quantity = parsedQty * 1000;
+        unit = "g";
+        break;
+      case "ml":
+        quantity = parsedQty;
+        unit = "ml";
+        break;
+      case "l":
+      case "ltr":
+      case "ltrs":
+        quantity = parsedQty * 1000;
+        unit = "ml";
+        break;
+      case "pack":
+      case "pcs":
+      case "piece":
+      case "bottle":
+      case "bag":
+        quantity = parsedQty;
+        unit = "unit";
+        break;
+      default:
+        quantity = parsedQty;
+        unit = parsedUnit;
+    }
+    return { quantity, unit };
+  }
+
+  // 3️⃣ Heuristics for broken fields
+  if ((unit === "kg" || unit === "") && raw.quantity) {
+    // Assume kg → grams
+    quantity = raw.quantity * 1000;
+    unit = "g";
+  } else if (unit === "no" || unit === "ea") {
+    quantity = 1;
+    unit = "unit";
+  }
+
+  // 4️⃣ Fallback for completely missing or empty unit
+  if (!unit || unit === "") {
+    unit = "kg";
+    quantity = quantity * 1; // normalize to grams
+  }
+
+  return { quantity, unit };
 }
 
 /**
@@ -124,25 +130,25 @@ export function normalizeQuantityUnit(raw: any): NormalizedQtyUnit {
  *  - null, undefined, NaN → 0
  */
 export function normalizePrice(raw: any): number {
-    if (raw == null) return 0;
+  if (raw == null) return 0;
 
-    // If already a number (int or float)
-    if (typeof raw === "number" && !isNaN(raw)) {
-        return raw;
-    }
+  // If already a number (int or float)
+  if (typeof raw === "number" && !isNaN(raw)) {
+    return raw;
+  }
 
-    // Convert to string and clean up
-    const str = String(raw)
-        .replace(/[^\d.,]/g, "") // Remove all non-numeric, non-dot, non-comma chars
-        .replace(/,/g, ""); // Remove thousand separators
+  // Convert to string and clean up
+  const str = String(raw)
+    .replace(/[^\d.,]/g, "") // Remove all non-numeric, non-dot, non-comma chars
+    .replace(/,/g, ""); // Remove thousand separators
 
-    // Parse as float
-    const parsed = parseFloat(str);
+  // Parse as float
+  const parsed = parseFloat(str);
 
-    if (isNaN(parsed)) {
-        console.warn(`⚠️ normalizePrice: failed to parse price from "${raw}"`);
-        return 0;
-    }
+  if (isNaN(parsed)) {
+    console.warn(`⚠️ normalizePrice: failed to parse price from "${raw}"`);
+    return 0;
+  }
 
-    return parsed;
+  return parsed;
 }

@@ -10,7 +10,7 @@
   --foreground: #222222;
 
   /* Your Custom Purple */
-  --primary: #B57EDC;
+  --primary: #b57edc;
   --primary-foreground: #ffffff;
 
   /* Standard shadcn variables */
@@ -43,7 +43,7 @@
   --foreground: oklch(0.985 0 0);
 
   /* Keep purple for dark mode, or tweak it if needed */
-  --primary: #B57EDC;
+  --primary: #b57edc;
   --primary-foreground: #ffffff;
 
   --card: oklch(0.205 0 0);
