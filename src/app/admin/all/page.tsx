@@ -6,6 +6,7 @@ import Footer from "@/components/footer/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -32,7 +33,9 @@ interface Ingredient {
   cuisine?: string[];
   region?: string[];
   flavor_profile?: string[];
+  flavorProfile?: string[];
   aliases?: string[];
+  provenance?: string;
   comment?: string;
 }
 
@@ -188,12 +191,15 @@ export default function IngredientsPage() {
               .filter(Boolean)
           : val;
 
+      const flavorVal = editFormData.flavorProfile || editFormData.flavor_profile;
+
       const payload = {
         ...editFormData,
         country: formatArray(editFormData.country),
         cuisine: formatArray(editFormData.cuisine),
         region: formatArray(editFormData.region),
-        flavor_profile: formatArray(editFormData.flavor_profile),
+        flavor_profile: formatArray(flavorVal),
+        flavorProfile: formatArray(flavorVal),
         aliases: formatArray(editFormData.aliases),
       };
 
@@ -220,6 +226,9 @@ export default function IngredientsPage() {
   // Helper to format arrays for display
   const formatValue = (val: any) =>
     Array.isArray(val) ? val.join(", ") : val || "—";
+
+  const getFlavorValue = (row: Ingredient) =>
+    formatValue(row.flavorProfile || row.flavor_profile);
 
   return (
     <div className="min-h-screen flex flex-col bg-background font-sans antialiased">
@@ -274,11 +283,11 @@ export default function IngredientsPage() {
         </form>
 
         {/* Data Table */}
-        <div className="rounded-md border bg-card">
+        <div className="rounded-md border bg-card overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[50px]">
+                <TableHead className="w-[40px]">
                   <Checkbox
                     checked={
                       ingredients.length > 0 &&
@@ -288,18 +297,21 @@ export default function IngredientsPage() {
                     aria-label="Select all"
                   />
                 </TableHead>
-                <TableHead className="min-w-[150px]">Name</TableHead>
-                <TableHead>Country</TableHead>
-                <TableHead>Cuisine</TableHead>
-                <TableHead>Flavor Profile</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="min-w-[140px]">Name</TableHead>
+                <TableHead className="min-w-[130px]">Country</TableHead>
+                <TableHead className="min-w-[130px]">Cuisine</TableHead>
+                <TableHead className="min-w-[130px]">Region</TableHead>
+                <TableHead className="min-w-[140px]">Flavor Profile</TableHead>
+                <TableHead className="min-w-[130px]">Aliases</TableHead>
+                <TableHead className="min-w-[130px]">Provenance</TableHead>
+                <TableHead className="text-right w-[80px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {ingredients.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={9}
                     className="h-24 text-center text-muted-foreground"
                   >
                     No results found.
@@ -357,7 +369,7 @@ export default function IngredientsPage() {
                             placeholder="US, Italy, etc."
                           />
                         ) : (
-                          <span className="truncate block max-w-[150px]">
+                          <span className="truncate block max-w-[140px]" title={formatValue(row.country)}>
                             {formatValue(row.country)}
                           </span>
                         )}
@@ -377,29 +389,81 @@ export default function IngredientsPage() {
                             className="h-8"
                           />
                         ) : (
-                          <span className="truncate block max-w-[150px]">
+                          <span className="truncate block max-w-[140px]" title={formatValue(row.cuisine)}>
                             {formatValue(row.cuisine)}
                           </span>
                         )}
                       </TableCell>
 
-                      {/* Flavor Cell */}
+                      {/* Region Cell */}
                       <TableCell>
                         {isEditing ? (
                           <Input
-                            value={formatValue(editFormData.flavor_profile)}
+                            value={formatValue(editFormData.region)}
                             onChange={(e) =>
                               setEditFormData({
                                 ...editFormData,
+                                region: e.target.value as any,
+                              })
+                            }
+                            className="h-8"
+                          />
+                        ) : (
+                          <span className="truncate block max-w-[140px]" title={formatValue(row.region)}>
+                            {formatValue(row.region)}
+                          </span>
+                        )}
+                      </TableCell>
+
+                      {/* Flavor Profile Cell */}
+                      <TableCell>
+                        {isEditing ? (
+                          <Input
+                            value={getFlavorValue(editFormData as any)}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                flavorProfile: e.target.value as any,
                                 flavor_profile: e.target.value as any,
                               })
                             }
                             className="h-8"
                           />
                         ) : (
-                          <span className="truncate block max-w-[150px]">
-                            {formatValue(row.flavor_profile)}
+                          <span className="truncate block max-w-[140px]" title={getFlavorValue(row)}>
+                            {getFlavorValue(row)}
                           </span>
+                        )}
+                      </TableCell>
+
+                      {/* Aliases Cell */}
+                      <TableCell>
+                        {isEditing ? (
+                          <Input
+                            value={formatValue(editFormData.aliases)}
+                            onChange={(e) =>
+                              setEditFormData({
+                                ...editFormData,
+                                aliases: e.target.value as any,
+                              })
+                            }
+                            className="h-8"
+                          />
+                        ) : (
+                          <span className="truncate block max-w-[140px]" title={formatValue(row.aliases)}>
+                            {formatValue(row.aliases)}
+                          </span>
+                        )}
+                      </TableCell>
+
+                      {/* Provenance Cell */}
+                      <TableCell>
+                        {row.provenance ? (
+                          <Badge variant="outline" className="text-[11px] font-mono whitespace-nowrap">
+                            {row.provenance}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
 
