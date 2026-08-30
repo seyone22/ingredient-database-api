@@ -7,7 +7,9 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "biome check",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "infra:plan": "railway config plan",
+    "infra:apply": "railway config apply"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
@@ -50,6 +52,7 @@
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
     "drizzle-kit": "^0.31.10",
+    "railway": "^3.11.0",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.22.4",
