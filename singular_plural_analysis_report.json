@@ -1,0 +1,1095 @@
+{
+  "metadata": {
+    "generatedAt": "2026-08-26T16:15:47.335Z",
+    "counts": {
+      "totalIngredients": 20534,
+      "totalProducts": 18011,
+      "totalUsdaFoods": 7793,
+      "totalTermsAnalyzed": 92548
+    }
+  },
+  "statistics": {
+    "totalUniqueBaseKeys": 49703,
+    "totalSingularOnlyKeys": 46435,
+    "totalPluralOnlyKeys": 2530,
+    "totalDualFormKeys": 738,
+    "dualFormPercentage": "1.48%",
+    "globalCounts": {
+      "singular": 85315,
+      "plural": 7233,
+      "singularPrevalence": "92.18%",
+      "pluralPrevalence": "7.82%",
+      "singularToPluralRatio": "11.80"
+    }
+  },
+  "ingredientTableRedundancy": {
+    "collisionCount": 0,
+    "collisions": []
+  },
+  "topDualFormPairs": [
+    {
+      "baseKey": "beverage",
+      "singularForms": [
+        [
+          "beverage",
+          6
+        ]
+      ],
+      "pluralForms": [
+        [
+          "beverages",
+          444
+        ]
+      ],
+      "totalSingularOccurrences": 6,
+      "totalPluralOccurrences": 444,
+      "sources": [
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "snack",
+      "singularForms": [
+        [
+          "snack",
+          1
+        ]
+      ],
+      "pluralForms": [
+        [
+          "snacks",
+          138
+        ]
+      ],
+      "totalSingularOccurrences": 1,
+      "totalPluralOccurrences": 138,
+      "sources": [
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "biscuit",
+      "singularForms": [
+        [
+          "biscuit",
+          3
+        ]
+      ],
+      "pluralForms": [
+        [
+          "biscuits",
+          110
+        ]
+      ],
+      "totalSingularOccurrences": 3,
+      "totalPluralOccurrences": 110,
+      "sources": [
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "spice",
+      "singularForms": [
+        [
+          "spice",
+          2
+        ]
+      ],
+      "pluralForms": [
+        [
+          "spices",
+          106
+        ]
+      ],
+      "totalSingularOccurrences": 2,
+      "totalPluralOccurrences": 106,
+      "sources": [
+        "ingredients.name",
+        "ingredients.varieties",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "meat",
+      "singularForms": [
+        [
+          "meat",
+          71
+        ]
+      ],
+      "pluralForms": [
+        [
+          "meats",
+          2
+        ]
+      ],
+      "totalSingularOccurrences": 71,
+      "totalPluralOccurrences": 2,
+      "sources": [
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "cereal",
+      "singularForms": [
+        [
+          "cereal",
+          4
+        ]
+      ],
+      "pluralForms": [
+        [
+          "cereals",
+          54
+        ]
+      ],
+      "totalSingularOccurrences": 4,
+      "totalPluralOccurrences": 54,
+      "sources": [
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "vegetable",
+      "singularForms": [
+        [
+          "vegetable",
+          4
+        ]
+      ],
+      "pluralForms": [
+        [
+          "vegetables",
+          52
+        ]
+      ],
+      "totalSingularOccurrences": 4,
+      "totalPluralOccurrences": 52,
+      "sources": [
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "spread",
+      "singularForms": [
+        [
+          "spread",
+          4
+        ]
+      ],
+      "pluralForms": [
+        [
+          "spreads",
+          45
+        ]
+      ],
+      "totalSingularOccurrences": 4,
+      "totalPluralOccurrences": 45,
+      "sources": [
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "dairy",
+      "singularForms": [
+        [
+          "dairy",
+          48
+        ]
+      ],
+      "pluralForms": [
+        [
+          "dairies",
+          1
+        ]
+      ],
+      "totalSingularOccurrences": 48,
+      "totalPluralOccurrences": 1,
+      "sources": [
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "grain",
+      "singularForms": [
+        [
+          "grain",
+          4
+        ]
+      ],
+      "pluralForms": [
+        [
+          "grains",
+          39
+        ]
+      ],
+      "totalSingularOccurrences": 4,
+      "totalPluralOccurrences": 39,
+      "sources": [
+        "ingredients.aliases",
+        "ingredients.varieties",
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "fruit",
+      "singularForms": [
+        [
+          "fruit",
+          1
+        ]
+      ],
+      "pluralForms": [
+        [
+          "fruits",
+          41
+        ]
+      ],
+      "totalSingularOccurrences": 1,
+      "totalPluralOccurrences": 41,
+      "sources": [
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "perfume",
+      "singularForms": [
+        [
+          "perfume",
+          37
+        ]
+      ],
+      "pluralForms": [
+        [
+          "perfumes",
+          5
+        ]
+      ],
+      "totalSingularOccurrences": 37,
+      "totalPluralOccurrences": 5,
+      "sources": [
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "baby product",
+      "singularForms": [
+        [
+          "baby product",
+          9
+        ]
+      ],
+      "pluralForms": [
+        [
+          "baby products",
+          27
+        ]
+      ],
+      "totalSingularOccurrences": 9,
+      "totalPluralOccurrences": 27,
+      "sources": [
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "soap",
+      "singularForms": [
+        [
+          "soap",
+          18
+        ]
+      ],
+      "pluralForms": [
+        [
+          "soaps",
+          16
+        ]
+      ],
+      "totalSingularOccurrences": 18,
+      "totalPluralOccurrences": 16,
+      "sources": [
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "chocolate",
+      "singularForms": [
+        [
+          "chocolate",
+          17
+        ]
+      ],
+      "pluralForms": [
+        [
+          "chocolates",
+          11
+        ]
+      ],
+      "totalSingularOccurrences": 17,
+      "totalPluralOccurrences": 11,
+      "sources": [
+        "ingredients.varieties",
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "egg",
+      "singularForms": [
+        [
+          "egg",
+          3
+        ]
+      ],
+      "pluralForms": [
+        [
+          "eggs",
+          24
+        ]
+      ],
+      "totalSingularOccurrences": 3,
+      "totalPluralOccurrences": 24,
+      "sources": [
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "cake",
+      "singularForms": [
+        [
+          "cake",
+          2
+        ]
+      ],
+      "pluralForms": [
+        [
+          "cakes",
+          25
+        ]
+      ],
+      "totalSingularOccurrences": 2,
+      "totalPluralOccurrences": 25,
+      "sources": [
+        "ingredients.name",
+        "ingredients.varieties",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "medicinal",
+      "singularForms": [
+        [
+          "medicinal",
+          2
+        ]
+      ],
+      "pluralForms": [
+        [
+          "medicinals",
+          23
+        ]
+      ],
+      "totalSingularOccurrences": 2,
+      "totalPluralOccurrences": 23,
+      "sources": [
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "deodorant",
+      "singularForms": [
+        [
+          "deodorant",
+          13
+        ]
+      ],
+      "pluralForms": [
+        [
+          "deodorants",
+          11
+        ]
+      ],
+      "totalSingularOccurrences": 13,
+      "totalPluralOccurrences": 11,
+      "sources": [
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "jams & spread",
+      "singularForms": [
+        [
+          "jams & spread",
+          1
+        ]
+      ],
+      "pluralForms": [
+        [
+          "jams & spreads",
+          23
+        ]
+      ],
+      "totalSingularOccurrences": 1,
+      "totalPluralOccurrences": 23,
+      "sources": [
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "1pc",
+      "singularForms": [
+        [
+          "1pc",
+          18
+        ]
+      ],
+      "pluralForms": [
+        [
+          "1pcs",
+          3
+        ]
+      ],
+      "totalSingularOccurrences": 18,
+      "totalPluralOccurrences": 3,
+      "sources": [
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "noodle",
+      "singularForms": [
+        [
+          "noodle",
+          1
+        ]
+      ],
+      "pluralForms": [
+        [
+          "noodles",
+          18
+        ]
+      ],
+      "totalSingularOccurrences": 1,
+      "totalPluralOccurrences": 18,
+      "sources": [
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "baby diaper",
+      "singularForms": [
+        [
+          "baby diaper",
+          7
+        ]
+      ],
+      "pluralForms": [
+        [
+          "baby diapers",
+          10
+        ]
+      ],
+      "totalSingularOccurrences": 7,
+      "totalPluralOccurrences": 10,
+      "sources": [
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "diaper pant",
+      "singularForms": [
+        [
+          "diaper pant",
+          7
+        ]
+      ],
+      "pluralForms": [
+        [
+          "diaper pants",
+          10
+        ]
+      ],
+      "totalSingularOccurrences": 7,
+      "totalPluralOccurrences": 10,
+      "sources": [
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "air freshener",
+      "singularForms": [
+        [
+          "air freshener",
+          5
+        ]
+      ],
+      "pluralForms": [
+        [
+          "air fresheners",
+          11
+        ]
+      ],
+      "totalSingularOccurrences": 5,
+      "totalPluralOccurrences": 11,
+      "sources": [
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "natures secret",
+      "singularForms": [
+        [
+          "natures secret",
+          7
+        ]
+      ],
+      "pluralForms": [
+        [
+          "natures secrets",
+          6
+        ]
+      ],
+      "totalSingularOccurrences": 7,
+      "totalPluralOccurrences": 6,
+      "sources": [
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "cuddle",
+      "singularForms": [
+        [
+          "cuddle",
+          10
+        ]
+      ],
+      "pluralForms": [
+        [
+          "cuddles",
+          3
+        ]
+      ],
+      "totalSingularOccurrences": 10,
+      "totalPluralOccurrences": 3,
+      "sources": [
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "hair removal & shave",
+      "singularForms": [
+        [
+          "hair removal & shave",
+          1
+        ]
+      ],
+      "pluralForms": [
+        [
+          "hair removal & shaves",
+          12
+        ]
+      ],
+      "totalSingularOccurrences": 1,
+      "totalPluralOccurrences": 12,
+      "sources": [
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "energy drink",
+      "singularForms": [
+        [
+          "energy drink",
+          9
+        ]
+      ],
+      "pluralForms": [
+        [
+          "energy drinks",
+          2
+        ]
+      ],
+      "totalSingularOccurrences": 9,
+      "totalPluralOccurrences": 2,
+      "sources": [
+        "ingredients.varieties",
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "bun",
+      "singularForms": [
+        [
+          "bun",
+          2
+        ]
+      ],
+      "pluralForms": [
+        [
+          "buns",
+          8
+        ]
+      ],
+      "totalSingularOccurrences": 2,
+      "totalPluralOccurrences": 8,
+      "sources": [
+        "ingredients.varieties",
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "fruit juice",
+      "singularForms": [
+        [
+          "fruit juice",
+          9
+        ]
+      ],
+      "pluralForms": [
+        [
+          "fruit juices",
+          1
+        ]
+      ],
+      "totalSingularOccurrences": 9,
+      "totalPluralOccurrences": 1,
+      "sources": [
+        "ingredients.varieties",
+        "ingredients.name",
+        "ingredients.aliases",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "potato",
+      "singularForms": [
+        [
+          "potato",
+          7
+        ]
+      ],
+      "pluralForms": [
+        [
+          "potatoes",
+          2
+        ]
+      ],
+      "totalSingularOccurrences": 7,
+      "totalPluralOccurrences": 2,
+      "sources": [
+        "ingredients.varieties",
+        "ingredients.name",
+        "products.searchTerms",
+        "products.name"
+      ]
+    },
+    {
+      "baseKey": "pear",
+      "singularForms": [
+        [
+          "pear",
+          4
+        ]
+      ],
+      "pluralForms": [
+        [
+          "pears",
+          5
+        ]
+      ],
+      "totalSingularOccurrences": 4,
+      "totalPluralOccurrences": 5,
+      "sources": [
+        "ingredients.varieties",
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "jelly",
+      "singularForms": [
+        [
+          "jelly",
+          7
+        ]
+      ],
+      "pluralForms": [
+        [
+          "jellies",
+          1
+        ]
+      ],
+      "totalSingularOccurrences": 7,
+      "totalPluralOccurrences": 1,
+      "sources": [
+        "ingredients.name",
+        "products.searchTerms",
+        "usdaFoods.description"
+      ]
+    },
+    {
+      "baseKey": "chip",
+      "singularForms": [
+        [
+          "chip",
+          1
+        ]
+      ],
+      "pluralForms": [
+        [
+          "chips",
+          7
+        ]
+      ],
+      "totalSingularOccurrences": 1,
+      "totalPluralOccurrences": 7,
+      "sources": [
+        "ingredients.name",
+        "ingredients.aliases",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "lime",
+      "singularForms": [
+        [
+          "lime",
+          6
+        ]
+      ],
+      "pluralForms": [
+        [
+          "limes",
+          1
+        ]
+      ],
+      "totalSingularOccurrences": 6,
+      "totalPluralOccurrences": 1,
+      "sources": [
+        "ingredients.name",
+        "ingredients.varieties",
+        "products.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "tomato",
+      "singularForms": [
+        [
+          "tomato",
+          5
+        ]
+      ],
+      "pluralForms": [
+        [
+          "tomatoes",
+          2
+        ]
+      ],
+      "totalSingularOccurrences": 5,
+      "totalPluralOccurrences": 2,
+      "sources": [
+        "ingredients.name",
+        "ingredients.varieties",
+        "products.name"
+      ]
+    },
+    {
+      "baseKey": "drink",
+      "singularForms": [
+        [
+          "drink",
+          6
+        ]
+      ],
+      "pluralForms": [
+        [
+          "drinks",
+          1
+        ]
+      ],
+      "totalSingularOccurrences": 6,
+      "totalPluralOccurrences": 1,
+      "sources": [
+        "ingredients.varieties",
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "bag",
+      "singularForms": [
+        [
+          "bag",
+          4
+        ]
+      ],
+      "pluralForms": [
+        [
+          "bags",
+          3
+        ]
+      ],
+      "totalSingularOccurrences": 4,
+      "totalPluralOccurrences": 3,
+      "sources": [
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "oat",
+      "singularForms": [
+        [
+          "oat",
+          1
+        ]
+      ],
+      "pluralForms": [
+        [
+          "oats",
+          5
+        ]
+      ],
+      "totalSingularOccurrences": 1,
+      "totalPluralOccurrences": 5,
+      "sources": [
+        "ingredients.varieties",
+        "ingredients.name",
+        "ingredients.aliases",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "jelly crystal",
+      "singularForms": [
+        [
+          "jelly crystal",
+          5
+        ]
+      ],
+      "pluralForms": [
+        [
+          "jelly crystals",
+          1
+        ]
+      ],
+      "totalSingularOccurrences": 5,
+      "totalPluralOccurrences": 1,
+      "sources": [
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "natural",
+      "singularForms": [
+        [
+          "natural",
+          1
+        ]
+      ],
+      "pluralForms": [
+        [
+          "naturals",
+          5
+        ]
+      ],
+      "totalSingularOccurrences": 1,
+      "totalPluralOccurrences": 5,
+      "sources": [
+        "ingredients.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "greek black olive",
+      "singularForms": [
+        [
+          "greek black olive",
+          3
+        ]
+      ],
+      "pluralForms": [
+        [
+          "greek black olives",
+          3
+        ]
+      ],
+      "totalSingularOccurrences": 3,
+      "totalPluralOccurrences": 3,
+      "sources": [
+        "ingredients.varieties",
+        "ingredients.name",
+        "ingredients.aliases"
+      ]
+    },
+    {
+      "baseKey": "white poppy seed",
+      "singularForms": [
+        [
+          "white poppy seed",
+          3
+        ]
+      ],
+      "pluralForms": [
+        [
+          "white poppy seeds",
+          3
+        ]
+      ],
+      "totalSingularOccurrences": 3,
+      "totalPluralOccurrences": 3,
+      "sources": [
+        "ingredients.varieties",
+        "ingredients.name",
+        "ingredients.aliases"
+      ]
+    },
+    {
+      "baseKey": "leek",
+      "singularForms": [
+        [
+          "leek",
+          2
+        ]
+      ],
+      "pluralForms": [
+        [
+          "leeks",
+          4
+        ]
+      ],
+      "totalSingularOccurrences": 2,
+      "totalPluralOccurrences": 4,
+      "sources": [
+        "ingredients.varieties",
+        "ingredients.name",
+        "products.name",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "brown mustard seed",
+      "singularForms": [
+        [
+          "brown mustard seed",
+          3
+        ]
+      ],
+      "pluralForms": [
+        [
+          "brown mustard seeds",
+          3
+        ]
+      ],
+      "totalSingularOccurrences": 3,
+      "totalPluralOccurrences": 3,
+      "sources": [
+        "ingredients.name",
+        "ingredients.aliases",
+        "ingredients.varieties"
+      ]
+    },
+    {
+      "baseKey": "white chocolate chip",
+      "singularForms": [
+        [
+          "white chocolate chip",
+          3
+        ]
+      ],
+      "pluralForms": [
+        [
+          "white chocolate chips",
+          3
+        ]
+      ],
+      "totalSingularOccurrences": 3,
+      "totalPluralOccurrences": 3,
+      "sources": [
+        "ingredients.varieties",
+        "ingredients.name",
+        "ingredients.aliases"
+      ]
+    },
+    {
+      "baseKey": "date",
+      "singularForms": [
+        [
+          "date",
+          3
+        ]
+      ],
+      "pluralForms": [
+        [
+          "dates",
+          3
+        ]
+      ],
+      "totalSingularOccurrences": 3,
+      "totalPluralOccurrences": 3,
+      "sources": [
+        "ingredients.name",
+        "ingredients.aliases",
+        "ingredients.varieties",
+        "products.searchTerms"
+      ]
+    },
+    {
+      "baseKey": "black mustard seed",
+      "singularForms": [
+        [
+          "black mustard seed",
+          3
+        ]
+      ],
+      "pluralForms": [
+        [
+          "black mustard seeds",
+          3
+        ]
+      ],
+      "totalSingularOccurrences": 3,
+      "totalPluralOccurrences": 3,
+      "sources": [
+        "ingredients.varieties",
+        "ingredients.name",
+        "ingredients.aliases"
+      ]
+    },
+    {
+      "baseKey": "yellow mustard seed",
+      "singularForms": [
+        [
+          "yellow mustard seed",
+          3
+        ]
+      ],
+      "pluralForms": [
+        [
+          "yellow mustard seeds",
+          3
+        ]
+      ],
+      "totalSingularOccurrences": 3,
+      "totalPluralOccurrences": 3,
+      "sources": [
+        "ingredients.varieties",
+        "ingredients.name",
+        "ingredients.aliases"
+      ]
+    }
+  ]
+}

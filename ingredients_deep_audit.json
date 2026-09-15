@@ -1,0 +1,254 @@
+{
+  "totalIngredients": 20461,
+  "anomalies": {
+    "nonLowercaseCount": 0,
+    "whitespaceIssuesCount": 0,
+    "specialSymbolsCount": 13,
+    "punctuationOrParensCount": 0,
+    "prepOrPrefixWordCount": 97,
+    "shortNamesCount": 73,
+    "longNamesCount": 25,
+    "selfOrDuplicateAliasesCount": 6,
+    "aliasCollidesWithPrimaryNameCount": 0,
+    "metadataGaps": {
+      "missingFdcLinkageCount": 16518,
+      "missingFdcPercentage": "80.7%",
+      "missingEmbeddingsCount": 20461,
+      "missingImageCount": 1792,
+      "emptyAliasesCount": 19476,
+      "missingProvenanceCount": 0
+    }
+  },
+  "samples": {
+    "specialSymbols": [
+      {
+        "id": "ef212bfd-f9cf-3793-3ab2-83e330589875",
+        "name": "milk 0.5% nonfat",
+        "symbol": "%"
+      },
+      {
+        "id": "32dc1bcb-fd69-daa1-a290-028a5b8f4205",
+        "name": "milk 0.5%",
+        "symbol": "%"
+      },
+      {
+        "id": "7dd04275-d3ed-93e2-930b-5175f0943557",
+        "name": "milk 2% low-fat",
+        "symbol": "%"
+      },
+      {
+        "id": "be9de282-67e7-9b85-4fe8-2de37fc1b33d",
+        "name": "0.5% nonfat milk",
+        "symbol": "%"
+      },
+      {
+        "id": "866b998f-871b-64f1-0002-67944a8bf7c0",
+        "name": "milk 3.5%",
+        "symbol": "%"
+      },
+      {
+        "id": "95b6627a-eb8c-c43c-94ea-806a40cea6de",
+        "name": "milk 2%",
+        "symbol": "%"
+      },
+      {
+        "id": "96b0a713-1256-8857-722b-7565a2e2de1a",
+        "name": "nonfat milk 0.5%",
+        "symbol": "%"
+      },
+      {
+        "id": "385e08b1-48f1-c7ce-91a1-b80b3346fb84",
+        "name": "42% fat double cream",
+        "symbol": "%"
+      },
+      {
+        "id": "816b3841-923b-2150-fec1-3c2790ed3b80",
+        "name": "low-fat milk 2%",
+        "symbol": "%"
+      },
+      {
+        "id": "d8da01ed-b43e-c9c4-d44d-d9a18cbda082",
+        "name": "b&b",
+        "symbol": "&"
+      }
+    ],
+    "punctuationOrParens": [],
+    "prepOrPrefixWords": [
+      {
+        "id": "129bbd22-700c-e390-55b5-24cdf4771abe",
+        "name": "dried bean",
+        "word": "dried"
+      },
+      {
+        "id": "dc924b0e-4bc0-320b-d728-5fbb2e3b9f06",
+        "name": "dried meat",
+        "word": "dried"
+      },
+      {
+        "id": "31995f04-6e4c-0a55-069c-546e4f312508",
+        "name": "fresh asiago",
+        "word": "fresh"
+      },
+      {
+        "id": "9e364edb-c957-7021-0ef9-bc1499992134",
+        "name": "mini pierogis",
+        "word": "mini"
+      },
+      {
+        "id": "4f657326-d7e8-7c80-aec0-53cc9abc855e",
+        "name": "ground ginger",
+        "word": "ground"
+      },
+      {
+        "id": "c1cb0dd0-f2e5-75b7-a67f-b75bba7d3b49",
+        "name": "dried fig",
+        "word": "dried"
+      },
+      {
+        "id": "6e9c362e-50ce-43ef-5791-754b8c05fd0c",
+        "name": "dried orange peel",
+        "word": "dried"
+      },
+      {
+        "id": "b909815e-84f2-b09e-c9ce-e9de67c5a564",
+        "name": "dried lemon peel",
+        "word": "dried"
+      },
+      {
+        "id": "6a260646-0de8-0478-2ee7-4e62f7e5e8f6",
+        "name": "dried pear",
+        "word": "dried"
+      },
+      {
+        "id": "b76da680-6ed3-cf52-f306-076c51aa7f41",
+        "name": "fresh black-eyed pea",
+        "word": "fresh"
+      }
+    ],
+    "shortNames": [
+      {
+        "id": "e000aa57-0008-991f-e61c-f3c47c7f4e42",
+        "name": "gur"
+      },
+      {
+        "id": "8d6c3fb7-05a9-8384-c06e-4d2614b50f2d",
+        "name": "sev"
+      },
+      {
+        "id": "6eb87586-a94c-abe3-3e52-68d9a35712a7",
+        "name": "hop"
+      },
+      {
+        "id": "558f4c66-0eea-a148-7397-5fda31f86309",
+        "name": "ice"
+      },
+      {
+        "id": "2596c5e0-e059-35c5-a34f-cc91327f2392",
+        "name": "gin"
+      },
+      {
+        "id": "0230dd87-1121-002c-18cd-4d30b95628d4",
+        "name": "ham"
+      },
+      {
+        "id": "483684d6-8156-8da0-5aed-c937b477affd",
+        "name": "egg"
+      },
+      {
+        "id": "a02135fc-769b-9e1e-18db-bbd099fb56c3",
+        "name": "yam"
+      },
+      {
+        "id": "0a9aca15-844b-f8f5-9c9d-08dcb921bfdb",
+        "name": "ube"
+      },
+      {
+        "id": "2c45622c-23a9-cf32-d035-0e8c48bfc8a8",
+        "name": "fig"
+      },
+      {
+        "id": "3fb52a04-db09-82a4-b17c-4f835c3ca71e",
+        "name": "elk"
+      },
+      {
+        "id": "1ac298a1-205c-7f65-dc79-8498d5d3b7a2",
+        "name": "pea"
+      },
+      {
+        "id": "9364e356-a895-3711-0758-8ae6c9a74bf6",
+        "name": "dal"
+      },
+      {
+        "id": "af0ecae3-76ff-f2e5-4386-632f795dd539",
+        "name": "eel"
+      },
+      {
+        "id": "3b5a4837-30f6-daa2-12a1-1588a84f88ac",
+        "name": "rub"
+      }
+    ],
+    "longNames": [
+      {
+        "id": "86c12327-19f6-e62d-ada4-8a312a7a7045",
+        "name": "betty crocker lasagna hamburger helper mix beef pasta"
+      },
+      {
+        "id": "0d414112-905f-01c3-2bea-69b91d383e48",
+        "name": "dr oetker caramel creme dessert mix vegetarian"
+      },
+      {
+        "id": "b2d65e3d-78a6-a9bd-c741-15129ac0d418",
+        "name": "house seasoning salt black pepper garlic powder"
+      },
+      {
+        "id": "2b2c36cd-51fe-08a6-6036-24e6f1f0e1aa",
+        "name": "herbes de provence simple spice mix from vegetarian time"
+      },
+      {
+        "id": "d4941330-d8e1-de1c-fbcd-4756e4ee332a",
+        "name": "traditional french green garlic butter pastis"
+      },
+      {
+        "id": "410041e0-789c-ce0e-5922-ffc2bc9a8d45",
+        "name": "kraft special collection greek salad dressing"
+      },
+      {
+        "id": "dabe35c4-bb8e-dc84-7eaf-4f183341b979",
+        "name": "thai seasoning sesame seed red pepper onion garlic"
+      },
+      {
+        "id": "56c78378-1fe7-4c6d-5d26-db26cbd667ea",
+        "name": "seasonal vegetable butternut squash carrot potato"
+      },
+      {
+        "id": "cc6496ae-765c-96f9-71eb-d7b7e0352e15",
+        "name": "better than bouillon chicken base vegetable stock"
+      },
+      {
+        "id": "90ba3fd6-856d-d405-32b2-2b4c372c307a",
+        "name": "kraft extra virgin olive oil balsamic vinaigrette dressing"
+      },
+      {
+        "id": "b79d3624-d550-b10a-aaeb-c1e4bdf739ee",
+        "name": "lemon verbena herbal simple syrup lemonade etc"
+      },
+      {
+        "id": "04ccfd2f-ba28-0cf7-a943-da230ff79fd2",
+        "name": "italian seasoning monkey organic grinder zest"
+      },
+      {
+        "id": "ac14e2de-77f2-85ef-d1d3-be5f0d7facd0",
+        "name": "red jalapeno chile cayenne powder green pepper"
+      },
+      {
+        "id": "57e612d1-2eee-3eb3-5242-e7184e44ffa3",
+        "name": "shiitake mushroom one accurately my measuring"
+      },
+      {
+        "id": "21597d3f-33c1-d5fa-446c-d41ef92b306a",
+        "name": "pepper sauce this amount give nice kick frank"
+      }
+    ],
+    "aliasCollisions": []
+  }
+}

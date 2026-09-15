@@ -1,0 +1,41 @@
+{
+  "totalIngredients": 20592,
+  "anomalies": {
+    "garbageOrShortCount": 0,
+    "htmlOrSpecialCharsCount": 13,
+    "concatenatedLongCount": 0,
+    "quantitiesOrUnitsInNameCount": 11,
+    "hyphenVsSpaceDuplicatesCount": 0,
+    "uppercaseOrTitleCaseCount": 0,
+    "whitespaceIssuesCount": 0,
+    "punctuationInNamesCount": 0,
+    "duplicateOrSelfAliasesCount": 1,
+    "packagingOrPrepWordsInNameCount": 180,
+    "missingVectorsCount": 20592,
+    "missingUsdaFdcLinkCount": 16634
+  },
+  "samples": {
+    "punctuationInNames": [],
+    "duplicateOrSelfAliases": [
+      {
+        "id": "65fe8d68-9f3a-16a6-9034-ed5e7906369c",
+        "name": "sesame chili oil",
+        "aliases": [
+          "chili sesame oil",
+          "rayu",
+          "la yu",
+          "spicy sesame oil",
+          "Chili Oil with Sesame",
+          "Spicy Sesame Oil",
+          "La-yu",
+          "Raan Chilli Oil",
+          "Szechuan Chili Oil"
+        ]
+      }
+    ],
+    "uppercaseOrTitleCase": [],
+    "hyphenVsSpaceCollisions": [],
+    "shortNames": [],
+    "longNames": []
+  }
+}

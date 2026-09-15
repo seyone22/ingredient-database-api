@@ -1,0 +1,252 @@
+{
+  "@type": "Recipe",
+  "name": "Key Lime Pie Recipe",
+  "author": {
+    "@id": "https://preppykitchen.com/#/schema/person/26390e871ce5a252a5ab2b095ad87099"
+  },
+  "description": "Key Lime Pie is perfect for the summer! It’s cool, refreshing, and requires minimal hands-on prep. The filling simply whisks together and only bakes for 10 minutes!",
+  "datePublished": "2020-04-19T00:00:35+00:00",
+  "image": [
+    "https://preppykitchen.com/wp-content/uploads/2020/03/key-lime-pie-recipe.jpg",
+    "https://preppykitchen.com/wp-content/uploads/2020/03/key-lime-pie-recipe-500x500.jpg",
+    "https://preppykitchen.com/wp-content/uploads/2020/03/key-lime-pie-recipe-500x375.jpg",
+    "https://preppykitchen.com/wp-content/uploads/2020/03/key-lime-pie-recipe-480x270.jpg"
+  ],
+  "video": {
+    "name": "Easy Key Lime Pie Recipe",
+    "description": "Creamy, tangy Key Lime Pie is the ultimate refreshing summertime dessert! The pie filling simply whisks together and only bakes for 10 minutes! Top it with dollops of whipped cream for a decadent treat.\n\nRECIPE:\n\nORDER MY NEW BOOK!\nAmazon:\nBarnes and Noble:\nBookshop:\nBooksamillion:\nAmazon CA:",
+    "uploadDate": "2025-06-19T19:00:50+00:00",
+    "duration": "PT9M48S",
+    "thumbnailUrl": "https://i.ytimg.com/vi/fYrjWwXUaA0/hqdefault.jpg",
+    "embedUrl": "https://www.youtube.com/embed/fYrjWwXUaA0?feature=oembed",
+    "contentUrl": "https://www.youtube.com/watch?v=fYrjWwXUaA0",
+    "@type": "VideoObject"
+  },
+  "recipeYield": [
+    "8",
+    "8 servings"
+  ],
+  "prepTime": "PT15M",
+  "cookTime": "PT20M",
+  "totalTime": "PT115M",
+  "recipeIngredient": [
+    "1½ cups graham cracker crumbs ((180g))",
+    "6 to 8 tablespoons unsalted butter ((87g to 113g), melted, divided)",
+    "¼ cup granulated sugar ((50g))",
+    "2  (14-ounce, 396g) cans sweetened condensed milk",
+    "¾ cup key lime juice ((180mL))",
+    "4  egg yolks",
+    "2 teaspoons lime or key lime zest",
+    "1 cup heavy cream ((240mL))",
+    "3 tablespoons powdered sugar",
+    "1 teaspoon vanilla extract",
+    "Optional: Lime zest and thinly sliced key limes"
+  ],
+  "recipeInstructions": [
+    {
+      "@type": "HowToSection",
+      "name": "For the Crust:",
+      "itemListElement": [
+        {
+          "@type": "HowToStep",
+          "text": "Preheat the oven to 350°F.",
+          "name": "Preheat the oven to 350°F.",
+          "url": "https://preppykitchen.com/key-lime-pie/#wprm-recipe-26810-step-0-0"
+        },
+        {
+          "@type": "HowToStep",
+          "text": "In a medium bowl, stir together graham cracker crumbs, 6 tablespoons of melted butter, and sugar until well moistened. Pinch the crumbs between your thumb, pointer and middle fingers. If they feel moist and stick together when released from the pinch, they are ready to be pressed in the pan. If they feel dry, sandy, and lose their shape when released from the pinch, stir in more butter, 1 tablespoon at a time.",
+          "name": "In a medium bowl, stir together graham cracker crumbs, 6 tablespoons of melted butter, and sugar until well moistened. Pinch the crumbs between your thumb, pointer and middle fingers. If they feel moist and stick together when released from the pinch, they are ready to be pressed in the pan. If they feel dry, sandy, and lose their shape when released from the pinch, stir in more butter, 1 tablespoon at a time.",
+          "url": "https://preppykitchen.com/key-lime-pie/#wprm-recipe-26810-step-0-1"
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Add the crumb mixture to the pie plate. Using the flat bottom of a measuring cup or glass, firmly press the mixture into the bottom of the pan and up the sides of the pan, mounding the edge slightly above the rim of the pie plate. (Your hands or a flat spatula may be helpful to press the sides of the crust.) Bake the crust for 10 minutes, until dry and golden brown.",
+          "name": "Add the crumb mixture to the pie plate. Using the flat bottom of a measuring cup or glass, firmly press the mixture into the bottom of the pan and up the sides of the pan, mounding the edge slightly above the rim of the pie plate. (Your hands or a flat spatula may be helpful to press the sides of the crust.) Bake the crust for 10 minutes, until dry and golden brown.",
+          "url": "https://preppykitchen.com/key-lime-pie/#wprm-recipe-26810-step-0-2"
+        }
+      ]
+    },
+    {
+      "@type": "HowToSection",
+      "name": "For the Filling:",
+      "itemListElement": [
+        {
+          "@type": "HowToStep",
+          "text": "In a large bowl, combine the sweetened condensed milk, key lime juice, egg yolks, and zest. Whisk to combine.",
+          "name": "In a large bowl, combine the sweetened condensed milk, key lime juice, egg yolks, and zest. Whisk to combine.",
+          "url": "https://preppykitchen.com/key-lime-pie/#wprm-recipe-26810-step-1-0"
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Pour the filling into the warm crust and give it a jiggle to level things out. Bake at 350°F for about 10 minutes. Cool on a wire rack for about 20 minutes, then chill for at least an hour. You'll see some tiny holes in the pie and it will jiggle slightly when it's done baking.",
+          "name": "Pour the filling into the warm crust and give it a jiggle to level things out. Bake at 350°F for about 10 minutes. Cool on a wire rack for about 20 minutes, then chill for at least an hour. You'll see some tiny holes in the pie and it will jiggle slightly when it's done baking.",
+          "url": "https://preppykitchen.com/key-lime-pie/#wprm-recipe-26810-step-1-1"
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Place a large mixing bowl or the bowl of a stand mixer along with the beaters or whisk attachment in the fridge or freezer until well chilled, at least 20 minutes.",
+          "name": "Place a large mixing bowl or the bowl of a stand mixer along with the beaters or whisk attachment in the fridge or freezer until well chilled, at least 20 minutes.",
+          "url": "https://preppykitchen.com/key-lime-pie/#wprm-recipe-26810-step-1-2"
+        }
+      ]
+    },
+    {
+      "@type": "HowToSection",
+      "name": "For the Topping:",
+      "itemListElement": [
+        {
+          "@type": "HowToStep",
+          "text": "In a large, chilled bowl, combine the cream, sugar, and vanilla. With a handheld mixer (or in a stand mixer with a whisk attachment), beat on medium speed until frothy and starting to thicken, about 2 minutes. Increase the speed to medium-high and beat until soft to medium peaks form, 1 to 2 more minutes.",
+          "name": "In a large, chilled bowl, combine the cream, sugar, and vanilla. With a handheld mixer (or in a stand mixer with a whisk attachment), beat on medium speed until frothy and starting to thicken, about 2 minutes. Increase the speed to medium-high and beat until soft to medium peaks form, 1 to 2 more minutes.",
+          "url": "https://preppykitchen.com/key-lime-pie/#wprm-recipe-26810-step-2-0"
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Top the pie with dollops of whipped cream, lime zest, and slices if you like, and serve.",
+          "name": "Top the pie with dollops of whipped cream, lime zest, and slices if you like, and serve.",
+          "url": "https://preppykitchen.com/key-lime-pie/#wprm-recipe-26810-step-2-1"
+        }
+      ]
+    }
+  ],
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.97",
+    "ratingCount": "207",
+    "reviewCount": "8"
+  },
+  "review": [
+    {
+      "@type": "Review",
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": "5"
+      },
+      "reviewBody": "Delicious! Thanks John for another winner. Making mini pies for friends. First recipe I made of yours was the cinnamon rolls. Never baked using yeast until you, my friend. Thanks to your style and encouragement I finally tried and they came out great!  Always refer to your recipes first, made many and love the pan dulce Conchas. Looking forward to more recipe videos. Be well",
+      "author": {
+        "@type": "Person",
+        "name": "Olga Burgess"
+      },
+      "datePublished": "2026-08-14"
+    },
+    {
+      "@type": "Review",
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": "5"
+      },
+      "reviewBody": "We use the Biscoff cookies as the Graham cracker crust....SOOOOO delicious!!",
+      "author": {
+        "@type": "Person",
+        "name": "Bliss"
+      },
+      "datePublished": "2025-09-27"
+    },
+    {
+      "@type": "Review",
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": "5"
+      },
+      "reviewBody": "The easiest and Tastiest recipe for key lime pie. The best in all ways",
+      "author": {
+        "@type": "Person",
+        "name": "Bliss"
+      },
+      "datePublished": "2025-09-27"
+    },
+    {
+      "@type": "Review",
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": "5"
+      },
+      "reviewBody": "It was Yummy... My family said we need to have this ever weekend...",
+      "author": {
+        "@type": "Person",
+        "name": "Diane"
+      },
+      "datePublished": "2025-06-17"
+    },
+    {
+      "@type": "Review",
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": "5"
+      },
+      "reviewBody": "This is that recipe your family brings up every gathering to ask you to make. It's THAT good! Almost as good as the levelled up version in John's cookbook. Both are EXCELLENT! Cannot recommend this recipe enough",
+      "author": {
+        "@type": "Person",
+        "name": "Rose"
+      },
+      "datePublished": "2025-05-11"
+    },
+    {
+      "@type": "Review",
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": "5"
+      },
+      "reviewBody": "This keylime pie is a crowd pleaser!!! Came out zangy, tart, sweet, and deeelliccciiouuussss.",
+      "author": {
+        "@type": "Person",
+        "name": "Bella Benjamin"
+      },
+      "datePublished": "2024-11-14"
+    },
+    {
+      "@type": "Review",
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": "5"
+      },
+      "reviewBody": "I tried key lime pie for the first time in Florida this winter. When I returned home I went directly to Preppy Kitchen to see how John makes his. I have now made this 4 times and everyone raves about it. I have used both biscoff (my favorite) and graham cracker crumbs. Both are delicious. Thank John for another winner!",
+      "author": {
+        "@type": "Person",
+        "name": "Eabp"
+      },
+      "datePublished": "2024-06-25"
+    },
+    {
+      "@type": "Review",
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": "5"
+      },
+      "reviewBody": "This was such a hit at our memorial Day BBQ and it was quite delicious!",
+      "author": {
+        "@type": "Person",
+        "name": "Brooke"
+      },
+      "datePublished": "2024-05-28"
+    }
+  ],
+  "recipeCategory": [
+    "Dessert"
+  ],
+  "recipeCuisine": [
+    "American"
+  ],
+  "keywords": "how to make key lime pie, key lime pie, key pime pie recipe",
+  "nutrition": {
+    "@type": "NutritionInformation",
+    "calories": "634 kcal",
+    "carbohydrateContent": "78 g",
+    "proteinContent": "11 g",
+    "fatContent": "32 g",
+    "saturatedFatContent": "19 g",
+    "transFatContent": "0.3 g",
+    "cholesterolContent": "187 mg",
+    "sodiumContent": "244 mg",
+    "fiberContent": "1 g",
+    "sugarContent": "68 g",
+    "unsaturatedFatContent": "11 g",
+    "servingSize": "1 serving"
+  },
+  "@id": "https://preppykitchen.com/key-lime-pie/#recipe",
+  "isPartOf": {
+    "@id": "https://preppykitchen.com/key-lime-pie/#article"
+  },
+  "mainEntityOfPage": "https://preppykitchen.com/key-lime-pie/"
+}

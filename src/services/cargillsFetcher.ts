@@ -1,39 +1,40 @@
+import { eq } from "drizzle-orm";
 import { chromium } from "playwright";
 import {
-  FetchProductParams,
+  type FetchProductParams,
   SupermarketFetcher,
 } from "@/services/supermarketFetcher";
 import { db } from "@/utils/db";
-import { priceSources } from "@/utils/schema";
-import { eq } from "drizzle-orm";
 import { normalizePrice } from "@/utils/normalizeQtyUtil";
+import { priceSources } from "@/utils/schema";
 
 export const CARGILLS_CAT_MAP: Record<string, string> = {
-  FT: "Fresh Fruits",
-  VG: "Vegetables & Herbs",
-  DY: "Dairy & Ice Cream",
-  FC: "Fresh Eggs & Dairy",
-  BV: "Beverages & Drinks",
+  FT: "Fruits",
+  VG: "Vegetables",
+  DY: "Dairy",
+  FC: "Food Cupboard",
+  BV: "Beverages",
   TC: "Tea & Coffee",
-  MT: "Meat & Sausages",
-  FF: "Frozen Foods",
-  RI: "Rice & Grains",
-  SS: "Spices & Seasonings",
-  CE: "Cereals, Flour & Mixes",
+  MT: "Meats",
+  SF: "Seafood",
+  FF: "Frozen Food",
+  RI: "Rice",
+  SS: "Seeds & Spices",
+  CE: "Cooking Essentials",
   SC: "Snacks & Confectionery",
-  DI: "Dry Ingredients & Baking",
-  BK: "Bakery & Bread",
+  DI: "Desserts & Ingredients",
+  BK: "Bakery",
   HB: "Health & Beauty",
-  HH: "Household & Air Fresheners",
+  HH: "Household",
   ST: "Stationery",
-  PP: "Pet Care & Nutrition",
-  BP: "Baby & Infant Care",
-  PI: "Party & Toys",
-  FA: "Fashion & Accessories",
+  PP: "Pet Products",
+  BP: "Baby Products",
+  PI: "Party Shop",
+  FA: "Fashion",
+  AC: "Auto Care",
   CD: "Christmas Decor",
   CT: "Christmas Treats",
   CA: "Charity & Donations",
-  AC: "Air Care",
 };
 
 export class CargillsFetcher extends SupermarketFetcher {
@@ -85,12 +86,16 @@ export class CargillsFetcher extends SupermarketFetcher {
 
   /**
    * Do everything within one Playwright context and use context.request to call
-   * the backend endpoint so cookies/session are preserved reliably.
+   * the backend endpoints so cookies/session are preserved reliably.
+   *
+   * If params.ingredientName is specified, runs a targeted keyword search.
+   * If params.ingredientName is empty / undefined, dynamically queries GetCategoriesV1
+   * and fetches all departmental categories in parallel/throttled batches with pagination.
    */
-  async fetchFromSource(params: FetchProductParams): Promise<any[]> {
+  async fetchFromSource(params: FetchProductParams = {}): Promise<any[]> {
     await this.ensureSourceId();
 
-    console.log("🟢 Launching headless browser...");
+    console.log("🟢 Launching headless browser for Cargills session...");
     const browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({
       userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
@@ -109,7 +114,7 @@ export class CargillsFetcher extends SupermarketFetcher {
     const page = await context.newPage();
 
     try {
-      console.log("🌐 Navigating to homepage...");
+      console.log("🌐 Navigating to Cargills homepage...");
       await page.goto(this.baseUrl, {
         waitUntil: "networkidle",
         timeout: 30000,
@@ -139,85 +144,140 @@ export class CargillsFetcher extends SupermarketFetcher {
         console.log("✅ No pincode modal detected.");
       }
 
-      // Build request body
-      const body = {
-        CategoryId: "",
-        Search: params.ingredientName || "",
-        Filter: "Wwzpa2LygAJqAK1uM94i8A==",
-        PageIndex: 1,
-        PageSize: params.itemsPerPage || 10000,
-        BannerId: "",
-        SectionId: "",
-        CollectionId: "",
-        SectionType: "",
-        DataType: "",
-        SubCatId: "-1",
-        PromoId: "",
+      const apiUrl = `${this.baseUrl}/Web/GetMenuCategoryItemsPagingV3/`;
+      const commonHeaders = {
+        "Content-Type": "application/json;charset=utf-8",
+        Accept: "application/json, text/plain, */*",
+        Origin: this.baseUrl,
+        Referer: this.baseUrl,
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
       };
 
-      console.log(
-        "📡 Performing backend POST via Playwright context.request...",
-      );
-      const apiUrl = `${this.baseUrl}/Web/GetMenuCategoryItemsPagingV3/`;
-
-      const response = await context.request.post(apiUrl, {
-        headers: {
-          "Content-Type": "application/json;charset=utf-8",
-          Accept: "application/json, text/plain, */*",
-          Origin: this.baseUrl,
-          Referer: this.baseUrl,
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        },
-        data: body,
-        timeout: 30000,
-      });
-
-      const status = response.status();
-      const statusText = response.statusText();
-      console.log(`🟢 Fetch status: ${status} ${statusText}`);
-
-      const text = await response.text();
-      console.log(
-        "📄 Response preview (first 1000 chars):",
-        text.slice(0, 1000),
-      );
-
-      let data: any;
-      try {
-        data = JSON.parse(text);
-      } catch (err) {
-        try {
-          data = JSON.parse(JSON.stringify(eval(text)));
-        } catch (_) {
-          data = null;
-        }
-      }
-
-      if (!data) {
-        console.warn("❌ Could not parse response JSON. Returning empty list.");
-        return [];
-      }
-
-      if (Array.isArray(data)) {
-        if (data.length === 1 && data[0]?.ItemName === "No Products Found") {
-          console.warn(
-            "⚠️ Backend returned 'No Products Found'. Check Search term and session cookies.",
-          );
-          return [];
-        }
-        return data;
-      }
-
-      if (!data.Items) {
-        console.warn(
-          "⚠️ No 'Items' key found in JSON. Full keys:",
-          Object.keys(data),
+      // Case 1: Targeted keyword search
+      if (params.ingredientName && params.ingredientName.trim()) {
+        console.log(
+          `📡 Performing targeted search for: "${params.ingredientName}"...`,
         );
-        return [];
+        const body = {
+          CategoryId: "",
+          Search: params.ingredientName.trim(),
+          Filter: "Wwzpa2LygAJqAK1uM94i8A==",
+          PageIndex: 1,
+          PageSize: params.itemsPerPage || 1000,
+          BannerId: "",
+          SectionId: "",
+          CollectionId: "",
+          SectionType: "",
+          DataType: "",
+          SubCatId: "-1",
+          PromoId: "",
+        };
+
+        const response = await context.request.post(apiUrl, {
+          headers: commonHeaders,
+          data: body,
+          timeout: 30000,
+        });
+
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          if (data.length === 1 && data[0]?.ItemName === "No Products Found") {
+            return [];
+          }
+          return data;
+        }
+        return data.Items || [];
       }
 
-      console.log(`✅ Found ${data.Items.length} products in response.`);
-      return data.Items;
+      // Case 2: Full Catalog Scrape via Category Enumeration
+      console.log(
+        "📂 Initiating full catalog scrape via dynamic category discovery...",
+      );
+      const catResp = await context.request.post(
+        `${this.baseUrl}/Web/GetCategoriesV1`,
+        {
+          headers: commonHeaders,
+          data: {},
+          timeout: 30000,
+        },
+      );
+
+      const categories: any[] = await catResp.json();
+      console.log(`✅ Discovered ${categories.length} Cargills categories.`);
+
+      const allItemsMap = new Map<string, any>();
+      const pageSize = 1000;
+
+      for (const cat of categories) {
+        if (!cat.EnId) continue;
+        const catName = cat.MenuCategoryName || cat.Abbreviation || "Unknown";
+        let pageIndex = 1;
+        let hasMore = true;
+
+        while (hasMore) {
+          console.log(
+            `  └─ Fetching category [${cat.Abbreviation || ""}] "${catName}" (Page ${pageIndex})...`,
+          );
+          const response = await context.request.post(apiUrl, {
+            headers: commonHeaders,
+            data: {
+              CategoryId: cat.EnId,
+              Search: "",
+              Filter: "Wwzpa2LygAJqAK1uM94i8A==",
+              PageIndex: pageIndex,
+              PageSize: pageSize,
+              BannerId: "",
+              SectionId: "",
+              CollectionId: "",
+              SectionType: "",
+              DataType: "",
+              SubCatId: "-1",
+              PromoId: "",
+            },
+            timeout: 30000,
+          });
+
+          if (!response.ok()) {
+            console.warn(
+              `⚠️ Failed to fetch category ${catName}: HTTP ${response.status()}`,
+            );
+            break;
+          }
+
+          const items: any[] = await response.json();
+          if (
+            !Array.isArray(items) ||
+            items.length === 0 ||
+            items[0]?.ItemName === "No Products Found"
+          ) {
+            break;
+          }
+
+          for (const item of items) {
+            const key = item.SKUCODE || String(item.Id);
+            if (key && !allItemsMap.has(key)) {
+              allItemsMap.set(key, item);
+            }
+          }
+
+          const totalCount = parseInt(items[0]?.TotalCount, 10) || items.length;
+          if (pageIndex * pageSize < totalCount) {
+            pageIndex++;
+            await new Promise((r) => setTimeout(r, 100)); // Gentle throttle
+          } else {
+            hasMore = false;
+          }
+        }
+
+        // Polite throttle between categories to avoid any rate-limiting
+        await new Promise((r) => setTimeout(r, 150));
+      }
+
+      const allProducts = Array.from(allItemsMap.values());
+      console.log(
+        `🎉 Cargills: Successfully extracted ${allProducts.length} unique products across all categories!`,
+      );
+      return allProducts;
     } finally {
       await page.close().catch(() => {});
       await context.close().catch(() => {});
@@ -225,7 +285,7 @@ export class CargillsFetcher extends SupermarketFetcher {
     }
   }
 
-  mapToProduct(raw: any, ingredientId?: string) {
+  mapToProduct(raw: any, _ingredientId?: string) {
     if (!this.sourceId) {
       throw new Error(
         "CargillsFetcher: sourceId not resolved — call fetchFromSource() first",
@@ -252,7 +312,9 @@ export class CargillsFetcher extends SupermarketFetcher {
       dietaryType: raw.Type || null,
       packSize: raw.PackSize ? parseInt(raw.PackSize) : null,
       searchTerms: raw.SearchTerm
-        ? raw.SearchTerm.split(",").map((s: string) => s.trim()).filter(Boolean)
+        ? raw.SearchTerm.split(",")
+            .map((s: string) => s.trim())
+            .filter(Boolean)
         : [],
 
       // Location & Stock Analytics
@@ -264,7 +326,8 @@ export class CargillsFetcher extends SupermarketFetcher {
       // Advanced Categorization
       departmentCode: raw.CategoryCode ? String(raw.CategoryCode) : "Misc",
       categoryPath: [
-        raw.CategoryName || (raw.CategoryCode ? CARGILLS_CAT_MAP[raw.CategoryCode] : undefined),
+        raw.CategoryName ||
+          (raw.CategoryCode ? CARGILLS_CAT_MAP[raw.CategoryCode] : undefined),
         raw.SubCategoryName,
       ].filter(Boolean) as string[],
 

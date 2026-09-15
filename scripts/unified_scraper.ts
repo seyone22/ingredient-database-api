@@ -20,7 +20,7 @@ import { ArpicoFetcher } from "@/services/arpicoFetcher";
 
 // Define supported stores
 const STORES = [
-  { name: "Cargills", fetcher: CargillsFetcher, mode: "alphabet" },
+  { name: "Cargills", fetcher: CargillsFetcher, mode: "all" },
   { name: "Keells", fetcher: KeellsFetcher, mode: "all" },
   { name: "SPAR", fetcher: SparFetcher, mode: "all" },
   { name: "Glomark", fetcher: GlomarkFetcher, mode: "all" },

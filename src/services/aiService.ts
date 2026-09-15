@@ -33,7 +33,7 @@ export const parsedIngredientSchema = z.object({
 export const parseIngredientsResponseSchema = z.array(parsedIngredientSchema);
 
 const CONFIG = {
-  GEMINI_MODEL: "gemini-2.5-flash",
+  GEMINI_MODEL: "gemini-3.6-flash",
   USE_AI: true,
 };
 

@@ -47,7 +47,7 @@ export interface IngredientListResponse {
 // ---------------------------------------------------------------------------
 // Gemini client (replaces the OpenAI-compatible embeddings wrapper)
 // ---------------------------------------------------------------------------
-const EMBEDDING_DIMENSIONS = 3072; // must match ingredients.embedding AND queryEmbeddings.embedding
+const EMBEDDING_DIMENSIONS = 1536; // must match ingredients.embedding AND queryEmbeddings.embedding
 const EMBEDDING_MODEL = "gemini-embedding-001";
 
 const ai = new GoogleGenAI({}); // reads GEMINI_API_KEY from env, same var name you already use

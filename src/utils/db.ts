@@ -14,7 +14,14 @@ declare global {
 }
 
 const queryClient =
-  global.postgresConnection || postgres(connectionString, { max: 10 });
+  global.postgresConnection ||
+  postgres(connectionString, {
+    max: 5,
+    prepare: false,
+    ssl: "require",
+    idle_timeout: 5,
+    connect_timeout: 10,
+  });
 
 if (process.env.NODE_ENV !== "production") {
   global.postgresConnection = queryClient;

@@ -1,18 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
+  ArrowDownToLine,
+  BarChart3,
   Database,
+  LayoutDashboard,
   Link2,
   Package,
-  ArrowDownToLine,
   ShieldAlert,
   ShieldCheck,
-  BarChart3,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 import styles from "./NavBar.module.css";
 
 export default function NavBar() {
@@ -36,6 +36,7 @@ export default function NavBar() {
   ];
 
   const publicLinks = [
+    { href: "/recipe-pricing", label: "Recipe Pricing" },
     { href: "/documentation", label: "Documentation" },
     { href: "/contribute", label: "Contribute" },
     { href: "/about", label: "About" },
@@ -58,6 +59,7 @@ export default function NavBar() {
       </div>
 
       <button
+        type="button"
         className={styles.hamburger}
         onClick={toggleMenu}
         aria-label="Toggle navigation menu"

@@ -1,0 +1,19 @@
+{
+  "totalIngredients": 20461,
+  "primaryNames": {
+    "total": 20461,
+    "singularCount": 20461,
+    "pluralCount": 0,
+    "singularPercentage": "100.00%",
+    "pluralPercentage": "0.00%"
+  },
+  "aliases": {
+    "totalAliasTerms": 1214,
+    "singularCount": 467,
+    "pluralCount": 747
+  },
+  "collisions": {
+    "directNameCollisions": 0,
+    "collisions": []
+  }
+}

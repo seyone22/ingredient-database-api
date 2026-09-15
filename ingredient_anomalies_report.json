@@ -1,0 +1,439 @@
+{
+  "totalIngredients": 20636,
+  "anomalies": {
+    "uppercaseOrTitleCaseCount": 650,
+    "whitespaceIssuesCount": 4,
+    "htmlOrSpecialCharsCount": 26,
+    "quantitiesOrUnitsInNameCount": 22,
+    "packagingOrPrepWordsInNameCount": 174,
+    "hyphenVsSpaceDuplicatesCount": 15,
+    "suspiciouslyShortCount": 7,
+    "suspiciouslyLongCount": 4,
+    "missingVectorsCount": 20636,
+    "missingProvenanceCount": 0,
+    "missingUsdaFdcLinkCount": 16669
+  },
+  "samples": {
+    "uppercaseOrTitleCase": [
+      {
+        "id": "bfd5d1e5-70a5-d466-2dd6-191ec84bb926",
+        "name": "French bread"
+      },
+      {
+        "id": "a3f1df0e-bd93-a51e-e69c-3c3c2c44769c",
+        "name": "Worcestershire sauce"
+      },
+      {
+        "id": "acaefc01-172c-af38-8b8b-721d83256e73",
+        "name": "Paneer"
+      },
+      {
+        "id": "eae5966c-97e3-fd8f-b01e-5735f1050844",
+        "name": "Red Grape"
+      },
+      {
+        "id": "3caad43e-ae70-311a-deae-9aae9ea414ae",
+        "name": "Virgin Olive Oil"
+      },
+      {
+        "id": "86dff889-5fcf-1d5a-e73c-36f8be792e41",
+        "name": "Liver"
+      },
+      {
+        "id": "c68f32dc-f41d-94b3-9f7f-3da75410adda",
+        "name": "Anjou pear"
+      },
+      {
+        "id": "c66b417f-c435-2917-c63e-d046ddfc11a5",
+        "name": "Tzfati"
+      },
+      {
+        "id": "228922ce-5b95-f39e-6137-851786434b7a",
+        "name": "Lamb"
+      },
+      {
+        "id": "72d89e41-cacf-432d-fd1d-59c6fc5e768e",
+        "name": "Alphonso Mango"
+      },
+      {
+        "id": "3774ad6e-7f79-6796-bbd6-0182727232f5",
+        "name": "Swiss chard"
+      },
+      {
+        "id": "ba691b52-3c18-a230-d1df-aa0b95912c16",
+        "name": "Italian sausage"
+      },
+      {
+        "id": "343ef66e-e93c-4fd6-a25a-67df05411b1f",
+        "name": "Seville orange"
+      },
+      {
+        "id": "7f272641-fc9c-71ea-3dc8-70651cfdd4a2",
+        "name": "Capulin cherry"
+      },
+      {
+        "id": "c9d66bca-0370-5ddb-0086-7182cbd041a4",
+        "name": "Cashel Bleu"
+      }
+    ],
+    "whitespaceIssues": [
+      {
+        "id": "21b50292-0ce2-8a45-5041-44381b866929",
+        "name": "dried fava bean "
+      },
+      {
+        "id": "c93adde9-9bf1-d6ec-63e5-b1f073d8b030",
+        "name": "Cheshire  "
+      },
+      {
+        "id": "2ed60940-7ff5-372e-7ab9-b384f07f4600",
+        "name": "California chili "
+      },
+      {
+        "id": "5ee1bea1-56a3-165e-a9ca-9b9922f74512",
+        "name": "chipotle pepper "
+      }
+    ],
+    "htmlOrSpecialChars": [
+      {
+        "id": "ef212bfd-f9cf-3793-3ab2-83e330589875",
+        "name": "milk 0.5% nonfat"
+      },
+      {
+        "id": "32dc1bcb-fd69-daa1-a290-028a5b8f4205",
+        "name": "milk 0.5%"
+      },
+      {
+        "id": "7dd04275-d3ed-93e2-930b-5175f0943557",
+        "name": "milk 2% Low-fat"
+      },
+      {
+        "id": "be9de282-67e7-9b85-4fe8-2de37fc1b33d",
+        "name": "0.5% nonfat milk"
+      },
+      {
+        "id": "866b998f-871b-64f1-0002-67944a8bf7c0",
+        "name": "milk 3.5%"
+      },
+      {
+        "id": "95b6627a-eb8c-c43c-94ea-806a40cea6de",
+        "name": "milk 2%"
+      },
+      {
+        "id": "96b0a713-1256-8857-722b-7565a2e2de1a",
+        "name": "milk 0.5%, nonfat"
+      },
+      {
+        "id": "34641a60-4286-3da5-3996-b79410b005c0",
+        "name": "fisher reg ; walnut half"
+      },
+      {
+        "id": "fb30e33e-32ee-9d02-d415-fc18fb4d90dc",
+        "name": "crisco reg ; butter"
+      },
+      {
+        "id": "385e08b1-48f1-c7ce-91a1-b80b3346fb84",
+        "name": "double cream (42% fat)"
+      },
+      {
+        "id": "190ff6ea-c5c2-4418-4a1d-8509ae8dcba3",
+        "name": "breadcrumb ? bread"
+      },
+      {
+        "id": "4f1cae55-600c-736f-2df8-094a194a23d9",
+        "name": "kraft reg ; parmesan cheese"
+      },
+      {
+        "id": "bcf72192-e56b-7509-1973-15d471ba8073",
+        "name": "reg ; hot italian sausage link"
+      },
+      {
+        "id": "46c5f755-5bcd-bd5b-4242-f27cfff6a4f2",
+        "name": "chef boyardee reg ; beef ravioli"
+      },
+      {
+        "id": "deb6eec6-940f-dc7f-9deb-524312bb685d",
+        "name": "quot ; meatless mincemeat"
+      }
+    ],
+    "quantitiesOrUnits": [
+      {
+        "id": "ef212bfd-f9cf-3793-3ab2-83e330589875",
+        "name": "milk 0.5% nonfat"
+      },
+      {
+        "id": "32dc1bcb-fd69-daa1-a290-028a5b8f4205",
+        "name": "milk 0.5%"
+      },
+      {
+        "id": "7dd04275-d3ed-93e2-930b-5175f0943557",
+        "name": "milk 2% Low-fat"
+      },
+      {
+        "id": "be9de282-67e7-9b85-4fe8-2de37fc1b33d",
+        "name": "0.5% nonfat milk"
+      },
+      {
+        "id": "866b998f-871b-64f1-0002-67944a8bf7c0",
+        "name": "milk 3.5%"
+      },
+      {
+        "id": "95b6627a-eb8c-c43c-94ea-806a40cea6de",
+        "name": "milk 2%"
+      },
+      {
+        "id": "96b0a713-1256-8857-722b-7565a2e2de1a",
+        "name": "milk 0.5%, nonfat"
+      },
+      {
+        "id": "385e08b1-48f1-c7ce-91a1-b80b3346fb84",
+        "name": "double cream (42% fat)"
+      },
+      {
+        "id": "4da54767-75a8-c5aa-a1ee-ffae0c35849e",
+        "name": "gingerroot 45g"
+      },
+      {
+        "id": "4bdd81ce-3bf0-45e2-5e9e-8810311edb64",
+        "name": "450g parrot fish red snapper"
+      },
+      {
+        "id": "34e26bde-be20-0e92-cf25-88e06b4bf001",
+        "name": "V-8 Juice"
+      },
+      {
+        "id": "69cda608-471c-fed0-bf04-bb4c2408cfdc",
+        "name": "1lb"
+      },
+      {
+        "id": "d0ac5e71-f43c-2378-ea2f-79b3239c1c29",
+        "name": "butternut squash 2lb"
+      },
+      {
+        "id": "26f948dd-3fad-0001-1af2-ac0633fedc2e",
+        "name": "havarti cheese 2oz"
+      },
+      {
+        "id": "673573b4-cd75-9d5e-1451-2b808476b330",
+        "name": "450g tomatillo"
+      }
+    ],
+    "packagingOrPrepWords": [
+      {
+        "id": "dc924b0e-4bc0-320b-d728-5fbb2e3b9f06",
+        "name": "dried meat"
+      },
+      {
+        "id": "53b47471-f79e-b2fa-74ee-117a7e8d26dd",
+        "name": "fresh cheese"
+      },
+      {
+        "id": "545c934e-0a2d-9e68-67ff-ceb45751bd2f",
+        "name": "cayenne pepper dried"
+      },
+      {
+        "id": "737d724d-63d2-8365-10fc-4f61090ef921",
+        "name": "chili garlic sauce brand"
+      },
+      {
+        "id": "15dc3cda-2a07-9e5f-4afa-a535a7273545",
+        "name": "Dried Fruit"
+      },
+      {
+        "id": "aa42fc39-c084-4a32-b9cd-77f98ceb3e9d",
+        "name": "fresh fava bean"
+      },
+      {
+        "id": "616326a7-14a3-0ed2-c17f-6ef9a4cd198b",
+        "name": "chile de árbol dried"
+      },
+      {
+        "id": "e645c03b-79cd-2b40-75ef-145fcc11dbe9",
+        "name": "cayenne pepper - ground"
+      },
+      {
+        "id": "901b1950-2207-1392-7889-4fafa1faae2b",
+        "name": "turmeric, ground"
+      },
+      {
+        "id": "4f657326-d7e8-7c80-aec0-53cc9abc855e",
+        "name": "ginger, ground"
+      },
+      {
+        "id": "6eb045ff-86c3-5d29-cd51-6aed815e374a",
+        "name": "cuaresmeno - fresh"
+      },
+      {
+        "id": "df8b478d-a036-464e-907a-be353e7c3806",
+        "name": "green chile canned"
+      },
+      {
+        "id": "8f6ec81a-db0c-5b26-ee91-ed3756851e0e",
+        "name": "tepin dried"
+      },
+      {
+        "id": "4e0d28ee-1093-217f-8375-a8c19b9b6b3c",
+        "name": "fresh beans"
+      },
+      {
+        "id": "c1cb0dd0-f2e5-75b7-a67f-b75bba7d3b49",
+        "name": "dried fig"
+      }
+    ],
+    "hyphenVsSpaceCollisions": [
+      {
+        "base": "palm oil",
+        "variants": [
+          "palm oil",
+          "Palm Oil"
+        ]
+      },
+      {
+        "base": "non iodized salt",
+        "variants": [
+          "non iodized salt",
+          "non-iodized salt"
+        ]
+      },
+      {
+        "base": "non dairy topping",
+        "variants": [
+          "non-dairy topping",
+          "non dairy topping"
+        ]
+      },
+      {
+        "base": "beef tri tip roast",
+        "variants": [
+          "beef tri-tip roast",
+          "beef tri tip roast"
+        ]
+      },
+      {
+        "base": "beef rib eye steak",
+        "variants": [
+          "beef rib-eye steak",
+          "beef rib eye steak"
+        ]
+      },
+      {
+        "base": "sesame chili oil",
+        "variants": [
+          "Sesame Chili Oil",
+          "sesame chili oil"
+        ]
+      },
+      {
+        "base": "black eyed pea",
+        "variants": [
+          "black-eyed pea",
+          "black eyed pea"
+        ]
+      },
+      {
+        "base": "beef rib eye roast",
+        "variants": [
+          "beef rib-eye roast",
+          "beef rib eye roast"
+        ]
+      },
+      {
+        "base": "beef tri tip steak",
+        "variants": [
+          "beef tri tip steak",
+          "beef tri-tip steak"
+        ]
+      },
+      {
+        "base": "green leaf lettuce",
+        "variants": [
+          "green-leaf lettuce",
+          "green leaf lettuce"
+        ]
+      },
+      {
+        "base": "red leaf lettuce",
+        "variants": [
+          "red-leaf lettuce",
+          "red leaf lettuce"
+        ]
+      },
+      {
+        "base": "self rising cornmeal",
+        "variants": [
+          "self rising cornmeal",
+          "self-rising cornmeal"
+        ]
+      },
+      {
+        "base": "chocolate hazelnut spread",
+        "variants": [
+          "chocolate hazelnut spread",
+          "chocolate-hazelnut spread"
+        ]
+      },
+      {
+        "base": "chinese five spice powder",
+        "variants": [
+          "chinese five spice powder",
+          "Chinese five-spice powder"
+        ]
+      },
+      {
+        "base": "self rising flour",
+        "variants": [
+          "self rising flour",
+          "self-rising flour"
+        ]
+      }
+    ],
+    "shortNames": [
+      {
+        "id": "c5fa00dc-9632-60d7-376c-cadce044f570",
+        "name": "be"
+      },
+      {
+        "id": "7b1959f9-c5c0-3eb7-d0a4-9961101178d8",
+        "name": "up"
+      },
+      {
+        "id": "f6109b52-4024-9d4b-4bab-dbc2a2d48f36",
+        "name": ""
+      },
+      {
+        "id": "c947e6cf-2770-f506-fc62-b455e30ae460",
+        "name": "'"
+      },
+      {
+        "id": "1f450a0e-afc5-7833-8c60-fd8b5c4c93b4",
+        "name": "el"
+      },
+      {
+        "id": "71eff4e0-6912-4dac-a619-630acaef7643",
+        "name": "rr"
+      },
+      {
+        "id": "095868b2-79ef-1465-10d2-16c710734cde",
+        "name": "u"
+      }
+    ],
+    "longNames": [
+      {
+        "id": "78d969b3-88c4-6ff5-7eb1-4437a8211fa3",
+        "name": "cajun seasoning tb onion powder cayenne pepper leaf mexican oregano thyme"
+      },
+      {
+        "id": "936a5a53-1f0e-95a0-80e9-79cad387da22",
+        "name": "mccormack taco seasoning beef mccormick grill mate southwest seasoning"
+      },
+      {
+        "id": "c939fd96-bb01-f73b-09af-600ac4c3c1ae",
+        "name": "cajun seasoning seasoning mix blackening seasoning seasoning"
+      },
+      {
+        "id": "4b7ae0ad-d752-eb5b-a992-e19d6d28df18",
+        "name": "taco seasoning mix paprika powder chilli enchilada seasoning tsp powd"
+      }
+    ]
+  }
+}

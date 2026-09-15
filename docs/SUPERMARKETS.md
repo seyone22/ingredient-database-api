@@ -12,7 +12,7 @@ Tracking document for all Sri Lankan supermarket chains, grocery delivery platfo
 | **Arpico Supercentre** | 🟢 **ACTIVE** | **4,820** | **100.0%** | **100.0%** | N/A | **100.0%** | Playwright HTML Scraper | `myarpico.com` OpenCart crawler |
 | **SPAR Sri Lanka** | 🟢 **ACTIVE** | **2,962** | **100.0%** | **60.6%** | **99.5%** | **99.3%** | Direct REST API | `spar2u.lk` (Consolidated source) |
 | **Softlogic GLOMARK** | 🟢 **ACTIVE** | **1,420** | **100.0%** | **100.0%** | N/A | **100.0%** | Playwright Web Scraper | `glomark.lk` (207 categories paginated) |
-| **Cargills Food City** | 🟢 **ACTIVE** | **1,192** | **100.0%** | **98.0%** | **70.6%** | **99.8%** | Playwright + Auth API | `cargillsonline.com` |
+| **Cargills Food City** | 🟢 **ACTIVE** | **~3,967** | **100.0%** | **98.0%** | **70.6%** | **99.8%** | Playwright + Dynamic Category API | `cargillsonline.com` (`GetCategoriesV1` + `GetMenuCategoryItemsPagingV3/`) |
 | **LAUGFS Super** | 🔴 **NOT FEASIBLE** | **0** | N/A | N/A | N/A | N/A | Direct Web Unresolved | No active standalone webstore (`laugfssuper.lk` DNS offline). Delivery via branch call-in / UberEats partner store UUIDs only. |
 | **Lanka Sathosa** | 🔴 **NOT FEASIBLE** | **0** | N/A | N/A | N/A | N/A | Direct Web Static Splash | `lankasathosa.org` is a static splash page with 0 e-commerce cart/catalog APIs. Government price revisions published via Facebook/News gazettes. |
 | **UberEats Groceries** | 🟡 **PROTOTYPE** | **0** | N/A | N/A | N/A | N/A | Playwright-Extra Stealth | Cloudflare bypass implemented for Keells / partner store UUIDs. |
@@ -42,7 +42,7 @@ Tracking document for all Sri Lankan supermarket chains, grocery delivery platfo
 ### 🏬 Cargills Food City
 * **Source ID**: `38f50672-c5a7-9a62-35e2-ddf5f35e15ed`
 * **Scraper**: `src/services/cargillsFetcher.ts`
-* **Capabilities**: Playwright authenticated POST requests to `cargillsonline.com/Web/GetMenuCategoryItemsPagingV3/`. Maps category codes (`FT`, `VG`, `DY`, `HB`, `FC`, etc.) into category paths. Includes vegetarian dietary flags (`dietaryType`).
+* **Capabilities**: Single-session Playwright API crawler. Dynamically queries `GetCategoriesV1` to discover all 23 departments, then sweeps each department's catalog via `GetMenuCategoryItemsPagingV3/` using encrypted `EnId` tokens with automatic pagination and gentle throttling. Full catalog coverage (~3,967 SKUs). Includes dietary flags (`dietaryType`), search terms, and stock counts.
 
 ### 🏬 Softlogic GLOMARK
 * **Source ID**: `70376e1b-f1a2-40da-b94b-769cc70cb42a`
