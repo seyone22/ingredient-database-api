@@ -21,6 +21,7 @@ export default defineRailway(() => {
   const foodrepoApi = service("foodrepo-api", {
     source: github("seyone22/foodrepo-api", { checkSuites: false }),
     replicas: { "asia-southeast1-eqsg3a": 1 },
+    deploy: { sleepApplication: true },
     env: { DATABASE_URL: preserve(), GEMINI_API_KEY: preserve(), NODE_ENV: preserve() },
   });
   const NOSBBQOMatic = group("NOS BBQ O' Matic", [nosBbqOMatic]);
