@@ -38,14 +38,16 @@ export default function IngredientPage() {
 
   // Pricing & Product State (Passed to Child Component)
   const [products, setProducts] = useState<any[]>([]);
+  const [resolvedFrom, setResolvedFrom] = useState<{ ingredient: string; relation: string } | null>(null);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
   const fetchIngredient = async () => {
+    setLoading(true);
     try {
       const res = await fetch(`/api/ingredients/${id}`);
-      if (!res.ok) throw new Error("Failed to fetch ingredient");
+      if (!res.ok) throw new Error("Ingredient not found");
       const data = await res.json();
-      setIngredient(data.ingredient || data);
+      setIngredient(data.ingredient);
     } catch (err) {
       console.error(err);
       setError(true);
@@ -61,9 +63,11 @@ export default function IngredientPage() {
       if (!res.ok) throw new Error("Failed to fetch prices");
       const data = await res.json();
       setProducts(data.prices || []);
+      setResolvedFrom(data.resolvedFrom || null);
     } catch (err) {
       console.error("Pricing fetch error:", err);
       setProducts([]);
+      setResolvedFrom(null);
     } finally {
       setLoadingProducts(false);
     }
@@ -640,6 +644,7 @@ export default function IngredientPage() {
                 ingredientName={ingredient.name}
                 products={products}
                 loadingProducts={loadingProducts}
+                resolvedFrom={resolvedFrom}
                 onRefreshProducts={fetchPrices}
               />
             </div>

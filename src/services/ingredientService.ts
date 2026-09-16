@@ -427,29 +427,87 @@ export async function getIngredientPrices(ingredientId: string) {
   // 1️⃣ Find the core ingredient
   const ing = await db.query.ingredients.findFirst({
     where: eq(ingredients.id, pgId),
-    columns: { name: true },
+    columns: { id: true, name: true, partOf: true },
   });
 
   if (!ing) return null;
 
-  // 2️⃣ Query the Mappings table for products linked to this ingredient
-  const mappedData = await db
-    .select({
-      product: products,
-      source: priceSources,
-    })
-    .from(mappings)
-    .innerJoin(products, eq(products.id, mappings.productId))
-    .leftJoin(priceSources, eq(priceSources.id, products.sourceId))
-    .where(sql`${mappings.matchedIngredients} @> ARRAY[
-        ${pgId}
-        ]
-        ::
-        uuid
-        [
-        ]`);
+  // 2️⃣ Helper function to fetch mapped products and their latest prices for an ingredient ID
+  const fetchProductsForIngredient = async (targetPgId: string) => {
+    const mapped = await db
+      .select({
+        product: products,
+        source: priceSources,
+      })
+      .from(mappings)
+      .innerJoin(products, eq(products.id, mappings.productId))
+      .leftJoin(priceSources, eq(priceSources.id, products.sourceId))
+      .where(sql`${mappings.matchedIngredients} @> ARRAY[
+          ${targetPgId}
+          ]
+          ::
+          uuid
+          [
+          ]`);
 
-  if (mappedData.length === 0) {
+    if (mapped.length === 0) return [];
+
+    const productIds = mapped.map((m) => m.product.id);
+
+    // Fetch the LATEST price for each product using Postgres DISTINCT ON
+    const latestPrices = await db
+      .selectDistinctOn([priceHistories.productId], {
+        productId: priceHistories.productId,
+        latestPrice: priceHistories.price,
+        currency: priceHistories.currency,
+        lastUpdated: priceHistories.timestamp,
+      })
+      .from(priceHistories)
+      .where(inArray(priceHistories.productId, productIds))
+      .orderBy(priceHistories.productId, desc(priceHistories.timestamp));
+
+    const priceMap = new Map(latestPrices.map((p) => [p.productId, p]));
+
+    return mapped.map(({ product, source }) => {
+      const latestData = priceMap.get(product.id);
+      return {
+        ...product,
+        source,
+        price: latestData ? latestData.latestPrice : product.price,
+        currency: latestData ? latestData.currency : product.currency || "LKR",
+        lastPriceUpdate: latestData ? latestData.lastUpdated : null,
+      };
+    });
+  };
+
+  // Direct check
+  let productsWithLatestPrices = await fetchProductsForIngredient(pgId);
+  let resolvedFrom: { ingredient: string; relation: string } | undefined = undefined;
+
+  // 3️⃣ If no direct products are mapped, traverse part_of parent ingredients
+  if (productsWithLatestPrices.length === 0 && ing.partOf && ing.partOf.length > 0) {
+    for (const parentName of ing.partOf) {
+      const cleanParentName = parentName.trim().toLowerCase();
+      const parentIng = await db.query.ingredients.findFirst({
+        where: sql`LOWER(${ingredients.name}) = ${cleanParentName}`,
+        columns: { id: true, name: true },
+      });
+
+      if (parentIng) {
+        const parentProducts = await fetchProductsForIngredient(parentIng.id);
+        if (parentProducts.length > 0) {
+          productsWithLatestPrices = parentProducts;
+          resolvedFrom = {
+            ingredient: parentIng.name,
+            relation: "part_of",
+          };
+          break;
+        }
+      }
+    }
+  }
+
+  if (productsWithLatestPrices.length === 0) {
     return {
       ingredient: ing.name,
       prices: [],
@@ -457,41 +515,10 @@ export async function getIngredientPrices(ingredientId: string) {
     };
   }
 
-  const productIds = mappedData.map((m) => m.product.id);
-
-  // 3️⃣ Fetch the LATEST price for each product using Postgres DISTINCT ON
-  // This grabs only the first row per productId after sorting by timestamp DESC
-  const latestPrices = await db
-    .selectDistinctOn([priceHistories.productId], {
-      productId: priceHistories.productId,
-      latestPrice: priceHistories.price,
-      currency: priceHistories.currency,
-      lastUpdated: priceHistories.timestamp,
-    })
-    .from(priceHistories)
-    .where(inArray(priceHistories.productId, productIds))
-    .orderBy(priceHistories.productId, desc(priceHistories.timestamp));
-
-  // Create a lookup Map for fast O(1) matching
-  const priceMap = new Map(latestPrices.map((p) => [p.productId, p]));
-
-  // 4️⃣ Merge the latest price data into the product objects
-  const productsWithLatestPrices = mappedData.map(({ product, source }) => {
-    const latestData = priceMap.get(product.id);
-
-    return {
-      ...product,
-      source, // Embed the joined source object
-      // Override with historical price if it exists
-      price: latestData ? latestData.latestPrice : product.price,
-      currency: latestData ? latestData.currency : product.currency || "LKR",
-      lastPriceUpdate: latestData ? latestData.lastUpdated : null,
-    };
-  });
-
   return {
     ingredient: ing.name,
     prices: productsWithLatestPrices,
+    ...(resolvedFrom && { resolvedFrom }),
   };
 }
 

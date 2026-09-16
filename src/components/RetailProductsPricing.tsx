@@ -99,6 +99,7 @@ interface RetailProductsPricingProps {
   ingredientName: string;
   products: any[];
   loadingProducts: boolean;
+  resolvedFrom?: { ingredient: string; relation: string } | null;
   onRefreshProducts: () => Promise<void>;
 }
 
@@ -107,6 +108,7 @@ export default function RetailProductsPricing({
   ingredientName,
   products,
   loadingProducts,
+  resolvedFrom,
   onRefreshProducts,
 }: RetailProductsPricingProps) {
   const [isMappingOpen, setIsMappingOpen] = useState(false);
@@ -395,6 +397,15 @@ export default function RetailProductsPricing({
           </DialogContent>
         </Dialog>
       </div>
+
+      {resolvedFrom && (
+        <div className="flex items-center gap-3 p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-900 dark:text-amber-200 text-xs">
+          <Info className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <span>
+            <strong>{ingredientName}</strong> is not sold standalone in retail stores. Displaying market pricing for its base parent ingredient (<strong>{resolvedFrom.ingredient}</strong>).
+          </span>
+        </div>
+      )}
 
       {loadingProducts ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
