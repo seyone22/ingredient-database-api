@@ -24,6 +24,36 @@ export function normalizeQuantityUnit(raw: any): NormalizedQtyUnit {
 
   const name = nameStr.toLowerCase();
 
+  // 🥚 Dedicated normalization for eggs (loose & multi-packs)
+  // Prevents weight regex from matching single egg grams like "(55-55g PER EGG), 10'S"
+  // or defaulting 10-packs / 6-packs / bulk eggs to 1 kg.
+  const isEggProduct = /\beggs?\b/i.test(name);
+  if (isEggProduct) {
+    // 1. Check for explicit multi-pack counts in title first (e.g. 10S, 6S, 30S, 10 Pack, 10Pkt)
+    const eggCountMatch =
+      name.match(/\b(30|15|12|10|6)\s*(?:'s|s|pack|pkt|pcs)\b/i) ||
+      name.match(/\b(?:pack|pkt)\s*of\s*(30|15|12|10|6)\b/i) ||
+      name.match(/\b(30|15|12|10|6)\b/);
+
+    if (eggCountMatch) {
+      return { quantity: parseInt(eggCountMatch[1], 10), unit: "unit" };
+    }
+
+    // 2. Loose / bulk eggs sold individually
+    if (/\bbulk\b/i.test(name) || raw?.uom === "NO" || raw?.uom === "EA") {
+      return { quantity: 1, unit: "unit" };
+    }
+
+    // Check store-specific raw fields (e.g., Cargills UnitSize: 10, UOM: 'pcs' / 'S')
+    const rawUnitSize = raw?.UnitSize ? parseInt(raw.UnitSize, 10) : null;
+    if (rawUnitSize && rawUnitSize > 1) {
+      return { quantity: rawUnitSize, unit: "unit" };
+    }
+
+    // Default egg pack standard in SL supermarkets if unspecified
+    return { quantity: 10, unit: "unit" };
+  }
+
   // 1️⃣ Handle multi-packs, e.g., "2x400g", "6 pack of 330ml"
   const multiPackMatch = name.match(
     /(\d+)\s*[xX*]\s*(\d+(?:\.\d+)?)\s*(g|kg|ml|l)/i,
