@@ -24,10 +24,12 @@ export function normalizeQuantityUnit(raw: any): NormalizedQtyUnit {
 
   const name = nameStr.toLowerCase();
 
-  // 🥚 Dedicated normalization for eggs (loose & multi-packs)
+  // 🥚 Dedicated normalization for whole poultry eggs (loose & multi-packs)
   // Prevents weight regex from matching single egg grams like "(55-55g PER EGG), 10'S"
   // or defaulting 10-packs / 6-packs / bulk eggs to 1 kg.
-  const isEggProduct = /\beggs?\b/i.test(name);
+  // Must NOT trigger for egg noodles, egg pasta, salted egg crisps, egg shampoo, etc.
+  const isNonWholeEggProduct = /\b(noodles?|pasta|spaghetti|powder|seasoning|crisps?|chips?|shampoo|biscuit|cookie|cracker|mayo|mayonnaise|sauce|colour|coloring)\b/i.test(name);
+  const isEggProduct = /\beggs?\b/i.test(name) && !isNonWholeEggProduct;
   if (isEggProduct) {
     // 1. Check for explicit multi-pack counts in title first (e.g. 10S, 6S, 30S, 10 Pack, 10Pkt)
     const eggCountMatch =
