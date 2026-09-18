@@ -119,7 +119,7 @@ export async function getDescendantIngredientIds(rootId: string): Promise<string
         const childRows = await db
           .select({ id: ingredients.id })
           .from(ingredients)
-          .where(sql`LOWER(${ingredients.name}) = ANY(${varietyNames})`);
+          .where(inArray(sql`LOWER(${ingredients.name})`, varietyNames));
 
         for (const child of childRows) {
           if (!visited.has(child.id)) {
@@ -134,7 +134,9 @@ export async function getDescendantIngredientIds(rootId: string): Promise<string
     const partOfChildren = await db
       .select({ id: ingredients.id })
       .from(ingredients)
-      .where(sql`${currentNameLower} = ANY(SELECT LOWER(unnest(${ingredients.partOf})))`);
+      .where(
+        sql`EXISTS (SELECT 1 FROM unnest(${ingredients.partOf}) p WHERE LOWER(p) = ${currentNameLower})`,
+      );
 
     for (const child of partOfChildren) {
       if (!visited.has(child.id)) {
