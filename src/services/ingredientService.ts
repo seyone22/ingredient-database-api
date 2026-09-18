@@ -91,13 +91,84 @@ const ingredientColumns = {
 
 // ---------------------------------------------------------------------------
 // Attach related products via the `mappings` table
-// (mappings.matchedIngredients is a uuid[] pointing back to ingredients.id)
+// ---------------------------------------------------------------------------
+// Helper: recursively find all descendant ingredient IDs via varieties and part_of
+// ---------------------------------------------------------------------------
+export async function getDescendantIngredientIds(rootId: string): Promise<string[]> {
+  const visited = new Set<string>();
+  const queue: string[] = [rootId];
+
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    if (visited.has(currentId)) continue;
+    visited.add(currentId);
+
+    const current = await db.query.ingredients.findFirst({
+      where: eq(ingredients.id, currentId),
+      columns: { id: true, name: true, varieties: true },
+    });
+
+    if (!current) continue;
+
+    // 1. Traverse varieties by name
+    if (current.varieties && current.varieties.length > 0) {
+      const varietyNames = current.varieties
+        .filter(Boolean)
+        .map((v) => v.trim().toLowerCase());
+      if (varietyNames.length > 0) {
+        const childRows = await db
+          .select({ id: ingredients.id })
+          .from(ingredients)
+          .where(sql`LOWER(${ingredients.name}) = ANY(${varietyNames})`);
+
+        for (const child of childRows) {
+          if (!visited.has(child.id)) {
+            queue.push(child.id);
+          }
+        }
+      }
+    }
+
+    // 2. Traverse ingredients where part_of contains current ingredient's name
+    const currentNameLower = current.name.trim().toLowerCase();
+    const partOfChildren = await db
+      .select({ id: ingredients.id })
+      .from(ingredients)
+      .where(sql`${currentNameLower} = ANY(SELECT LOWER(unnest(${ingredients.partOf})))`);
+
+    for (const child of partOfChildren) {
+      if (!visited.has(child.id)) {
+        queue.push(child.id);
+      }
+    }
+  }
+
+  return Array.from(visited);
+}
+
+// ---------------------------------------------------------------------------
+// Attach related products via the `mappings` table
+// (Supports hierarchy: root ingredient inherits products mapped to its varieties)
 // ---------------------------------------------------------------------------
 async function attachProducts<T extends { id: string }>(
   rows: T[],
 ): Promise<(T & { products: ProductRow[] })[]> {
-  const ingredientIds = rows.map((r) => r.id);
-  if (ingredientIds.length === 0) {
+  if (rows.length === 0) {
+    return [];
+  }
+
+  // Build a map of root ingredient ID -> all its descendant IDs (including self)
+  const descendantsMap = new Map<string, string[]>();
+  const allNeededIngredientIds = new Set<string>();
+
+  for (const r of rows) {
+    const descIds = await getDescendantIngredientIds(r.id);
+    descendantsMap.set(r.id, descIds);
+    descIds.forEach((id) => allNeededIngredientIds.add(id));
+  }
+
+  const queryIds = Array.from(allNeededIngredientIds);
+  if (queryIds.length === 0) {
     return rows.map((r) => ({ ...r, products: [] }));
   }
 
@@ -108,27 +179,42 @@ async function attachProducts<T extends { id: string }>(
     })
     .from(mappings)
     .innerJoin(products, eq(products.id, mappings.productId))
-    .where(sql`${mappings.matchedIngredients} &&
-        ${ingredientIds}
-        ::
-        uuid
-        [
-        ]`);
+    .where(
+      sql`${mappings.matchedIngredients} && ${queryIds}::uuid[]`,
+    );
 
-  const productsByIngredient = new Map<string, ProductRow[]>();
+  // Group products by directly matched ingredient ID
+  const directMap = new Map<string, ProductRow[]>();
   for (const rel of rels) {
     for (const ingId of rel.matchedIngredients ?? []) {
-      if (!ingredientIds.includes(ingId)) continue;
-      const list = productsByIngredient.get(ingId) ?? [];
+      if (!allNeededIngredientIds.has(ingId)) continue;
+      const list = directMap.get(ingId) ?? [];
       list.push(rel.product);
-      productsByIngredient.set(ingId, list);
+      directMap.set(ingId, list);
     }
   }
 
-  return rows.map((r) => ({
-    ...r,
-    products: productsByIngredient.get(r.id) ?? [],
-  }));
+  // For each row, collect products from all its descendants (deduplicating by product ID)
+  return rows.map((r) => {
+    const descIds = descendantsMap.get(r.id) ?? [r.id];
+    const seenProductIds = new Set<string>();
+    const rowProducts: ProductRow[] = [];
+
+    for (const dId of descIds) {
+      const prodList = directMap.get(dId) ?? [];
+      for (const p of prodList) {
+        if (!seenProductIds.has(p.id)) {
+          seenProductIds.add(p.id);
+          rowProducts.push(p);
+        }
+      }
+    }
+
+    return {
+      ...r,
+      products: rowProducts,
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -432,8 +518,10 @@ export async function getIngredientPrices(ingredientId: string) {
 
   if (!ing) return null;
 
-  // 2️⃣ Helper function to fetch mapped products and their latest prices for an ingredient ID
-  const fetchProductsForIngredient = async (targetPgId: string) => {
+  // 2️⃣ Helper function to fetch mapped products and their latest prices for an array of ingredient IDs
+  const fetchProductsForIngredients = async (targetPgIds: string[]) => {
+    if (!targetPgIds || targetPgIds.length === 0) return [];
+
     const mapped = await db
       .select({
         product: products,
@@ -442,17 +530,19 @@ export async function getIngredientPrices(ingredientId: string) {
       .from(mappings)
       .innerJoin(products, eq(products.id, mappings.productId))
       .leftJoin(priceSources, eq(priceSources.id, products.sourceId))
-      .where(sql`${mappings.matchedIngredients} @> ARRAY[
-          ${targetPgId}
-          ]
-          ::
-          uuid
-          [
-          ]`);
+      .where(sql`${mappings.matchedIngredients} && ${targetPgIds}::uuid[]`);
 
     if (mapped.length === 0) return [];
 
-    const productIds = mapped.map((m) => m.product.id);
+    // Deduplicate mapped products by product.id
+    const uniqueMappedMap = new Map<string, { product: ProductRow; source: any }>();
+    for (const item of mapped) {
+      if (!uniqueMappedMap.has(item.product.id)) {
+        uniqueMappedMap.set(item.product.id, item);
+      }
+    }
+    const uniqueMapped = Array.from(uniqueMappedMap.values());
+    const productIds = uniqueMapped.map((m) => m.product.id);
 
     // Fetch the LATEST price for each product using Postgres DISTINCT ON
     const latestPrices = await db
@@ -468,7 +558,7 @@ export async function getIngredientPrices(ingredientId: string) {
 
     const priceMap = new Map(latestPrices.map((p) => [p.productId, p]));
 
-    return mapped.map(({ product, source }) => {
+    return uniqueMapped.map(({ product, source }) => {
       const latestData = priceMap.get(product.id);
       return {
         ...product,
@@ -480,21 +570,59 @@ export async function getIngredientPrices(ingredientId: string) {
     });
   };
 
-  // Direct check
-  let productsWithLatestPrices = await fetchProductsForIngredient(pgId);
+  // Fetch products for all descendant ingredients (including self)
+  const descendantIds = await getDescendantIngredientIds(pgId);
+  let productsWithLatestPrices = await fetchProductsForIngredients(descendantIds);
   let resolvedFrom: { ingredient: string; relation: string } | undefined = undefined;
 
-  // 3️⃣ If no direct products are mapped, traverse part_of parent ingredients
+  // If descendant ingredients had products, note inheritance if it came from varieties
+  if (productsWithLatestPrices.length > 0 && descendantIds.length > 1) {
+    resolvedFrom = {
+      ingredient: ing.name,
+      relation: "varieties",
+    };
+  }
+
+  // 3️⃣ If still no products are mapped, traverse part_of parent ingredients (fallback upward)
+  // NOTE: Exclude broad meta-categories (e.g. 'fruit', 'vegetable', 'meat', 'dairy', 'spice')
+  // so an unmapped specific ingredient doesn't get flooded with unrelated products from the whole category!
+  const BROAD_META_CATEGORIES = new Set([
+    "fruit",
+    "fruits",
+    "vegetable",
+    "vegetables",
+    "meat",
+    "meats",
+    "dairy",
+    "spice",
+    "spices",
+    "grain",
+    "grains",
+    "seafood",
+    "fish",
+    "herb",
+    "herbs",
+    "oil",
+    "sweetener",
+    "beverage",
+    "sauce",
+  ]);
+
   if (productsWithLatestPrices.length === 0 && ing.partOf && ing.partOf.length > 0) {
     for (const parentName of ing.partOf) {
       const cleanParentName = parentName.trim().toLowerCase();
+      if (BROAD_META_CATEGORIES.has(cleanParentName)) {
+        continue;
+      }
+
       const parentIng = await db.query.ingredients.findFirst({
         where: sql`LOWER(${ingredients.name}) = ${cleanParentName}`,
         columns: { id: true, name: true },
       });
 
       if (parentIng) {
-        const parentProducts = await fetchProductsForIngredient(parentIng.id);
+        const parentDescendants = await getDescendantIngredientIds(parentIng.id);
+        const parentProducts = await fetchProductsForIngredients(parentDescendants);
         if (parentProducts.length > 0) {
           productsWithLatestPrices = parentProducts;
           resolvedFrom = {

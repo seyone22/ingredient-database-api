@@ -68,10 +68,16 @@ const getUnitPriceData = (product: any) => {
       ? (product.price / baseQty) * 100
       : product.price / baseQty;
 
+  const displayUnit =
+    baseUnit === "g" || baseUnit === "ml"
+      ? `100${baseUnit}`
+      : baseUnit === "unit"
+        ? "unit"
+        : baseUnit;
+
   return {
     pricePer100,
-    displayUnit:
-      baseUnit === "g" || baseUnit === "ml" ? `100${baseUnit}` : "unit",
+    displayUnit,
     normalizedQty: baseQty,
   };
 };

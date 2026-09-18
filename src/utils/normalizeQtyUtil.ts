@@ -56,6 +56,32 @@ export function normalizeQuantityUnit(raw: any): NormalizedQtyUnit {
     return { quantity: 10, unit: "unit" };
   }
 
+  // 🥥 Dedicated normalization for whole coconuts (pol gediya, fresh coconut, king coconut, thambili)
+  // Must NOT trigger for coconut milk, coconut oil, coconut flour, coconut water, coconut treacle, desiccated coconut, etc.
+  const isNonWholeCoconutProduct =
+    /\b(oil|milk|powder|cream|flour|sugar|treacle|vinegar|water|nectar|aminos|honey|syrup|butter|spread|jaggery|paste|scraped|grated|shredded|desiccated|sambol|chutney|chips?|biscuit|cookie|chocolate|toffee|soap|shampoo|lotion|scrub|conditioner|scraper|shell|charcoal)\b/i.test(
+      name,
+    );
+  const isWholeCoconut =
+    /\b(coconuts?|pol|thambili)\b/i.test(name) && !isNonWholeCoconutProduct;
+  if (isWholeCoconut) {
+    // 1. Check for explicit multi-pack counts in title (e.g. 3S, 2 Pack, Pack of 3)
+    const packMatch =
+      name.match(/\b(?:pack|pkt)\s*of\s*(\d+)\b/i) ||
+      name.match(/\b(\d+)\s*(?:'s|s|pack|pkt|pcs)\b/i);
+    if (packMatch) {
+      return { quantity: parseInt(packMatch[1], 10), unit: "unit" };
+    }
+
+    // 2. Check store-specific raw fields (e.g. Cargills UnitSize: 3, UOM: 'pcs' for "Coconut 3S")
+    const rawUnitSize = raw?.UnitSize ? parseInt(raw.UnitSize, 10) : null;
+    if (rawUnitSize && rawUnitSize > 1) {
+      return { quantity: rawUnitSize, unit: "unit" };
+    }
+
+    return { quantity: 1, unit: "unit" };
+  }
+
   // 1️⃣ Handle multi-packs, e.g., "2x400g", "6 pack of 330ml"
   const multiPackMatch = name.match(
     /(\d+)\s*[xX*]\s*(\d+(?:\.\d+)?)\s*(g|kg|ml|l)/i,
