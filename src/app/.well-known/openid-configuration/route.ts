@@ -12,19 +12,36 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json(
     {
-      resource: origin,
-      authorization_servers: [
-        process.env.AUTH_SERVER_URL || origin,
-      ],
+      issuer: origin,
+      authorization_endpoint: `${origin}/api/oauth/authorize`,
+      token_endpoint: `${origin}/api/oauth/token`,
+      registration_endpoint: `${origin}/api/oauth/register`,
+      jwks_uri: `${origin}/api/oauth/jwks`,
       scopes_supported: [
+        "openid",
+        "profile",
+        "email",
         "read:ingredients",
         "write:ingredients",
         "read:products",
         "read:recipes",
         "admin:maintenance",
       ],
-      bearer_methods_supported: ["header"],
-      resource_documentation: `${origin}/documentation`,
+      response_types_supported: ["code"],
+      response_modes_supported: ["query"],
+      grant_types_supported: [
+        "authorization_code",
+        "client_credentials",
+        "refresh_token",
+      ],
+      token_endpoint_auth_methods_supported: [
+        "client_secret_post",
+        "client_secret_basic",
+        "none",
+      ],
+      code_challenge_methods_supported: ["S256", "plain"],
+      subject_types_supported: ["public"],
+      id_token_signing_alg_values_supported: ["RS256", "HS256"],
     },
     {
       headers: {
