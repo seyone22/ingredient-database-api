@@ -182,7 +182,10 @@ async function attachProducts<T extends { id: string }>(
     .from(mappings)
     .innerJoin(products, eq(products.id, mappings.productId))
     .where(
-      sql`${mappings.matchedIngredients} && ${queryIds}::uuid[]`,
+      sql`${mappings.matchedIngredients} && ARRAY[${sql.join(
+        queryIds.map((id) => sql`${id}::uuid`),
+        sql`, `,
+      )}]`,
     );
 
   // Group products by directly matched ingredient ID
@@ -532,7 +535,12 @@ export async function getIngredientPrices(ingredientId: string) {
       .from(mappings)
       .innerJoin(products, eq(products.id, mappings.productId))
       .leftJoin(priceSources, eq(priceSources.id, products.sourceId))
-      .where(sql`${mappings.matchedIngredients} && ${targetPgIds}::uuid[]`);
+      .where(
+        sql`${mappings.matchedIngredients} && ARRAY[${sql.join(
+          targetPgIds.map((id) => sql`${id}::uuid`),
+          sql`, `,
+        )}]`,
+      );
 
     if (mapped.length === 0) return [];
 
