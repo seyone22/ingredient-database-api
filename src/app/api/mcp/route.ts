@@ -18,7 +18,16 @@ export async function OPTIONS() {
   });
 }
 
+function getPublicOrigin(req: NextRequest): string {
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+  return host && !host.includes("localhost")
+    ? `${proto}://${host}`
+    : process.env.NEXT_PUBLIC_APP_URL || "https://food.seyone.dev";
+}
+
 export async function GET(req: NextRequest) {
+  const origin = getPublicOrigin(req);
   // Support simple status checks or protocol info
   return NextResponse.json(
     {
@@ -26,7 +35,7 @@ export async function GET(req: NextRequest) {
       server: "foodrepo-mcp-server",
       transport: "Streamable HTTP (POST /api/mcp)",
       spec: "Model Context Protocol",
-      documentation: `${req.nextUrl.origin}/documentation`,
+      documentation: `${origin}/documentation`,
     },
     { headers: CORS_HEADERS },
   );
@@ -37,10 +46,7 @@ export async function POST(req: NextRequest) {
   const auth = await verifyMcpAuth(req);
 
   if (!auth.authenticated) {
-    const origin =
-      req.nextUrl.origin ||
-      process.env.NEXT_PUBLIC_APP_URL ||
-      "https://food.seyone.dev";
+    const origin = getPublicOrigin(req);
     return NextResponse.json(
       {
         jsonrpc: "2.0",
