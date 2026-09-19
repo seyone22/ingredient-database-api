@@ -604,6 +604,7 @@ export default function IngredientPage() {
                               {derivatives.map((d: any, idx: number) => {
                                 const isObj = typeof d === "object" && d !== null;
                                 const name = isObj ? d.name : d;
+                                if (!name || typeof name !== "string") return null;
                                 const hasYield = isObj && typeof d.yieldRatio === "number";
                                 const yieldPct = hasYield ? Math.round(d.yieldRatio * 100) : null;
                                 const process = isObj ? d.process : null;
