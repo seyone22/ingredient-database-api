@@ -111,9 +111,9 @@ export default function IngestDashboard() {
 
   // Compute 4-axis Cross Spider Chart coordinates (GitHub style in purple theme)
   const spiderChartData = React.useMemo(() => {
-    const cx = 170;
-    const cy = 100;
-    const L = 60;
+    const cx = 175;
+    const cy = 110;
+    const L = 72;
 
     const north = sourceStats.list[0] || {
       name: "Keells",
@@ -145,7 +145,7 @@ export default function IngestDashboard() {
     );
 
     const getRadius = (pct: number) => {
-      return 12 + (pct / maxPercent) * (L - 14);
+      return 14 + (pct / maxPercent) * (L - 22);
     };
 
     const rNorth = getRadius(north.percent);
@@ -323,7 +323,7 @@ export default function IngestDashboard() {
 
         {/* Activity Overview & Spider Chart (GitHub style in purple theme) */}
         <Card className="bg-card shadow-xs border-border/80 overflow-hidden">
-          <CardContent className="p-6">
+          <CardContent className="py-5 px-6 sm:px-8">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
               {/* Left Column: Activity Overview */}
               <div className="md:col-span-5 space-y-3">
@@ -370,16 +370,19 @@ export default function IngestDashboard() {
               </div>
 
               {/* Middle Divider */}
-              <div className="hidden md:flex justify-center md:col-span-1 h-32">
-                <div className="w-px bg-border/60 h-full" />
+              <div className="hidden md:flex justify-center md:col-span-1 self-stretch items-center">
+                <div className="w-px bg-border/60 h-28" />
               </div>
 
               {/* Right Column: Spider / Radar Cross Chart */}
               <div className="md:col-span-6 flex justify-center items-center">
                 <svg
-                  viewBox="0 0 340 210"
-                  className="w-full max-w-[340px] h-auto overflow-visible select-none"
+                  viewBox="0 0 350 220"
+                  className="w-full max-w-[360px] h-auto overflow-visible select-none"
+                  role="img"
+                  aria-label="Supermarket activity distribution cross chart"
                 >
+                  <title>Supermarket activity distribution</title>
                   {/* Perpendicular Axis Cross (Purple) */}
                   <line
                     x1={spiderChartData.cx}
@@ -430,7 +433,7 @@ export default function IngestDashboard() {
                   {/* Labels: North */}
                   <text
                     x={spiderChartData.cx}
-                    y={spiderChartData.cy - spiderChartData.L - 14}
+                    y={spiderChartData.cy - spiderChartData.L - 19}
                     textAnchor="middle"
                     className="text-xs font-semibold fill-foreground"
                   >
@@ -438,7 +441,7 @@ export default function IngestDashboard() {
                   </text>
                   <text
                     x={spiderChartData.cx}
-                    y={spiderChartData.cy - spiderChartData.L - 3}
+                    y={spiderChartData.cy - spiderChartData.L - 6}
                     textAnchor="middle"
                     className="text-[11px] fill-muted-foreground"
                   >
@@ -447,7 +450,7 @@ export default function IngestDashboard() {
 
                   {/* Labels: East */}
                   <text
-                    x={spiderChartData.cx + spiderChartData.L + 8}
+                    x={spiderChartData.cx + spiderChartData.L + 9}
                     y={spiderChartData.cy - 2}
                     textAnchor="start"
                     className="text-xs font-semibold fill-foreground"
@@ -455,8 +458,8 @@ export default function IngestDashboard() {
                     {spiderChartData.east.percent}%
                   </text>
                   <text
-                    x={spiderChartData.cx + spiderChartData.L + 8}
-                    y={spiderChartData.cy + 10}
+                    x={spiderChartData.cx + spiderChartData.L + 9}
+                    y={spiderChartData.cy + 11}
                     textAnchor="start"
                     className="text-[11px] fill-muted-foreground"
                   >
@@ -466,7 +469,7 @@ export default function IngestDashboard() {
                   {/* Labels: South */}
                   <text
                     x={spiderChartData.cx}
-                    y={spiderChartData.cy + spiderChartData.L + 14}
+                    y={spiderChartData.cy + spiderChartData.L + 16}
                     textAnchor="middle"
                     className="text-xs font-semibold fill-foreground"
                   >
@@ -474,7 +477,7 @@ export default function IngestDashboard() {
                   </text>
                   <text
                     x={spiderChartData.cx}
-                    y={spiderChartData.cy + spiderChartData.L + 25}
+                    y={spiderChartData.cy + spiderChartData.L + 28}
                     textAnchor="middle"
                     className="text-[11px] fill-muted-foreground"
                   >
@@ -483,7 +486,7 @@ export default function IngestDashboard() {
 
                   {/* Labels: West */}
                   <text
-                    x={spiderChartData.cx - spiderChartData.L - 8}
+                    x={spiderChartData.cx - spiderChartData.L - 9}
                     y={spiderChartData.cy - 2}
                     textAnchor="end"
                     className="text-xs font-semibold fill-foreground"
@@ -491,8 +494,8 @@ export default function IngestDashboard() {
                     {spiderChartData.west.percent}%
                   </text>
                   <text
-                    x={spiderChartData.cx - spiderChartData.L - 8}
-                    y={spiderChartData.cy + 10}
+                    x={spiderChartData.cx - spiderChartData.L - 9}
+                    y={spiderChartData.cy + 11}
                     textAnchor="end"
                     className="text-[11px] fill-muted-foreground"
                   >
