@@ -7,7 +7,7 @@
   background-color: var(--background, #f0f1f5);
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 40;
   backdrop-filter: blur(8px);
 }
 
