@@ -3,7 +3,6 @@
 import { useState } from "react";
 import NavBar from "@/components/navbar/NavBar";
 import Footer from "@/components/footer/Footer";
-import { RedocStandalone } from "redoc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Terminal,
@@ -11,7 +10,6 @@ import {
   Copy,
   Check,
   BookOpen,
-  FileCode,
   Sliders,
   ExternalLink,
 } from "lucide-react";
@@ -147,7 +145,6 @@ export default function DocumentationPage() {
   const [paramValues, setParamValues] = useState<Record<string, string>>({ query: "turmeric", region: "South Asia", limit: "10" });
   const [codeLang, setCodeLang] = useState<"curl" | "ts" | "dart" | "python">("curl");
   const [copied, setCopied] = useState(false);
-  const [viewMode, setViewMode] = useState<"interactive" | "redoc">("interactive");
   const [testResult, setTestResult] = useState<string | null>(null);
   const [testLoading, setTestLoading] = useState(false);
   const [testStatus, setTestStatus] = useState<number | null>(null);
@@ -244,27 +241,7 @@ export default function DocumentationPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setViewMode("interactive")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                viewMode === "interactive"
-                  ? "bg-primary text-primary-foreground font-semibold shadow-sm"
-                  : "border border-input bg-background hover:bg-accent text-muted-foreground"
-              }`}
-            >
-              <Terminal className="w-4 h-4 inline mr-1.5" /> Interactive Explorer
-            </button>
-            <button
-              onClick={() => setViewMode("redoc")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                viewMode === "redoc"
-                  ? "bg-primary text-primary-foreground font-semibold shadow-sm"
-                  : "border border-input bg-background hover:bg-accent text-muted-foreground"
-              }`}
-            >
-              <FileCode className="w-4 h-4 inline mr-1.5" /> OpenAPI Redoc
-            </button>
+          <div className="flex items-center gap-2">
             <a
               href="https://foodapi.seyone.dev/api/docs"
               target="_blank"
@@ -276,27 +253,7 @@ export default function DocumentationPage() {
           </div>
         </div>
 
-        {viewMode === "redoc" ? (
-          <Card className="border-border/60 bg-card overflow-hidden">
-            <CardContent className="p-0 min-h-[700px]">
-              <RedocStandalone
-                specUrl="https://foodapi.seyone.dev/api/docs-json"
-                options={{
-                  scrollYOffset: 0,
-                  hideDownloadButton: false,
-                  hideHostname: false,
-                  theme: {
-                    colors: {
-                      primary: { main: "#38bdf8" },
-                      responses: { success: { color: "#22c55e" } },
-                    },
-                  },
-                }}
-              />
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
             {/* Sidebar Endpoint Navigation (4 cols) */}
             <div className="lg:col-span-4 space-y-3">
@@ -437,11 +394,8 @@ export default function DocumentationPage() {
                 </CardContent>
               </Card>
 
-            </div>
-
           </div>
-        )}
-
+        </div>
       </main>
 
       <Footer />
