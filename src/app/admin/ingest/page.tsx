@@ -1,9 +1,21 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import {
+  AlertTriangle,
+  Building2,
+  Calendar,
+  CheckCircle2,
+  ListFilter,
+  Loader2,
+  Play,
+  RefreshCcw,
+  XCircle,
+} from "lucide-react";
 import Link from "next/link";
-import NavBar from "@/components/navbar/NavBar";
+import React, { useEffect, useState } from "react";
 import Footer from "@/components/footer/Footer";
+import NavBar from "@/components/navbar/NavBar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,6 +24,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -20,22 +33,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Play,
-  CheckCircle2,
-  XCircle,
-  Loader2,
-  Calendar,
-  ListFilter,
-  AlertTriangle,
-  Building2,
-  RefreshCcw,
-} from "lucide-react";
 import "react-calendar-heatmap/dist/styles.css";
-import { Tooltip } from "react-tooltip";
 import CalendarHeatmap from "react-calendar-heatmap";
+import { Tooltip } from "react-tooltip";
 
 export default function IngestDashboard() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -45,7 +45,7 @@ export default function IngestDashboard() {
 
   const fetchLogs = async () => {
     try {
-      const res = await fetch("/api/admin/logs?type=SCRAPE_RUN&limit=200");
+      const res = await fetch("/api/admin/logs?type=SCRAPE_RUN&limit=1000");
       const data = await res.json();
       setLogs(data.logs || []);
     } catch (error) {
@@ -72,7 +72,7 @@ export default function IngestDashboard() {
     fetchStats();
   }, []);
 
-  // Process logs for the heatmap (last 6 months)
+  // Process logs for the heatmap (last 1 year)
   const heatmapData = React.useMemo(() => {
     const counts: Record<string, number> = {};
     logs.forEach((log) => {
@@ -115,10 +115,26 @@ export default function IngestDashboard() {
     const cy = 100;
     const L = 60;
 
-    const north = sourceStats.list[0] || { name: "Keells", count: 7610, percent: 36 };
-    const east = sourceStats.list[1] || { name: "Arpico", count: 4888, percent: 23 };
-    const south = sourceStats.list[2] || { name: "Cargills", count: 4152, percent: 19 };
-    const west = sourceStats.list[3] || { name: "SPAR", count: 2963, percent: 14 };
+    const north = sourceStats.list[0] || {
+      name: "Keells",
+      count: 7610,
+      percent: 36,
+    };
+    const east = sourceStats.list[1] || {
+      name: "Arpico",
+      count: 4888,
+      percent: 23,
+    };
+    const south = sourceStats.list[2] || {
+      name: "Cargills",
+      count: 4152,
+      percent: 19,
+    };
+    const west = sourceStats.list[3] || {
+      name: "SPAR",
+      count: 2963,
+      percent: 14,
+    };
 
     const maxPercent = Math.max(
       north.percent,
@@ -129,7 +145,7 @@ export default function IngestDashboard() {
     );
 
     const getRadius = (pct: number) => {
-      return 12 + ((pct / maxPercent) * (L - 14));
+      return 12 + (pct / maxPercent) * (L - 14);
     };
 
     const rNorth = getRadius(north.percent);
@@ -179,9 +195,9 @@ export default function IngestDashboard() {
   };
 
   const today = React.useMemo(() => new Date(), []);
-  const sixMonthsAgo = React.useMemo(() => {
+  const oneYearAgo = React.useMemo(() => {
     const d = new Date();
-    d.setMonth(d.getMonth() - 6);
+    d.setFullYear(d.getFullYear() - 1);
     return d;
   }, []);
 
@@ -222,15 +238,15 @@ export default function IngestDashboard() {
               Ingest Frequency
             </CardTitle>
             <CardDescription>
-              Visualizing supermarket scrape activity over the last 6 months
+              Visualizing supermarket scrape activity over the last 1 year
             </CardDescription>
           </CardHeader>
           <CardContent>
             {/* Added a responsive wrapper with overflow-x-auto for small screens */}
             <div className="pt-4 pb-2 px-1 overflow-x-auto">
-              <div className="min-w-[650px] heatmap-container">
+              <div className="min-w-[750px] heatmap-container">
                 <CalendarHeatmap
-                  startDate={sixMonthsAgo}
+                  startDate={oneYearAgo}
                   endDate={today}
                   values={heatmapData}
                   gutterSize={2.5}
@@ -337,7 +353,11 @@ export default function IngestDashboard() {
                     </div>
                     {sourceStats.list.length > 3 && (
                       <p className="text-muted-foreground text-[11px] pt-0.5">
-                        and {sourceStats.list.length - 3} other {sourceStats.list.length - 3 === 1 ? "source" : "sources"} (
+                        and {sourceStats.list.length - 3} other{" "}
+                        {sourceStats.list.length - 3 === 1
+                          ? "source"
+                          : "sources"}{" "}
+                        (
                         {sourceStats.list
                           .slice(3)
                           .map((s) => `${s.name}: ${s.percent}%`)
