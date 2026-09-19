@@ -44,7 +44,8 @@ export default function IngredientPage() {
 
   // Pricing & Product State (Passed to Child Component)
   const [products, setProducts] = useState<any[]>([]);
-  const [resolvedFrom, setResolvedFrom] = useState<{ ingredient: string; relation: string } | null>(null);
+  const [categories, setCategories] = useState<{ id: string; name: string; count: number }[] | null>(null);
+  const [resolvedFrom, setResolvedFrom] = useState<{ ingredient: string; relation: string; level?: number } | null>(null);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
   const fetchIngredient = async () => {
@@ -69,10 +70,12 @@ export default function IngredientPage() {
       if (!res.ok) throw new Error("Failed to fetch prices");
       const data = await res.json();
       setProducts(data.products || data.prices || []);
+      setCategories(data.categories || null);
       setResolvedFrom(data.resolvedFrom || null);
     } catch (err) {
       console.error("Pricing fetch error:", err);
       setProducts([]);
+      setCategories(null);
       setResolvedFrom(null);
     } finally {
       setLoadingProducts(false);
@@ -666,6 +669,7 @@ export default function IngredientPage() {
                 ingredientId={id as string}
                 ingredientName={ingredient.name}
                 products={products}
+                categories={categories}
                 loadingProducts={loadingProducts}
                 resolvedFrom={resolvedFrom}
                 onRefreshProducts={fetchPrices}

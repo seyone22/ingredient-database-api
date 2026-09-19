@@ -101,8 +101,9 @@ interface RetailProductsPricingProps {
   ingredientId: string;
   ingredientName: string;
   products: any[];
+  categories?: { id: string; name: string; count: number }[] | null;
   loadingProducts: boolean;
-  resolvedFrom?: { ingredient: string; relation: string } | null;
+  resolvedFrom?: { ingredient: string; relation: string; level?: number } | null;
   onRefreshProducts: () => Promise<void>;
 }
 
@@ -110,12 +111,14 @@ export default function RetailProductsPricing({
   ingredientId,
   ingredientName,
   products,
+  categories,
   loadingProducts,
   resolvedFrom,
   onRefreshProducts,
 }: RetailProductsPricingProps) {
   const [isMappingOpen, setIsMappingOpen] = useState(false);
   const [imgErrorMap, setImgErrorMap] = useState<Record<string, boolean>>({});
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   // Search State
   const [productQuery, setProductQuery] = useState("");
@@ -188,10 +191,22 @@ export default function RetailProductsPricing({
     return productResults.filter((p) => !linkedProductIds.has(p.id)).length;
   }, [productResults, linkedProductIds]);
 
+  // Filter products by selected category
+  const filteredProducts = useMemo(() => {
+    if (!categories || categories.length <= 1 || selectedCategory === "all") {
+      return products;
+    }
+    return products.filter(
+      (p) =>
+        p.childIngredient?.name?.toLowerCase() === selectedCategory.toLowerCase() ||
+        p.childIngredient?.id === selectedCategory,
+    );
+  }, [products, categories, selectedCategory]);
+
   // Calculate Price Insights
   const insights = useMemo(() => {
-    if (!products.length) return null;
-    const processed = products.map((p) => ({ ...p, ...getUnitPriceData(p) }));
+    if (!filteredProducts.length) return null;
+    const processed = filteredProducts.map((p) => ({ ...p, ...getUnitPriceData(p) }));
     const validUnitPrices = processed.filter(
       (p) => p.pricePer100 > 0 && !isNaN(p.pricePer100),
     );
@@ -206,7 +221,7 @@ export default function RetailProductsPricing({
     )[0];
 
     const avgPrice =
-      products.reduce((acc, curr) => acc + curr.price, 0) / products.length;
+      filteredProducts.reduce((acc, curr) => acc + curr.price, 0) / filteredProducts.length;
     const avgPricePerUnit =
       validUnitPrices.length > 0
         ? validUnitPrices.reduce((acc, curr) => acc + curr.pricePer100, 0) /
@@ -246,7 +261,7 @@ export default function RetailProductsPricing({
       priceSpreadRatio,
       recommendationText,
     };
-  }, [products]);
+  }, [filteredProducts]);
 
   // 1. Debounce the user input
   useEffect(() => {
@@ -608,19 +623,65 @@ export default function RetailProductsPricing({
         <div className="flex items-center gap-3 p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-900 dark:text-amber-200 text-xs">
           <Info className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
           <span>
-            {resolvedFrom.relation === "varieties" ? (
+            {resolvedFrom.relation === "parent" ? (
               <>
-                Displaying market pricing aggregated across known varieties of{" "}
-                <strong>{ingredientName}</strong>.
+                No retail products are directly mapped to <strong>{ingredientName}</strong>. Displaying market pricing from its immediate parent ingredient (<strong>{resolvedFrom.ingredient}</strong>).
+              </>
+            ) : resolvedFrom.relation === "ancestor" ? (
+              <>
+                No retail products are directly mapped to <strong>{ingredientName}</strong> or its immediate parent. Displaying market pricing from ancestor ingredient (<strong>{resolvedFrom.ingredient}</strong>).
               </>
             ) : (
               <>
-                <strong>{ingredientName}</strong> is typically not sold
-                standalone in retail stores. Displaying market pricing for its base
-                parent ingredient (<strong>{resolvedFrom.ingredient}</strong>).
+                Displaying market pricing aggregated across varieties of <strong>{ingredientName}</strong>.
               </>
             )}
           </span>
+        </div>
+      )}
+
+      {categories && categories.length > 1 && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-muted-foreground px-0.5">
+            <span className="font-semibold text-foreground">Categories & Varieties:</span>
+            <span>{categories.length - 1} categories</span>
+          </div>
+          <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 no-scrollbar">
+            {categories.map((cat) => {
+              const isSelected =
+                selectedCategory === cat.name ||
+                (selectedCategory === "all" && cat.id === "all");
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() =>
+                    setSelectedCategory(
+                      selectedCategory === cat.name ? "all" : cat.name,
+                    )
+                  }
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 cursor-pointer border shadow-sm",
+                    isSelected
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-card text-muted-foreground hover:bg-muted/70 hover:text-foreground border-border/60",
+                  )}
+                >
+                  <span className="capitalize">{cat.name}</span>
+                  <span
+                    className={cn(
+                      "text-[10px] px-1.5 py-0.2 rounded-full font-bold",
+                      isSelected
+                        ? "bg-primary-foreground/25 text-primary-foreground"
+                        : "bg-muted text-foreground/80 border border-border/40",
+                    )}
+                  >
+                    {cat.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -630,14 +691,15 @@ export default function RetailProductsPricing({
             <Skeleton key={i} className="h-28 w-full rounded-xl" />
           ))}
         </div>
-      ) : !products.length ? (
+      ) : !filteredProducts.length ? (
         <Card className="bg-muted/50 border-dashed py-16 text-center">
           <div className="max-w-[300px] mx-auto space-y-3">
             <Store className="h-12 w-12 mx-auto text-muted-foreground/50" />
-            <p className="font-semibold text-lg">No links found</p>
+            <p className="font-semibold text-lg">No products found</p>
             <p className="text-sm text-muted-foreground">
-              Linked retail products will appear here to provide price
-              benchmarks.
+              {selectedCategory !== "all"
+                ? `No products mapped under category "${selectedCategory}".`
+                : "Linked retail products will appear here to provide price benchmarks."}
             </p>
           </div>
         </Card>
@@ -671,22 +733,19 @@ export default function RetailProductsPricing({
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {products[0].currency}{" "}
-                  {insights?.avgPrice.toLocaleString(undefined, {
-                    maximumFractionDigits: 0,
-                  })}
-                </div>
-                <div className="text-[10px] text-gray-500 font-medium uppercase">
-                  Avg Unit: {products[0].currency}{" "}
+                  {insights?.bestValue.currency}{" "}
                   {insights?.avgPricePerUnit.toFixed(2)}
                 </div>
+                <p className="text-[10px] text-muted-foreground font-medium">
+                  Per 100g/ml (Avg base: LKR {insights?.avgPrice.toFixed(0)})
+                </p>
               </CardContent>
             </Card>
 
-            <Card className="border-blue-100 bg-blue-50/40">
+            <Card className="border-blue-100 bg-blue-50/30">
               <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
                 <div className="flex items-center gap-1.5">
-                  <Info className="h-4 w-4 text-blue-600" />
+                  <LineChart className="h-4 w-4 text-blue-600" />
                   <CardTitle className="text-xs font-bold uppercase text-blue-700">
                     Buying Insight
                   </CardTitle>
@@ -724,7 +783,7 @@ export default function RetailProductsPricing({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.map((product) => {
+                {filteredProducts.map((product) => {
                   const unitData = getUnitPriceData(product);
                   const isBestValue = product.id === insights?.bestValue.id;
                   const formattedImgUrl = getFormattedImageUrl(product);
@@ -759,12 +818,20 @@ export default function RetailProductsPricing({
                           <span className="font-medium text-sm line-clamp-1">
                             {product.name}
                           </span>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
                               {product.source?.name}
                               {product.quantity &&
                                 ` • ${product.quantity}${product.unit}`}
                             </span>
+                            {product.childIngredient && categories && categories.length > 1 && (
+                              <Badge
+                                variant="outline"
+                                className="h-4 text-[9px] font-medium border-primary/20 text-primary bg-primary/5 px-1 capitalize"
+                              >
+                                {product.childIngredient.name}
+                              </Badge>
+                            )}
                             {isBestValue && (
                               <Badge className="h-4 text-[9px] bg-green-600 hover:bg-green-600 border-none px-1">
                                 BEST VALUE
