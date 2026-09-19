@@ -42,120 +42,112 @@ export default function NavBar() {
     { href: "/documentation", label: "Documentation" },
     { href: "/contribute", label: "Contribute" },
     { href: "/about", label: "About" },
-    { href: "/admin", label: "Admin Panel", isButton: true },
+    { href: "/admin", label: "Stats" },
   ];
 
   return (
-    <nav className={styles.nav}>
-      <div className="flex items-center gap-3">
-        <Link href={"/"} className={styles.logoLink}>
-          <h2 className={styles.logo}>
-            <span className={styles.textPrimary}>Food</span>Repo
-          </h2>
-        </Link>
-        {isAdminPage && (
-          <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-            <ShieldAlert className="w-3 h-3" /> Admin Area
-          </span>
+    <header className={styles.navHeader}>
+      <nav
+        className={cn(
+          styles.navContainer,
+          isAdminPage ? "max-w-7xl" : "max-w-5xl"
         )}
-      </div>
-
-      <button
-        type="button"
-        className={styles.hamburger}
-        onClick={toggleMenu}
-        aria-label="Toggle navigation menu"
       >
-        <div
-          className={`${styles.line} ${isOpen ? styles.line1Open : ""}`}
-        ></div>
-        <div
-          className={`${styles.line} ${isOpen ? styles.line2Open : ""}`}
-        ></div>
-        <div
-          className={`${styles.line} ${isOpen ? styles.line3Open : ""}`}
-        ></div>
-      </button>
+        <div className="flex items-center gap-3">
+          <Link href={"/"} className={styles.logoLink}>
+            <h2 className={styles.logo}>
+              <span className={styles.textPrimary}>Food</span>Repo
+            </h2>
+          </Link>
+          {isAdminPage && (
+            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+              <ShieldAlert className="w-3 h-3" /> Admin Area
+            </span>
+          )}
+        </div>
 
-      <ul className={`${styles.navLinks} ${isOpen ? styles.navLinksOpen : ""}`}>
-        {isAdminPage ? (
-          <>
-            {adminLinks.map((link) => {
-              const Icon = link.icon;
-              const isActive =
-                link.href === "/admin"
-                  ? pathname === "/admin"
-                  : pathname?.startsWith(link.href);
+        <button
+          type="button"
+          className={styles.hamburger}
+          onClick={toggleMenu}
+          aria-label="Toggle navigation menu"
+        >
+          <div
+            className={`${styles.line} ${isOpen ? styles.line1Open : ""}`}
+          ></div>
+          <div
+            className={`${styles.line} ${isOpen ? styles.line2Open : ""}`}
+          ></div>
+          <div
+            className={`${styles.line} ${isOpen ? styles.line3Open : ""}`}
+          ></div>
+        </button>
 
+        <ul className={`${styles.navLinks} ${isOpen ? styles.navLinksOpen : ""}`}>
+          {isAdminPage ? (
+            <>
+              {adminLinks.map((link) => {
+                const Icon = link.icon;
+                const isActive =
+                  link.href === "/admin"
+                    ? pathname === "/admin"
+                    : pathname?.startsWith(link.href);
+
+                return (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-150",
+                        isActive
+                          ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/70",
+                      )}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span>{link.label}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+              <li className="hidden md:block h-4 w-px bg-border my-auto mx-1" />
+              <li>
+                <Link
+                  href="/documentation"
+                  onClick={() => setIsOpen(false)}
+                  className="text-xs text-muted-foreground hover:text-foreground hover:bg-muted/70 px-2.5 py-1.5 rounded-lg transition-all"
+                >
+                  Docs
+                </Link>
+              </li>
+            </>
+          ) : (
+            publicLinks.map((link) => {
+              const isActive = pathname === link.href;
+              const isExternal = link.href.startsWith("http");
               return (
                 <li key={link.href}>
                   <Link
                     href={link.href}
+                    target={isExternal ? "_blank" : undefined}
+                    rel={isExternal ? "noopener noreferrer" : undefined}
                     onClick={() => setIsOpen(false)}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-150",
+                      "px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 inline-block",
                       isActive
-                        ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                        ? "text-foreground font-semibold bg-muted/80 shadow-xs"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted/70",
                     )}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{link.label}</span>
-                  </Link>
-                </li>
-              );
-            })}
-            <li className="hidden md:block h-4 w-px bg-border my-auto mx-1" />
-            <li>
-              <Link
-                href="/documentation"
-                onClick={() => setIsOpen(false)}
-                className="text-xs text-muted-foreground hover:text-foreground hover:bg-muted/70 px-2.5 py-1.5 rounded-lg transition-all"
-              >
-                Docs
-              </Link>
-            </li>
-          </>
-        ) : (
-          publicLinks.map((link) => {
-            const isActive = pathname === link.href;
-
-            if (link.isButton) {
-              return (
-                <li key={link.href} className="ml-1 sm:ml-2">
-                  <Link
-                    href={link.href}
-                    onClick={() => setIsOpen(false)}
-                    className="inline-flex items-center justify-center px-4 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-purple-500 via-purple-600 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 shadow-xs hover:shadow-sm transition-all duration-150 active:scale-[0.98]"
                   >
                     {link.label}
                   </Link>
                 </li>
               );
-            }
-
-            const isExternal = link.href.startsWith("http");
-            return (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  target={isExternal ? "_blank" : undefined}
-                  rel={isExternal ? "noopener noreferrer" : undefined}
-                  onClick={() => setIsOpen(false)}
-                  className={cn(
-                    "px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 inline-block",
-                    isActive
-                      ? "text-foreground font-semibold bg-muted/80 shadow-xs"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70",
-                  )}
-                >
-                  {link.label}
-                </Link>
-              </li>
-            );
-          })
-        )}
-      </ul>
-    </nav>
+            })
+          )}
+        </ul>
+      </nav>
+    </header>
   );
 }

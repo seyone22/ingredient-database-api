@@ -1,17 +1,23 @@
 /* NavBar.module.css */
 
 /* Base Styles for NavBar */
-.nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.85rem 2rem;
+.navHeader {
+  width: 100%;
   border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.08));
   background-color: var(--background, #f0f1f5);
   position: sticky;
   top: 0;
   z-index: 1000;
   backdrop-filter: blur(8px);
+}
+
+.navContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem;
 }
 
 .logoLink {
@@ -75,11 +81,11 @@
 
 /* --- Mobile Specific Styles --- */
 @media (max-width: 768px) {
-  .nav {
+  .navContainer {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 1.25rem;
+    padding: 0.75rem 1rem;
   }
 
   .hamburger {
