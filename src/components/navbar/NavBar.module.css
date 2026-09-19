@@ -5,39 +5,42 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 2rem;
-  border-bottom: 1px solid var(--border, #eee);
+  padding: 0.85rem 2rem;
+  border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.08));
   background-color: var(--background, #f0f1f5);
-  position: relative; /* Crucial for absolute positioning of mobile menu */
-  z-index: 1000; /* Ensure nav is above other content */
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
 }
 
 .logoLink {
   text-decoration: none;
-  color: inherit; /* Ensure logo text color is inherited */
-  z-index: 20; /* Ensure logo is above the mobile menu */
+  color: inherit;
+  z-index: 20;
 }
 
 .logo {
-  font-weight: bold;
+  font-weight: 700;
   font-size: 1.35rem;
-  color: #222;
-  margin: 0; /* Override any default margin */
+  color: var(--foreground, #222);
+  margin: 0;
+  letter-spacing: -0.02em;
 }
 
 .textPrimary {
-  color: var(--color-primary, #6366f1); /* Primary accent color */
+  color: var(--primary, #b57edc);
 }
 
 /* Nav Links - Default (Desktop) */
 .navLinks {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
   list-style: none;
   margin: 0;
   padding: 0;
-  transition: all 0.3s ease-in-out; /* Add transition for smoothness */
+  transition: all 0.2s ease-in-out;
 }
 
 .navLinks a {

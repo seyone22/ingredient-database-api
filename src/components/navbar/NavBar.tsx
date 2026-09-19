@@ -15,6 +15,8 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import styles from "./NavBar.module.css";
 
+import { cn } from "@/lib/utils";
+
 export default function NavBar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
@@ -40,7 +42,7 @@ export default function NavBar() {
     { href: "/documentation", label: "Documentation" },
     { href: "/contribute", label: "Contribute" },
     { href: "/about", label: "About" },
-    { href: "/admin", label: "Admin Panel" },
+    { href: "/admin", label: "Admin Panel", isButton: true },
   ];
 
   return (
@@ -90,11 +92,12 @@ export default function NavBar() {
                   <Link
                     href={link.href}
                     onClick={() => setIsOpen(false)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-150",
                       isActive
-                        ? "bg-primary text-primary-foreground font-semibold shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                    }`}
+                        ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/70",
+                    )}
                   >
                     <Icon className="w-4 h-4" />
                     <span>{link.label}</span>
@@ -107,20 +110,47 @@ export default function NavBar() {
               <Link
                 href="/documentation"
                 onClick={() => setIsOpen(false)}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
+                className="text-xs text-muted-foreground hover:text-foreground hover:bg-muted/70 px-2.5 py-1.5 rounded-lg transition-all"
               >
                 Docs
               </Link>
             </li>
           </>
         ) : (
-          publicLinks.map((link) => (
-            <li key={link.href}>
-              <Link href={link.href} onClick={() => setIsOpen(false)}>
-                {link.label}
-              </Link>
-            </li>
-          ))
+          publicLinks.map((link) => {
+            const isActive = pathname === link.href;
+
+            if (link.isButton) {
+              return (
+                <li key={link.href} className="ml-1 sm:ml-2">
+                  <Link
+                    href={link.href}
+                    onClick={() => setIsOpen(false)}
+                    className="inline-flex items-center justify-center px-4 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-purple-500 via-purple-600 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 shadow-xs hover:shadow-sm transition-all duration-150 active:scale-[0.98]"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            }
+
+            return (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  onClick={() => setIsOpen(false)}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 inline-block",
+                    isActive
+                      ? "text-foreground font-semibold bg-muted/80 shadow-xs"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/70",
+                  )}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            );
+          })
         )}
       </ul>
     </nav>
