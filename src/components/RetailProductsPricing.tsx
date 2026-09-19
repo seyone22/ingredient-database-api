@@ -342,7 +342,7 @@ export default function RetailProductsPricing({
           } />
           <SheetContent
             side="right"
-            className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl h-full flex flex-col p-0 gap-0"
+            className="w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl h-full flex flex-col p-0 gap-0"
           >
             {/* Header */}
             <div className="px-6 py-5 border-b bg-card/60">
