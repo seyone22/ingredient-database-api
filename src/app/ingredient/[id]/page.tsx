@@ -263,11 +263,6 @@ export default function IngredientPage() {
                         /{ingredient.pronunciation}/
                       </span>
                     )}
-                    {provenance && (
-                      <Badge variant="secondary" className="text-xs px-2.5 py-1 font-medium bg-muted text-muted-foreground">
-                        {provenance}
-                      </Badge>
-                    )}
                   </div>
                   {ingredient.aliases && ingredient.aliases.length > 0 && (
                     <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-3xl">
