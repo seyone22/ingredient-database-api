@@ -19,6 +19,32 @@ export async function POST(req: NextRequest) {
       },
     );
 
+    const contentType = backendRes.headers.get("content-type") || "";
+
+    if (!contentType.includes("json")) {
+      let errorMsg = `Pricing backend service error (HTTP ${backendRes.status})`;
+      if (backendRes.status === 524 || backendRes.status === 504) {
+        errorMsg =
+          "The recipe pricing service timed out while analyzing ingredients and live supermarket stock. Please try again or paste the ingredient lines directly.";
+      } else if (backendRes.status === 502 || backendRes.status === 503) {
+        errorMsg =
+          "The FoodRepo pricing backend is temporarily restarting or unavailable. Please try again in a few moments.";
+      }
+
+      return NextResponse.json(
+        {
+          type: "https://food.seyone.dev/errors/gateway-error",
+          title: "Pricing Service Unavailable",
+          status: backendRes.status || 502,
+          detail: errorMsg,
+        },
+        {
+          status: backendRes.status || 502,
+          headers: { "Content-Type": "application/problem+json" },
+        },
+      );
+    }
+
     const data = await backendRes.json();
 
     return NextResponse.json(data, {
