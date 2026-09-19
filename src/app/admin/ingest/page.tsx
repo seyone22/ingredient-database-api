@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import NavBar from "@/components/navbar/NavBar";
 import Footer from "@/components/footer/Footer";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,8 @@ import {
   Calendar,
   ListFilter,
   AlertTriangle,
+  Building2,
+  RefreshCcw,
 } from "lucide-react";
 import "react-calendar-heatmap/dist/styles.css";
 import { Tooltip } from "react-tooltip";
@@ -36,6 +39,7 @@ import CalendarHeatmap from "react-calendar-heatmap";
 
 export default function IngestDashboard() {
   const [logs, setLogs] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isTriggering, setIsTriggering] = useState(false);
 
@@ -51,8 +55,21 @@ export default function IngestDashboard() {
     }
   };
 
+  const fetchStats = async () => {
+    try {
+      const res = await fetch("/api/admin/stats");
+      if (res.ok) {
+        const data = await res.json();
+        setStats(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch stats", error);
+    }
+  };
+
   useEffect(() => {
     fetchLogs();
+    fetchStats();
   }, []);
 
   // Process logs for the heatmap (last 6 months)
@@ -64,6 +81,82 @@ export default function IngestDashboard() {
     });
     return Object.entries(counts).map(([date, count]) => ({ date, count }));
   }, [logs]);
+
+  // Process source distribution for Activity Overview & Spider Chart
+  const sourceStats = React.useMemo(() => {
+    const defaultSources: Record<string, number> = {
+      Keells: 7610,
+      Arpico: 4888,
+      Cargills: 4152,
+      SPAR: 2963,
+      Glomark: 1775,
+    };
+
+    const rawSources: Record<string, number> =
+      stats?.productsBySource && Object.keys(stats.productsBySource).length > 0
+        ? stats.productsBySource
+        : defaultSources;
+
+    const total = Object.values(rawSources).reduce((acc, c) => acc + c, 0) || 1;
+    const sorted = Object.entries(rawSources)
+      .map(([name, count]) => ({
+        name,
+        count,
+        percent: Math.round((count / total) * 100),
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    return { total, list: sorted };
+  }, [stats]);
+
+  // Compute 4-axis Cross Spider Chart coordinates (GitHub style in purple theme)
+  const spiderChartData = React.useMemo(() => {
+    const cx = 170;
+    const cy = 100;
+    const L = 60;
+
+    const north = sourceStats.list[0] || { name: "Keells", count: 7610, percent: 36 };
+    const east = sourceStats.list[1] || { name: "Arpico", count: 4888, percent: 23 };
+    const south = sourceStats.list[2] || { name: "Cargills", count: 4152, percent: 19 };
+    const west = sourceStats.list[3] || { name: "SPAR", count: 2963, percent: 14 };
+
+    const maxPercent = Math.max(
+      north.percent,
+      east.percent,
+      south.percent,
+      west.percent,
+      1,
+    );
+
+    const getRadius = (pct: number) => {
+      return 12 + ((pct / maxPercent) * (L - 14));
+    };
+
+    const rNorth = getRadius(north.percent);
+    const rEast = getRadius(east.percent);
+    const rSouth = getRadius(south.percent);
+    const rWest = getRadius(west.percent);
+
+    const ptNorth = { x: cx, y: cy - rNorth };
+    const ptEast = { x: cx + rEast, y: cy };
+    const ptSouth = { x: cx, y: cy + rSouth };
+    const ptWest = { x: cx - rWest, y: cy };
+
+    return {
+      cx,
+      cy,
+      L,
+      north,
+      east,
+      south,
+      west,
+      ptNorth,
+      ptEast,
+      ptSouth,
+      ptWest,
+      polygonPoints: `${ptNorth.x},${ptNorth.y} ${ptEast.x},${ptEast.y} ${ptSouth.x},${ptSouth.y} ${ptWest.x},${ptWest.y}`,
+    };
+  }, [sourceStats]);
 
   const handleManualTrigger = async () => {
     if (
@@ -212,6 +305,185 @@ export default function IngestDashboard() {
           </CardContent>
         </Card>
 
+        {/* Activity Overview & Spider Chart (GitHub style in purple theme) */}
+        <Card className="bg-card shadow-xs border-border/80 overflow-hidden">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+              {/* Left Column: Activity Overview */}
+              <div className="md:col-span-5 space-y-3">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Activity overview
+                </h3>
+                <div className="flex items-start gap-3">
+                  <Building2 className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div className="text-xs space-y-1.5">
+                    <span className="text-muted-foreground font-medium">
+                      Ingested from
+                    </span>
+                    <div className="space-y-1">
+                      {sourceStats.list.slice(0, 3).map((s) => (
+                        <div key={s.name} className="flex items-center gap-1.5">
+                          <Link
+                            href="/admin/product"
+                            className="text-primary font-semibold hover:underline"
+                          >
+                            {s.name}
+                          </Link>
+                          <span className="text-muted-foreground text-[11px]">
+                            ({s.count.toLocaleString()} SKUs • {s.percent}%)
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {sourceStats.list.length > 3 && (
+                      <p className="text-muted-foreground text-[11px] pt-0.5">
+                        and {sourceStats.list.length - 3} other {sourceStats.list.length - 3 === 1 ? "source" : "sources"} (
+                        {sourceStats.list
+                          .slice(3)
+                          .map((s) => `${s.name}: ${s.percent}%`)
+                          .join(", ")}
+                        )
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Middle Divider */}
+              <div className="hidden md:flex justify-center md:col-span-1 h-32">
+                <div className="w-px bg-border/60 h-full" />
+              </div>
+
+              {/* Right Column: Spider / Radar Cross Chart */}
+              <div className="md:col-span-6 flex justify-center items-center">
+                <svg
+                  viewBox="0 0 340 210"
+                  className="w-full max-w-[340px] h-auto overflow-visible select-none"
+                >
+                  {/* Perpendicular Axis Cross (Purple) */}
+                  <line
+                    x1={spiderChartData.cx}
+                    y1={spiderChartData.cy - spiderChartData.L}
+                    x2={spiderChartData.cx}
+                    y2={spiderChartData.cy + spiderChartData.L}
+                    stroke="currentColor"
+                    className="text-purple-600/70 dark:text-purple-400/60"
+                    strokeWidth="1.75"
+                  />
+                  <line
+                    x1={spiderChartData.cx - spiderChartData.L}
+                    y1={spiderChartData.cy}
+                    x2={spiderChartData.cx + spiderChartData.L}
+                    y2={spiderChartData.cy}
+                    stroke="currentColor"
+                    className="text-purple-600/70 dark:text-purple-400/60"
+                    strokeWidth="1.75"
+                  />
+
+                  {/* Polygon shape */}
+                  <polygon
+                    points={spiderChartData.polygonPoints}
+                    fill="rgba(168, 85, 247, 0.22)"
+                    stroke="#9333ea"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                    className="dark:fill-purple-500/25 dark:stroke-purple-400"
+                  />
+
+                  {/* Circular nodes on the 4 axes */}
+                  {[
+                    spiderChartData.ptNorth,
+                    spiderChartData.ptEast,
+                    spiderChartData.ptSouth,
+                    spiderChartData.ptWest,
+                  ].map((pt, i) => (
+                    <circle
+                      key={i}
+                      cx={pt.x}
+                      cy={pt.y}
+                      r="3.5"
+                      className="fill-background stroke-purple-600 dark:stroke-purple-400"
+                      strokeWidth="2"
+                    />
+                  ))}
+
+                  {/* Labels: North */}
+                  <text
+                    x={spiderChartData.cx}
+                    y={spiderChartData.cy - spiderChartData.L - 14}
+                    textAnchor="middle"
+                    className="text-xs font-semibold fill-foreground"
+                  >
+                    {spiderChartData.north.percent}%
+                  </text>
+                  <text
+                    x={spiderChartData.cx}
+                    y={spiderChartData.cy - spiderChartData.L - 3}
+                    textAnchor="middle"
+                    className="text-[11px] fill-muted-foreground"
+                  >
+                    {spiderChartData.north.name}
+                  </text>
+
+                  {/* Labels: East */}
+                  <text
+                    x={spiderChartData.cx + spiderChartData.L + 8}
+                    y={spiderChartData.cy - 2}
+                    textAnchor="start"
+                    className="text-xs font-semibold fill-foreground"
+                  >
+                    {spiderChartData.east.percent}%
+                  </text>
+                  <text
+                    x={spiderChartData.cx + spiderChartData.L + 8}
+                    y={spiderChartData.cy + 10}
+                    textAnchor="start"
+                    className="text-[11px] fill-muted-foreground"
+                  >
+                    {spiderChartData.east.name}
+                  </text>
+
+                  {/* Labels: South */}
+                  <text
+                    x={spiderChartData.cx}
+                    y={spiderChartData.cy + spiderChartData.L + 14}
+                    textAnchor="middle"
+                    className="text-xs font-semibold fill-foreground"
+                  >
+                    {spiderChartData.south.percent}%
+                  </text>
+                  <text
+                    x={spiderChartData.cx}
+                    y={spiderChartData.cy + spiderChartData.L + 25}
+                    textAnchor="middle"
+                    className="text-[11px] fill-muted-foreground"
+                  >
+                    {spiderChartData.south.name}
+                  </text>
+
+                  {/* Labels: West */}
+                  <text
+                    x={spiderChartData.cx - spiderChartData.L - 8}
+                    y={spiderChartData.cy - 2}
+                    textAnchor="end"
+                    className="text-xs font-semibold fill-foreground"
+                  >
+                    {spiderChartData.west.percent}%
+                  </text>
+                  <text
+                    x={spiderChartData.cx - spiderChartData.L - 8}
+                    y={spiderChartData.cy + 10}
+                    textAnchor="end"
+                    className="text-[11px] fill-muted-foreground"
+                  >
+                    {spiderChartData.west.name}
+                  </text>
+                </svg>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Log List Section */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between border-b pb-4 bg-muted/20">
@@ -342,27 +614,4 @@ export default function IngestDashboard() {
 // Utility for class merging
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(" ");
-}
-
-function RefreshCcw(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="lucide lucide-refresh-ccw"
-    >
-      <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-      <path d="M3 3v5h5" />
-      <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-      <path d="M16 16h5v5" />
-    </svg>
-  );
 }
