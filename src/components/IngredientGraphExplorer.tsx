@@ -13,6 +13,7 @@ import {
   GitBranch,
   Layers,
   LayoutGrid,
+  Loader2,
   Maximize2,
   Minimize2,
   Network,
@@ -193,6 +194,11 @@ export default function IngredientGraphExplorer({
     LinkageCategoryKey | "all"
   >("all");
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+
+  // Resolution cache & navigation feedback
+  const [resolvedMap, setResolvedMap] = useState<Record<string, string | null>>({});
+  const [navigatingNode, setNavigatingNode] = useState<string | null>(null);
+  const pendingRequestsRef = useRef<Set<string>>(new Set());
 
   // Canvas pan & zoom
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
@@ -392,7 +398,10 @@ export default function IngredientGraphExplorer({
         const leafId = `leaf-${cat.key}-${idx}`;
         const isObj = typeof item === "object" && item !== null;
         const name = isObj ? item.name : String(item);
-        const targetId = isObj ? item.targetId : null;
+        const targetId =
+          isObj && item.targetId
+            ? item.targetId
+            : resolvedMap[name.trim().toLowerCase()] || null;
         const process = isObj ? item.process : null;
         const yieldRatio =
           isObj && typeof item.yieldRatio === "number" ? item.yieldRatio : null;
@@ -474,7 +483,10 @@ export default function IngredientGraphExplorer({
         const leafId = `leaf-${cat.key}-${idx}`;
         const isObj = typeof item === "object" && item !== null;
         const name = isObj ? item.name : String(item);
-        const targetId = isObj ? item.targetId : null;
+        const targetId =
+          isObj && item.targetId
+            ? item.targetId
+            : resolvedMap[name.trim().toLowerCase()] || null;
         const process = isObj ? item.process : null;
         const yieldRatio =
           isObj && typeof item.yieldRatio === "number" ? item.yieldRatio : null;
@@ -531,18 +543,100 @@ export default function IngredientGraphExplorer({
     cleanedSubstitutes,
     cleanedPairsWith,
     cleanedUsedIn,
+    resolvedMap,
   ]);
 
-  // Click Navigation
-  const handleNodeClick = useCallback(
-    (name: string, targetId?: string | null) => {
-      if (targetId) {
-        router.push(`/ingredient/${targetId}`);
-      } else {
-        router.push(`/?query=${encodeURIComponent(name)}`);
+  // Asynchronously resolve an ingredient name/alias to its canonical UUID
+  const resolveIngredientId = useCallback(
+    async (rawName: string): Promise<string | null> => {
+      const name = rawName.trim().toLowerCase();
+      if (!name) return null;
+      if (resolvedMap[name] !== undefined) {
+        return resolvedMap[name];
+      }
+      if (pendingRequestsRef.current.has(name)) {
+        return null;
+      }
+      pendingRequestsRef.current.add(name);
+      try {
+        const res = await fetch(
+          `/api/ingredients?query=${encodeURIComponent(name)}&limit=5`,
+        );
+        if (!res.ok) {
+          setResolvedMap((prev) => ({ ...prev, [name]: null }));
+          return null;
+        }
+        const data = await res.json();
+        const results: Array<{ id: string; name: string; aliases?: string[] }> =
+          data.results || [];
+        const match = results.find(
+          (r) =>
+            r.name.toLowerCase() === name ||
+            (Array.isArray(r.aliases) &&
+              r.aliases.some((a) => a.toLowerCase() === name)),
+        );
+        const resolvedId = match?.id || null;
+        setResolvedMap((prev) => ({ ...prev, [name]: resolvedId }));
+        return resolvedId;
+      } catch (err) {
+        console.error("Failed to resolve ingredient node:", rawName, err);
+        setResolvedMap((prev) => ({ ...prev, [name]: null }));
+        return null;
+      } finally {
+        pendingRequestsRef.current.delete(name);
       }
     },
-    [router],
+    [resolvedMap],
+  );
+
+  // Prefetch candidate ID on mouse hover
+  const prefetchNode = useCallback(
+    (name: string, targetId?: string | null) => {
+      if (targetId) return;
+      const key = name.trim().toLowerCase();
+      if (
+        resolvedMap[key] !== undefined ||
+        pendingRequestsRef.current.has(key)
+      ) {
+        return;
+      }
+      resolveIngredientId(name);
+    },
+    [resolvedMap, resolveIngredientId],
+  );
+
+  // Click Navigation: navigate directly to ingredient page if ID is known/resolvable, fallback to search
+  const handleNodeClick = useCallback(
+    async (name: string, targetId?: string | null) => {
+      const trimmed = name.trim();
+      const key = trimmed.toLowerCase();
+      const directId = targetId || resolvedMap[key];
+
+      if (directId) {
+        router.push(`/ingredient/${directId}`);
+        return;
+      }
+
+      if (resolvedMap[key] === null) {
+        router.push(`/?query=${encodeURIComponent(trimmed)}`);
+        return;
+      }
+
+      setNavigatingNode(trimmed);
+      try {
+        const foundId = await resolveIngredientId(trimmed);
+        if (foundId) {
+          router.push(`/ingredient/${foundId}`);
+        } else {
+          router.push(`/?query=${encodeURIComponent(trimmed)}`);
+        }
+      } catch {
+        router.push(`/?query=${encodeURIComponent(trimmed)}`);
+      } finally {
+        setNavigatingNode(null);
+      }
+    },
+    [router, resolvedMap, resolveIngredientId],
   );
 
   // Zoom & Pan Handlers
@@ -1001,13 +1095,18 @@ export default function IngredientGraphExplorer({
                     key={leaf.id}
                     type="button"
                     onClick={() => handleNodeClick(leaf.name, leaf.targetId)}
-                    onMouseEnter={() => setHoveredNodeId(leaf.id)}
+                    onMouseEnter={() => {
+                      setHoveredNodeId(leaf.id);
+                      prefetchNode(leaf.name, leaf.targetId);
+                    }}
                     onMouseLeave={() => setHoveredNodeId(null)}
                     className={cn(
                       "absolute z-10 -translate-x-1/2 -translate-y-1/2 w-56 px-3 py-2 rounded-xl border text-left cursor-pointer transition-all flex items-center justify-between gap-2 shadow-xs",
                       "bg-card text-card-foreground border-border hover:shadow-md hover:scale-[1.02]",
                       !matchesSearch && "opacity-20",
                       isHighlighted && "border-2 shadow-md scale-[1.03]",
+                      navigatingNode === leaf.name &&
+                        "border-primary ring-2 ring-primary/20",
                     )}
                     style={{
                       left: `${leaf.x}px`,
@@ -1036,17 +1135,23 @@ export default function IngredientGraphExplorer({
 
                     {/* Derivative Yield & Process Badges */}
                     <div className="flex items-center gap-1 shrink-0">
-                      {typeof leaf.yieldRatio === "number" && (
-                        <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                          {Math.round(leaf.yieldRatio * 100)}%
-                        </span>
+                      {navigatingNode === leaf.name ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0" />
+                      ) : (
+                        <>
+                          {typeof leaf.yieldRatio === "number" && (
+                            <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                              {Math.round(leaf.yieldRatio * 100)}%
+                            </span>
+                          )}
+                          {leaf.process && (
+                            <span className="text-[9px] px-1 py-0.5 rounded bg-muted text-muted-foreground hidden sm:inline max-w-[65px] truncate">
+                              {leaf.process}
+                            </span>
+                          )}
+                          <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                        </>
                       )}
-                      {leaf.process && (
-                        <span className="text-[9px] px-1 py-0.5 rounded bg-muted text-muted-foreground hidden sm:inline max-w-[65px] truncate">
-                          {leaf.process}
-                        </span>
-                      )}
-                      <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
                     </div>
                   </button>
                 );
@@ -1114,10 +1219,15 @@ export default function IngredientGraphExplorer({
                           onClick={() =>
                             handleNodeClick(item.name, item.targetId)
                           }
+                          onMouseEnter={() =>
+                            prefetchNode(item.name, item.targetId)
+                          }
                           className={cn(
                             "text-xs px-2.5 py-1.5 rounded-lg border text-left cursor-pointer transition-all hover:scale-[1.02] flex items-center gap-2",
                             cat.badgeClass,
                             "hover:bg-primary hover:text-primary-foreground hover:border-primary",
+                            navigatingNode === item.name &&
+                              "ring-2 ring-primary/40",
                           )}
                           title={
                             item.process
@@ -1132,15 +1242,21 @@ export default function IngredientGraphExplorer({
                           <span className="capitalize font-medium">
                             {item.name}
                           </span>
-                          {typeof item.yieldRatio === "number" && (
-                            <span className="font-mono text-[10px] font-bold opacity-90 border-l pl-1.5 border-current">
-                              {Math.round(item.yieldRatio * 100)}%
-                            </span>
-                          )}
-                          {item.process && (
-                            <span className="text-[9px] opacity-75 hidden sm:inline">
-                              ({item.process})
-                            </span>
+                          {navigatingNode === item.name ? (
+                            <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                          ) : (
+                            <>
+                              {typeof item.yieldRatio === "number" && (
+                                <span className="font-mono text-[10px] font-bold opacity-90 border-l pl-1.5 border-current">
+                                  {Math.round(item.yieldRatio * 100)}%
+                                </span>
+                              )}
+                              {item.process && (
+                                <span className="text-[9px] opacity-75 hidden sm:inline">
+                                  ({item.process})
+                                </span>
+                              )}
+                            </>
                           )}
                         </button>
                       ))
@@ -1149,7 +1265,7 @@ export default function IngredientGraphExplorer({
                 </div>
 
                 <div className="pt-2 border-t text-[11px] text-muted-foreground flex items-center justify-between">
-                  <span>Click item to search</span>
+                  <span>Click item to explore</span>
                   <ExternalLink className="h-3 w-3 text-muted-foreground/60" />
                 </div>
               </div>
