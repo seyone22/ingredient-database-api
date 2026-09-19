@@ -134,10 +134,13 @@ export default function NavBar() {
               );
             }
 
+            const isExternal = link.href.startsWith("http");
             return (
               <li key={link.href}>
                 <Link
                   href={link.href}
+                  target={isExternal ? "_blank" : undefined}
+                  rel={isExternal ? "noopener noreferrer" : undefined}
                   onClick={() => setIsOpen(false)}
                   className={cn(
                     "px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 inline-block",

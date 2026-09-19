@@ -13,6 +13,7 @@ import {
   BookOpen,
   FileCode,
   Sliders,
+  ExternalLink,
 } from "lucide-react";
 
 interface EndpointInfo {
@@ -243,7 +244,7 @@ export default function DocumentationPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setViewMode("interactive")}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -264,6 +265,14 @@ export default function DocumentationPage() {
             >
               <FileCode className="w-4 h-4 inline mr-1.5" /> OpenAPI Redoc
             </button>
+            <a
+              href="https://foodapi.seyone.dev/api/docs"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 rounded-lg text-sm font-medium border border-border/80 bg-background hover:bg-muted/80 text-foreground inline-flex items-center gap-1.5 transition-colors shadow-xs"
+            >
+              <ExternalLink className="w-4 h-4 text-primary" /> Live Swagger Docs ↗
+            </a>
           </div>
         </div>
 
@@ -271,7 +280,7 @@ export default function DocumentationPage() {
           <Card className="border-border/60 bg-card overflow-hidden">
             <CardContent className="p-0 min-h-[700px]">
               <RedocStandalone
-                specUrl="/docs/api/openapi.yaml"
+                specUrl="https://foodapi.seyone.dev/api/docs-json"
                 options={{
                   scrollYOffset: 0,
                   hideDownloadButton: false,
