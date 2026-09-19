@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
-import NavBar from "@/components/navbar/NavBar";
+import { ChevronLeft, ChevronRight, ExternalLink, Search } from "lucide-react";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
 import Footer from "@/components/footer/Footer";
-import { Input } from "@/components/ui/input";
+import NavBar from "@/components/navbar/NavBar";
+import ProductSparkline from "@/components/ProductSparkline";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -13,14 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  ExternalLink,
-  Loader2,
-} from "lucide-react";
-import { getProductSalesHistory } from "@/actions/stock.actions";
 
 // --- Types ---
 interface Source {
@@ -45,84 +40,6 @@ interface ApiResponse {
   page: number;
   limit: number;
 }
-
-// --- Smart Sparkline Wrapper Component ---
-const ProductSparkline = ({ productId }: { productId: string }) => {
-  const [data, setData] = useState<number[] | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchHistory = async () => {
-      setLoading(true);
-      // Fire the Server Action
-      const history = await getProductSalesHistory(productId);
-
-      if (isMounted) {
-        setData(history);
-        setLoading(false);
-      }
-    };
-
-    fetchHistory();
-
-    // Cleanup to prevent setting state on unmounted components
-    return () => {
-      isMounted = false;
-    };
-  }, [productId]);
-
-  if (loading) {
-    return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
-  }
-
-  if (!data || data.length < 2) {
-    return (
-      <span className="text-xs text-muted-foreground">Not enough data</span>
-    );
-  }
-
-  // Mathematical SVG Drawing
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const width = 120;
-  const height = 30;
-
-  const points = data
-    .map((d, i) => {
-      const x = (i / (data.length - 1)) * width;
-      const y = height - ((d - min) / range) * height;
-      return `${x},${y}`;
-    })
-    .join(" ");
-
-  return (
-    <svg
-      width={width}
-      height={height}
-      viewBox={`0 -5 ${width} ${height + 10}`}
-      className="overflow-visible"
-    >
-      <polyline
-        points={points}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-primary opacity-80"
-      />
-      <circle
-        cx={width}
-        cy={height - ((data[data.length - 1] - min) / range) * height}
-        r="3"
-        className="fill-primary"
-      />
-    </svg>
-  );
-};
 
 export default function AllProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);

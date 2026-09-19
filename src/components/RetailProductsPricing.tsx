@@ -1,6 +1,27 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import {
+  Calculator,
+  Check,
+  ExternalLink,
+  Info,
+  LineChart,
+  Loader2,
+  Plus,
+  Search,
+  Sparkles,
+  Store,
+  Trash2,
+  X,
+} from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import ProductHistoryModal from "@/components/PriceHistoryModal";
+import ProductSparkline from "@/components/ProductSparkline";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -9,8 +30,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -19,25 +39,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Calculator,
-  Check,
-  ExternalLink,
-  LineChart,
-  Loader2,
-  Plus,
-  Store,
-  Info,
-  Sparkles,
-  Search,
-  X,
-  Trash2,
-} from "lucide-react";
-import ProductHistoryModal from "@/components/PriceHistoryModal";
 import { cn } from "@/lib/utils";
 
 const getUnitPriceData = (product: any) => {
@@ -85,7 +86,8 @@ const getFormattedImageUrl = (product: any) => {
 
   if (!imgUrl && product.raw) {
     try {
-      const rawObj = typeof product.raw === "string" ? JSON.parse(product.raw) : product.raw;
+      const rawObj =
+        typeof product.raw === "string" ? JSON.parse(product.raw) : product.raw;
       imgUrl = rawObj?.image || rawObj?.images?.[0]?.src || rawObj?.imageUrl;
     } catch (e) {}
   }
@@ -103,7 +105,11 @@ interface RetailProductsPricingProps {
   products: any[];
   categories?: { id: string; name: string; count: number }[] | null;
   loadingProducts: boolean;
-  resolvedFrom?: { ingredient: string; relation: string; level?: number } | null;
+  resolvedFrom?: {
+    ingredient: string;
+    relation: string;
+    level?: number;
+  } | null;
   onRefreshProducts: () => Promise<void>;
 }
 
@@ -193,8 +199,7 @@ export default function RetailProductsPricing({
 
   // Filter products by selected category
   const filteredProducts = useMemo(() => {
-    const isAll =
-      !selectedCategory || selectedCategory.toLowerCase() === "all";
+    const isAll = !selectedCategory || selectedCategory.toLowerCase() === "all";
     if (!categories || categories.length <= 1 || isAll) {
       return products;
     }
@@ -209,7 +214,10 @@ export default function RetailProductsPricing({
   // Calculate Price Insights
   const insights = useMemo(() => {
     if (!filteredProducts.length) return null;
-    const processed = filteredProducts.map((p) => ({ ...p, ...getUnitPriceData(p) }));
+    const processed = filteredProducts.map((p) => ({
+      ...p,
+      ...getUnitPriceData(p),
+    }));
     const validUnitPrices = processed.filter(
       (p) => p.pricePer100 > 0 && !isNaN(p.pricePer100),
     );
@@ -224,7 +232,8 @@ export default function RetailProductsPricing({
     )[0];
 
     const avgPrice =
-      filteredProducts.reduce((acc, curr) => acc + curr.price, 0) / filteredProducts.length;
+      filteredProducts.reduce((acc, curr) => acc + curr.price, 0) /
+      filteredProducts.length;
     const avgPricePerUnit =
       validUnitPrices.length > 0
         ? validUnitPrices.reduce((acc, curr) => acc + curr.pricePer100, 0) /
@@ -233,7 +242,13 @@ export default function RetailProductsPricing({
 
     const savingsVsAvg =
       avgPricePerUnit > 0
-        ? Math.max(0, Math.round(((avgPricePerUnit - bestValue.pricePer100) / avgPricePerUnit) * 100))
+        ? Math.max(
+            0,
+            Math.round(
+              ((avgPricePerUnit - bestValue.pricePer100) / avgPricePerUnit) *
+                100,
+            ),
+          )
         : 0;
 
     const priceSpreadRatio =
@@ -319,7 +334,10 @@ export default function RetailProductsPricing({
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(
-          errData.detail || errData.message || errData.error || "Mapping failed",
+          errData.detail ||
+            errData.message ||
+            errData.error ||
+            "Mapping failed",
         );
       }
 
@@ -349,15 +367,17 @@ export default function RetailProductsPricing({
           </p>
         </div>
         <Sheet open={isMappingOpen} onOpenChange={setIsMappingOpen}>
-          <SheetTrigger render={
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-primary/50 text-primary cursor-pointer hover:bg-primary/10"
-            >
-              <Plus className="mr-2 h-4 w-4" /> Map Products
-            </Button>
-          } />
+          <SheetTrigger
+            render={
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-primary/50 text-primary cursor-pointer hover:bg-primary/10"
+              >
+                <Plus className="mr-2 h-4 w-4" /> Map Products
+              </Button>
+            }
+          />
           <SheetContent
             side="right"
             className="w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl h-full flex flex-col p-0 gap-0"
@@ -455,27 +475,35 @@ export default function RetailProductsPricing({
                     <Search className="h-6 w-6" />
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground">Search Supermarkets</p>
+                    <p className="font-semibold text-foreground">
+                      Search Supermarkets
+                    </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Type at least 2 characters to search Keells, Cargills, Glomark, and Spar
+                      Type at least 2 characters to search Keells, Cargills,
+                      Glomark, and Spar
                     </p>
                   </div>
                 </div>
               )}
 
-              {!isSearching && debouncedQuery.length >= 2 && productResults.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 text-center text-sm text-muted-foreground gap-3">
-                  <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center text-muted-foreground/60">
-                    <Store className="h-6 w-6" />
+              {!isSearching &&
+                debouncedQuery.length >= 2 &&
+                productResults.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-20 text-center text-sm text-muted-foreground gap-3">
+                    <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center text-muted-foreground/60">
+                      <Store className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">
+                        No products found
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        No supermarket items matched &quot;{debouncedQuery}
+                        &quot;
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-foreground">No products found</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      No supermarket items matched &quot;{debouncedQuery}&quot;
-                    </p>
-                  </div>
-                </div>
-              )}
+                )}
 
               {!isSearching && productResults.length > 0 && (
                 <div className="rounded-xl border border-border/80 bg-card divide-y divide-border/60 overflow-hidden shadow-2xs">
@@ -490,12 +518,15 @@ export default function RetailProductsPricing({
                     return (
                       <div
                         key={prod.id}
-                        onClick={() => !isLinked && toggleProductSelection(prod.id)}
+                        onClick={() =>
+                          !isLinked && toggleProductSelection(prod.id)
+                        }
                         className={cn(
                           "group flex items-center gap-3.5 px-4 py-3 transition-colors select-none",
                           !isLinked && "cursor-pointer hover:bg-muted/40",
                           isSelected && "bg-primary/[0.04]",
-                          isLinked && "opacity-60 bg-muted/15 cursor-not-allowed",
+                          isLinked &&
+                            "opacity-60 bg-muted/15 cursor-not-allowed",
                         )}
                       >
                         <div
@@ -548,7 +579,8 @@ export default function RetailProductsPricing({
                             {/* Mapping status tags */}
                             {isLinked && (
                               <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-medium">
-                                <Check className="h-3 w-3 text-green-600" /> Linked
+                                <Check className="h-3 w-3 text-green-600" />{" "}
+                                Linked
                               </span>
                             )}
 
@@ -628,15 +660,22 @@ export default function RetailProductsPricing({
           <span>
             {resolvedFrom.relation === "parent" ? (
               <>
-                No retail products are directly mapped to <strong>{ingredientName}</strong>. Displaying market pricing from its immediate parent ingredient (<strong>{resolvedFrom.ingredient}</strong>).
+                No retail products are directly mapped to{" "}
+                <strong>{ingredientName}</strong>. Displaying market pricing
+                from its immediate parent ingredient (
+                <strong>{resolvedFrom.ingredient}</strong>).
               </>
             ) : resolvedFrom.relation === "ancestor" ? (
               <>
-                No retail products are directly mapped to <strong>{ingredientName}</strong> or its immediate parent. Displaying market pricing from ancestor ingredient (<strong>{resolvedFrom.ingredient}</strong>).
+                No retail products are directly mapped to{" "}
+                <strong>{ingredientName}</strong> or its immediate parent.
+                Displaying market pricing from ancestor ingredient (
+                <strong>{resolvedFrom.ingredient}</strong>).
               </>
             ) : (
               <>
-                Displaying market pricing aggregated across varieties of <strong>{ingredientName}</strong>.
+                Displaying market pricing aggregated across varieties of{" "}
+                <strong>{ingredientName}</strong>.
               </>
             )}
           </span>
@@ -646,12 +685,15 @@ export default function RetailProductsPricing({
       {categories && categories.length > 1 && (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs text-muted-foreground px-0.5">
-            <span className="font-semibold text-foreground">Categories & Varieties:</span>
+            <span className="font-semibold text-foreground">
+              Categories & Varieties:
+            </span>
             <span>{categories.length - 1} categories</span>
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 no-scrollbar">
             {categories.map((cat) => {
-              const isCatAll = cat.id === "all" || cat.name.toLowerCase() === "all";
+              const isCatAll =
+                cat.id === "all" || cat.name.toLowerCase() === "all";
               const isSelected =
                 (selectedCategory.toLowerCase() === "all" && isCatAll) ||
                 selectedCategory.toLowerCase() === cat.name.toLowerCase() ||
@@ -666,7 +708,8 @@ export default function RetailProductsPricing({
                       setSelectedCategory("all");
                     } else {
                       setSelectedCategory(
-                        selectedCategory.toLowerCase() === cat.name.toLowerCase()
+                        selectedCategory.toLowerCase() ===
+                          cat.name.toLowerCase()
                           ? "all"
                           : cat.name,
                       );
@@ -791,6 +834,9 @@ export default function RetailProductsPricing({
                   <TableHead>Product</TableHead>
                   <TableHead className="text-right">Price</TableHead>
                   <TableHead className="text-right">Unit Price</TableHead>
+                  <TableHead className="w-[130px] text-center">
+                    30-Day Trend
+                  </TableHead>
                   <TableHead className="w-[100px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -836,14 +882,16 @@ export default function RetailProductsPricing({
                               {product.quantity &&
                                 ` • ${product.quantity}${product.unit}`}
                             </span>
-                            {product.childIngredient && categories && categories.length > 1 && (
-                              <Badge
-                                variant="outline"
-                                className="h-4 text-[9px] font-medium border-primary/20 text-primary bg-primary/5 px-1 capitalize"
-                              >
-                                {product.childIngredient.name}
-                              </Badge>
-                            )}
+                            {product.childIngredient &&
+                              categories &&
+                              categories.length > 1 && (
+                                <Badge
+                                  variant="outline"
+                                  className="h-4 text-[9px] font-medium border-primary/20 text-primary bg-primary/5 px-1 capitalize"
+                                >
+                                  {product.childIngredient.name}
+                                </Badge>
+                              )}
                             {isBestValue && (
                               <Badge className="h-4 text-[9px] bg-green-600 hover:bg-green-600 border-none px-1">
                                 BEST VALUE
@@ -864,6 +912,14 @@ export default function RetailProductsPricing({
                             per {unitData.displayUnit}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <ProductSparkline
+                          productId={product.id}
+                          width={110}
+                          height={24}
+                          onClick={() => setSelectedHistoryProduct(product)}
+                        />
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
@@ -925,4 +981,3 @@ export default function RetailProductsPricing({
     </div>
   );
 }
-
