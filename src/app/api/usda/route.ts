@@ -8,8 +8,23 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const res = await fetch(`${NESTJS_API_BASE}/usda?${searchParams.toString()}`, {
       headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(10000),
     });
-    const data = await res.json();
+
+    const contentType = res.headers.get("content-type") || "";
+    let data: any;
+    if (contentType.includes("application/json")) {
+      data = await res.json();
+    } else {
+      const text = await res.text();
+      data = {
+        error:
+          res.status >= 500
+            ? "USDA search service is restarting or temporarily unavailable. Please retry in a moment."
+            : text || "USDA search failed",
+      };
+    }
+
     return NextResponse.json(data, {
       status: res.status,
       headers: { "X-Powered-By": "foodrepo-api (NestJS)" },

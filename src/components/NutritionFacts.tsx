@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -65,6 +65,7 @@ export default function NutritionFacts({
   const [loading, setLoading] = useState(false);
   const [linking, setLinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // FDA Daily Value guidelines for a standard 2000 kcal diet
   const DAILY_VALUES = {
@@ -75,10 +76,11 @@ export default function NutritionFacts({
     protein: 50, // DV% not typically shown but standard reference
   };
 
-  const handleSearch = async (val: string) => {
-    setSearchQuery(val);
-    if (val.trim().length < 2) {
+  const executeSearch = async (val: string) => {
+    const clean = val.trim();
+    if (clean.length < 2) {
       setSearchResults([]);
+      setLoading(false);
       return;
     }
 
@@ -86,15 +88,36 @@ export default function NutritionFacts({
     setError(null);
     try {
       const res = await fetch(
-        `/api/usda?query=${encodeURIComponent(val)}&limit=25`,
+        `/api/usda?query=${encodeURIComponent(clean)}&limit=25`,
       );
-      if (!res.ok) throw new Error("Search request failed");
-      const data = await res.json();
-      setSearchResults(data.results || []);
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error || data?.message || "Search request failed");
+      }
+      setSearchResults(data?.results || []);
     } catch (err: any) {
       setError(err.message || "Failed to search USDA database");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSearch = (val: string) => {
+    setSearchQuery(val);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      executeSearch(val);
+    }, 250);
+  };
+
+  const openSearchModal = () => {
+    setIsModalOpen(true);
+    const initial = ingredientName?.trim() || "";
+    setSearchQuery(initial);
+    if (initial.length >= 2) {
+      executeSearch(initial);
     }
   };
 
@@ -191,7 +214,7 @@ export default function NutritionFacts({
             </CardDescription>
           </div>
           <Button
-            onClick={() => setIsModalOpen(true)}
+            onClick={openSearchModal}
             className="flex items-center gap-2"
           >
             <LinkIcon className="h-4 w-4" />
@@ -205,6 +228,7 @@ export default function NutritionFacts({
           onOpenChange={setIsModalOpen}
           searchQuery={searchQuery}
           onSearchChange={handleSearch}
+          onRetry={() => executeSearch(searchQuery)}
           loading={loading}
           searchResults={searchResults}
           onLink={handleLink}
@@ -248,7 +272,7 @@ export default function NutritionFacts({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setIsModalOpen(true)}
+            onClick={openSearchModal}
           >
             Change Link
           </Button>
@@ -465,6 +489,7 @@ export default function NutritionFacts({
         onOpenChange={setIsModalOpen}
         searchQuery={searchQuery}
         onSearchChange={handleSearch}
+        onRetry={() => executeSearch(searchQuery)}
         loading={loading}
         searchResults={searchResults}
         onLink={handleLink}
@@ -482,6 +507,7 @@ function LinkModal({
   onOpenChange,
   searchQuery,
   onSearchChange,
+  onRetry,
   loading,
   searchResults,
   onLink,
@@ -511,9 +537,22 @@ function LinkModal({
         </div>
 
         {error && (
-          <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-lg flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>{error}</span>
+          <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-lg flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+            {onRetry && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onRetry}
+                className="h-7 px-2.5 text-xs bg-background/80 hover:bg-background"
+              >
+                Retry
+              </Button>
+            )}
           </div>
         )}
 
