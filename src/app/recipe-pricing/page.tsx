@@ -642,6 +642,35 @@ export default function RecipePricingPage() {
                                 Priced
                               </Badge>
                             )}
+                            {ing.fulfillment?.strategy === "derivative" && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300 border-sky-300"
+                              >
+                                {ing.fulfillment.sourceIngredient ? (
+                                  <Link
+                                    href={`/ingredient/${ing.fulfillment.sourceIngredientId || ing.identifier}`}
+                                    className="hover:underline"
+                                  >
+                                    Derived from {ing.fulfillment.sourceIngredient}
+                                    {ing.fulfillment.yieldRatio
+                                      ? ` (${Math.round(ing.fulfillment.yieldRatio * 100)}% yield)`
+                                      : ""}
+                                  </Link>
+                                ) : (
+                                  "Derived Item"
+                                )}
+                              </Badge>
+                            )}
+                            {(ing.fulfillment?.strategy === "parent" ||
+                              ing.fulfillment?.strategy === "ancestor") && (
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border-purple-300"
+                              >
+                                Via {ing.fulfillment.sourceIngredient}
+                              </Badge>
+                            )}
                             {isExcluded && (
                               <Badge
                                 variant="outline"
