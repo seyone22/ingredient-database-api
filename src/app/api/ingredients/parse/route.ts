@@ -1,25 +1,22 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { parseIngredients } from "@/services/aiService";
+import { NextRequest, NextResponse } from "next/server";
+
+const NESTJS_API_BASE =
+  process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { ingredients } = body;
-
-    if (!ingredients || !Array.isArray(ingredients)) {
-      return NextResponse.json(
-        { error: "Missing or invalid 'ingredients' array." },
-        { status: 400 },
-      );
-    }
-
-    const parsed = await parseIngredients(ingredients);
-
-    return NextResponse.json(parsed);
-  } catch (err: unknown) {
-    const message =
-      err instanceof Error ? err.message : "Failed to parse ingredients";
-    console.error("Error in /api/ingredients/parse:", err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    const res = await fetch(`${NESTJS_API_BASE}/ingredients/parse`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err.message || "Failed to parse ingredients" },
+      { status: 500 },
+    );
   }
 }
