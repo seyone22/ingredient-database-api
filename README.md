@@ -1,132 +1,156 @@
 # FoodRepo
 
-FoodRepo is a culinary ingredient knowledge base built with **Next.js** and **MongoDB**.  
-It provides search, contribution, and metadata features for exploring ingredients in a structured way.
+FoodRepo is an open culinary ingredient knowledge platform and supermarket retail price benchmarking application built with Next.js 15, React 19, TypeScript, and Tailwind CSS. It is powered by the FoodRepo NestJS API backend and PostgreSQL.
 
-## Features
+FoodRepo connects more than 20,000 canonical ingredients with botanical taxonomy relationships, retail products across major Sri Lankan supermarket chains, nutritional data, recipe price calculation, and developer API tooling.
 
-- Ingredient search by name and aliases, with pagination
-- Contribute page for adding new ingredients
-- Metadata endpoint with statistics (entries, countries, cuisines, regions, flavors)
-- Support for culinary relationships: `partOf`, `varieties`, `derivatives`, `usedIn`, `substitutes`, `pairsWith`
-- MongoDB schema designed to be portable into graph databases like Neo4j
+## Key Capabilities
+
+### Canonical Ingredient Knowledge Base
+Browse and search over 20,000 culinary ingredients with multilingual aliases, countries of origin, culinary traditions, and organoleptic flavor profiles. Explore botanical relationships including partOf, varieties, derivatives, culinary substitutes, and pairings.
+
+### Supermarket Retail Price Benchmarking
+Compare real-time item prices, pack sizes, and normalized unit costs (cost per 100g or 100ml) across supermarket chains including Keells, Cargills Online, Glomark, and SPAR. Inspect historical price fluctuations and stock levels.
+
+### Dynamic Hierarchical Pricing
+When an ingredient lacks direct supermarket products, the pricing engine resolves products from immediate parent ingredients or ancestor taxonomy trees. Parents with multiple child cultivars display category filters for granular inspection.
+
+### Dual-Strategy Recipe Supermarket Costing
+Analyze recipe costs by importing a public recipe webpage or pasting raw ingredient lists. Calculates two distinct costs:
+* Pro-Rata Consumed Cost: The exact monetary value of the gram/milliliter proportion consumed in the recipe.
+* Supermarket Basket Cost: The actual checkout amount required to purchase the minimum commercial package sizes.
+
+### Data Quality & Operational Analytics
+Includes an administrative console to monitor database health scores, orphan ingredients, duplicate candidates, regional market breakdowns, and ingestion activity.
+
+### Interactive API Explorer
+Test API queries, inspect query parameters, and copy code snippets for cURL, TypeScript, Python, and Dart directly in the documentation explorer. Links directly to live OpenAPI Swagger documentation.
 
 ## Tech Stack
 
-- Frontend: Next.js (App Router), React, TypeScript  
-- Backend: Next.js API routes  
-- Database: MongoDB Atlas with Mongoose  
-- Styling: CSS Modules and MUI  
+### Frontend Application
+* Framework: Next.js 15 (Turbopack, App Router)
+* Language: TypeScript 5
+* UI Library: React 19, Lucide React, Shadcn UI / Radix primitives
+* Styling: Tailwind CSS v4, CSS Modules
+* Visualizations: Recharts, React Calendar Heatmap
+
+### Backend Engine & Persistence
+* Backend: FoodRepo API (NestJS 11, Node.js)
+* Database: PostgreSQL 16 with pgvector extension
+* ORM: Drizzle ORM
+* Artificial Intelligence: Google Gemini Flash for semantic parsing and image waterfall enrichment
+* Standards: OpenAPI 3.0 / Swagger, Model Context Protocol (MCP)
 
 ## Project Structure
 
 ```
+ingredient-database-api/
+├── public/
+│   ├── logo.png                # FoodRepo transparent badge logo
+│   └── ...
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx          # Root layout and theme providers
+│   │   ├── page.tsx            # Home page with search hero
+│   │   ├── about/              # About and project info
+│   │   ├── contribute/         # Community ingredient contribution
+│   │   ├── documentation/      # Interactive API explorer and Swagger link
+│   │   ├── ingredient/[id]/    # Comprehensive ingredient profile & market pricing
+│   │   ├── recipe-pricing/     # Supermarket recipe costing calculator
+│   │   ├── admin/
+│   │   │   ├── page.tsx        # Administration dashboard overview
+│   │   │   ├── all/            # Paginated master ingredient database
+│   │   │   ├── analytics/      # Regional and flavor profile matrices
+│   │   │   ├── ingest/         # Ingestion pipeline monitor and source charts
+│   │   │   ├── mapper/         # Supermarket product-to-ingredient linker
+│   │   │   ├── product/        # Supermarket products catalog
+│   │   │   └── quality/        # Data quality and anomaly detection
+│   │   └── api/                # Proxies forwarding requests to FoodRepo API
+│   ├── components/
+│   │   ├── footer/             # Site footer
+│   │   ├── navbar/             # Navigation header with constrained content width
+│   │   ├── ingredientcard/     # Ingredient search result card
+│   │   ├── NutritionFacts.tsx  # USDA nutritional profile breakdown
+│   │   ├── RetailProductsPricing.tsx # Store pricing table and product mapper
+│   │   └── ui/                 # Reusable UI component library
+│   ├── lib/
+│   │   └── utils.ts            # Classnames and styling utilities
+│   └── types/                  # TypeScript interface and type declarations
+└── package.json
+```
 
-src/
-app/
-api/            # API endpoints
-contribute/     # Contribute page
-search/         # Search page
-components/       # Navbar, Footer, SearchBar, etc.
-models/           # Mongoose schemas
-services/         # Database services
-utils/            # Helpers (dbConnect, etc.)
+## Getting Started
 
-````
+### Prerequisites
+* Node.js 20 or later
+* npm, yarn, or pnpm
 
-## Setup
+### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/foodrepo.git
-cd foodrepo
-````
+git clone https://github.com/seyone22/ingredient-database-api.git
+cd ingredient-database-api
+```
 
 2. Install dependencies:
-
 ```bash
 npm install
 ```
 
-3. Configure environment:
-   Copy `.env.sample` to `.env.local` and set your MongoDB connection string:
-
+3. Configure environment variables:
+Create a `.env.local` file in the project root:
+```env
+FOODREPO_API_URL=https://foodapi.seyone.dev/api/v1
 ```
-MONGODB_URI=mongodb+srv://<user>:<password>@cluster0.mongodb.net/foodrepo
-```
 
-4. Run the development server:
-
+4. Start the development server:
 ```bash
 npm run dev
 ```
 
-The app will be available at [http://localhost:3000](http://localhost:3000).
+The application will be accessible at http://localhost:3000.
 
-## API Documentation
+### Production Build
 
-### Search Ingredients
-
-`GET /api/ingredients?query=<string>&page=<number>&limit=<number>`
-
-Parameters:
-
-* `query` (required): search term
-* `page` (optional, default 1): page number
-* `limit` (optional, default 20): items per page
-
-Response:
-
-```json
-{
-  "results": [ { "name": "Banana", "country": ["Sri Lanka"], ... } ],
-  "page": 1,
-  "totalPages": 3,
-  "total": 45
-}
+Create an optimized build using Turbopack:
+```bash
+npm run build
+npm run start
 ```
 
-### Contribute Ingredient
+## Frontend API Proxy Endpoints
 
-`POST /api/ingredients`
+The Next.js frontend provides proxy routes that forward requests to the FoodRepo NestJS backend engine:
 
-Body:
+### Ingredient Search
+`GET /api/ingredients?query=<term>&page=<number>&limit=<number>`
+Search ingredients by name or alias, returning taxonomy relationships and metadata.
 
-```json
-{
-  "name": "Mango",
-  "aliases": ["Amba"],
-  "country": ["Sri Lanka"],
-  "cuisine": ["Sri Lankan"],
-  "provenance": "Cultivated in South Asia",
-  "flavor_profile": ["sweet", "fragrant"]
-}
-```
+### Ingredient Details & Pricing
+`GET /api/ingredients/:id`
+Fetch full ingredient specification, linked USDA nutrition facts, and matched supermarket products.
 
-### Database Metadata
+### Supermarket Products
+`GET /api/products?query=<term>`
+Query supermarket catalogs across Keells, Cargills, Glomark, and SPAR.
 
-`GET /api/meta`
+### Recipe Pricing Engine
+`POST /api/recipes/parse-and-price`
+Submit a recipe URL or raw ingredient lines to calculate pro-rata and supermarket basket costs.
 
-Response:
+### Administration & Metrics
+* `GET /api/admin/analytics`: Macro-region and culinary distribution stats.
+* `GET /api/admin/quality`: Anomaly counts and data quality scores.
+* `GET /api/admin/stats`: Source ingest breakdown and pipeline statistics.
 
-```json
-{
-  "entryCount": 123,
-  "countries": { "count": 15, "byCountry": { "Sri Lanka": 20, "India": 35 } },
-  "cuisines": { "count": 10, "byCuisine": { "Sri Lankan": 18, "Thai": 12 } },
-  "regions": { "count": 8, "byRegion": { "South Asia": 25, "Southeast Asia": 20 } },
-  "flavorProfiles": { "count": 12, "byFlavor": { "sweet": 40, "sour": 10 } }
-}
-```
+## Live Services & Documentation
 
-## Contributing
-
-Contributions are welcome. You can:
-
-* Add missing ingredients using the Contribute page
-* Open issues for bugs or improvements
-* Submit pull requests for new features
+* Production Frontend: https://food.seyone.dev
+* Live OpenAPI Swagger Documentation: https://foodapi.seyone.dev/api/docs
+* Backend API Service: https://foodapi.seyone.dev
 
 ## License
 
-MIT License.
+This project is licensed under the MIT License.
