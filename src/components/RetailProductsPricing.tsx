@@ -193,13 +193,16 @@ export default function RetailProductsPricing({
 
   // Filter products by selected category
   const filteredProducts = useMemo(() => {
-    if (!categories || categories.length <= 1 || selectedCategory === "all") {
+    const isAll =
+      !selectedCategory || selectedCategory.toLowerCase() === "all";
+    if (!categories || categories.length <= 1 || isAll) {
       return products;
     }
+    const target = selectedCategory.toLowerCase();
     return products.filter(
       (p) =>
-        p.childIngredient?.name?.toLowerCase() === selectedCategory.toLowerCase() ||
-        p.childIngredient?.id === selectedCategory,
+        p.childIngredient?.name?.toLowerCase() === target ||
+        p.childIngredient?.id?.toLowerCase() === target,
     );
   }, [products, categories, selectedCategory]);
 
@@ -648,18 +651,27 @@ export default function RetailProductsPricing({
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 no-scrollbar">
             {categories.map((cat) => {
+              const isCatAll = cat.id === "all" || cat.name.toLowerCase() === "all";
               const isSelected =
-                selectedCategory === cat.name ||
-                (selectedCategory === "all" && cat.id === "all");
+                (selectedCategory.toLowerCase() === "all" && isCatAll) ||
+                selectedCategory.toLowerCase() === cat.name.toLowerCase() ||
+                selectedCategory === cat.id;
+
               return (
                 <button
                   key={cat.id}
                   type="button"
-                  onClick={() =>
-                    setSelectedCategory(
-                      selectedCategory === cat.name ? "all" : cat.name,
-                    )
-                  }
+                  onClick={() => {
+                    if (isCatAll) {
+                      setSelectedCategory("all");
+                    } else {
+                      setSelectedCategory(
+                        selectedCategory.toLowerCase() === cat.name.toLowerCase()
+                          ? "all"
+                          : cat.name,
+                      );
+                    }
+                  }}
                   className={cn(
                     "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 cursor-pointer border shadow-sm",
                     isSelected
