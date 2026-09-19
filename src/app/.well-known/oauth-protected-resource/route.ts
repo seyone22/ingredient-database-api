@@ -1,40 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const NESTJS_API_BASE =
+  process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
+
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
-  const proto = req.headers.get("x-forwarded-proto") || "https";
-  const origin =
-    host && !host.includes("localhost")
-      ? `${proto}://${host}`
-      : process.env.NEXT_PUBLIC_APP_URL || "https://food.seyone.dev";
-
-  return NextResponse.json(
-    {
-      resource: origin,
-      authorization_servers: [
-        process.env.AUTH_SERVER_URL || origin,
-      ],
-      scopes_supported: [
-        "read:ingredients",
-        "write:ingredients",
-        "read:products",
-        "read:recipes",
-        "admin:maintenance",
-      ],
-      bearer_methods_supported: ["header"],
-      resource_documentation: `${origin}/documentation`,
-    },
-    {
+  try {
+    const res = await fetch(`${NESTJS_API_BASE}/.well-known/oauth-protected-resource`, {
+      headers: { Accept: "application/json" },
+    });
+    const data = await res.json();
+    return NextResponse.json(data, {
+      status: res.status,
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, OPTIONS",
         "Access-Control-Allow-Headers": "Authorization, Content-Type",
         "Content-Type": "application/json",
       },
-    },
-  );
+    });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 502 });
+  }
 }
 
 export async function OPTIONS() {
