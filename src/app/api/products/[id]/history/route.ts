@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProductPriceHistory } from "@/services/productService";
+
+const NESTJS_API_BASE =
+  process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
 
 export async function GET(req: NextRequest, { params }: { params: any }) {
   try {
-    // Await params for Next.js 15+ compatibility
     const { id } = await params;
 
     if (!id) {
@@ -13,9 +14,20 @@ export async function GET(req: NextRequest, { params }: { params: any }) {
       );
     }
 
-    const chartData = await getProductPriceHistory(id);
+    const backendRes = await fetch(`${NESTJS_API_BASE}/products/${id}/history`, {
+      headers: {
+        Accept: "application/json",
+      },
+    });
 
-    return NextResponse.json({ history: chartData });
+    const data = await backendRes.json();
+
+    return NextResponse.json(data, {
+      status: backendRes.status,
+      headers: {
+        "X-Powered-By": "foodrepo-api (NestJS)",
+      },
+    });
   } catch (err: any) {
     console.error("Error fetching price history:", err);
     return NextResponse.json(

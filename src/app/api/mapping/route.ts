@@ -1,29 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
-import {
-  fetchProductsByIds,
-  getRandomUnmappedProduct,
-} from "@/services/productService";
+import { type NextRequest, NextResponse } from "next/server";
+
+const NESTJS_API_BASE =
+  process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
 
 // POST: Fetch specific product IDs
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const ids: string[] = body.ids;
-
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
-      return NextResponse.json(
-        { error: "'ids' must be a non-empty array in the request body" },
-        { status: 400 },
-      );
-    }
-
-    const { products, total } = await fetchProductsByIds(ids);
-
-    if (products.length === 0) {
-      return NextResponse.json({ error: "No products found" }, { status: 404 });
-    }
-
-    return NextResponse.json({ products, total });
+    const backendRes = await fetch(`${NESTJS_API_BASE}/products`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await backendRes.json();
+    return NextResponse.json(data, {
+      status: backendRes.status,
+      headers: { "X-Powered-By": "foodrepo-api (NestJS)" },
+    });
   } catch (err: any) {
     console.error("Error fetching products:", err);
     return NextResponse.json(
@@ -36,17 +29,15 @@ export async function POST(req: NextRequest) {
 // GET: Fetch a random unmapped product
 export async function GET(req: NextRequest) {
   try {
-    // Delegate the complex relational logic to our service
-    const { product } = await getRandomUnmappedProduct();
-
-    if (!product) {
-      return NextResponse.json(
-        { error: "No unmapped products found" },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({ product });
+    const backendRes = await fetch(
+      `${NESTJS_API_BASE}/products/unmapped/random`,
+      { headers: { Accept: "application/json" } },
+    );
+    const data = await backendRes.json();
+    return NextResponse.json(data, {
+      status: backendRes.status,
+      headers: { "X-Powered-By": "foodrepo-api (NestJS)" },
+    });
   } catch (err: any) {
     console.error("Error fetching random product:", err);
     return NextResponse.json(

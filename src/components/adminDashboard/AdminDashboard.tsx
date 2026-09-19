@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DatabaseStats } from "@/services/metaService";
+import { DatabaseStats } from "@/types/types";
 import AdminCharts from "@/components/adminChart/AdminCharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";

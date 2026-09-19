@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchIngredientsByIds } from "@/services/ingredientService";
+
+const NESTJS_API_BASE =
+  process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,16 +15,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { ingredients, total } = await fetchIngredientsByIds(ids);
+    const backendRes = await fetch(`${NESTJS_API_BASE}/ingredients/bulk`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ ids }),
+    });
 
-    if (ingredients.length === 0) {
-      return NextResponse.json(
-        { error: "No Ingredients found" },
-        { status: 404 },
-      );
-    }
+    const data = await backendRes.json();
 
-    return NextResponse.json({ ingredients, total });
+    return NextResponse.json(data, {
+      status: backendRes.status,
+      headers: {
+        "X-Powered-By": "foodrepo-api (NestJS)",
+      },
+    });
   } catch (err: any) {
     console.error("Error fetching Ingredients by IDs:", err);
     return NextResponse.json(

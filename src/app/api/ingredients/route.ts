@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { addIngredient } from "@/services/ingredientService";
 
 const NESTJS_API_BASE =
   process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
@@ -42,12 +41,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
-    const ingredient = await addIngredient(body);
+    const backendRes = await fetch(`${NESTJS_API_BASE}/ingredients`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+    });
 
-    return NextResponse.json(
-      { message: "Ingredient added", ingredient },
-      { status: 201 },
-    );
+    const data = await backendRes.json();
+
+    return NextResponse.json(data, {
+      status: backendRes.status,
+      headers: {
+        "X-Powered-By": "foodrepo-api (NestJS)",
+      },
+    });
   } catch (err: any) {
     console.error("Add Ingredient Error:", err);
     return NextResponse.json(

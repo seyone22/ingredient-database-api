@@ -28,7 +28,7 @@ import {
   Tooltip,
 } from "recharts";
 import { TrendingUp, AlertCircle, Calendar, DollarSign } from "lucide-react";
-import { IProductData } from "@/services/productService";
+import { IProductData } from "@/types/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProductHistoryModalProps {

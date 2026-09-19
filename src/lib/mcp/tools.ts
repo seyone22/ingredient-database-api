@@ -1,13 +1,7 @@
-import {
-  searchIngredients,
-  getIngredientById,
-  getIngredientPrices,
-  getBestIngredientMatch,
-  addIngredient,
-  updateIngredient,
-} from "@/services/ingredientService";
-import { withAuditLog } from "@/utils/logger";
 import { assertScope, McpAuthContext } from "./auth";
+
+const NESTJS_API_BASE =
+  process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
 
 export interface McpToolDefinition {
   name: string;
@@ -23,9 +17,6 @@ export interface McpToolDefinition {
 }
 
 export const mcpTools: Record<string, McpToolDefinition> = {
-  // -------------------------------------------------------------------------
-  // READ: Search Canonical Ingredients
-  // -------------------------------------------------------------------------
   search_ingredients: {
     name: "search_ingredients",
     description:
@@ -81,21 +72,24 @@ export const mcpTools: Record<string, McpToolDefinition> = {
       const page = Math.max(1, Number(args.page) || 1);
       const limit = Math.min(50, Math.max(1, Number(args.limit) || 15));
 
-      return await searchIngredients(args.query || "", {
-        page,
-        limit,
-        cuisine: args.cuisine || null,
-        country: args.country || null,
-        region: args.region || null,
-        flavor: args.flavor || null,
-        includeProducts: Boolean(args.includeProducts),
+      const params = new URLSearchParams({
+        query: args.query || "",
+        page: String(page),
+        limit: String(limit),
+        includeProducts: String(Boolean(args.includeProducts)),
       });
+      if (args.cuisine) params.append("cuisine", args.cuisine);
+      if (args.country) params.append("country", args.country);
+      if (args.region) params.append("region", args.region);
+      if (args.flavor) params.append("flavor", args.flavor);
+
+      const res = await fetch(`${NESTJS_API_BASE}/ingredients?${params.toString()}`, {
+        headers: { Accept: "application/json" },
+      });
+      return await res.json();
     },
   },
 
-  // -------------------------------------------------------------------------
-  // READ: Get Complete Ingredient Record
-  // -------------------------------------------------------------------------
   get_ingredient_details: {
     name: "get_ingredient_details",
     description:
@@ -127,17 +121,17 @@ export const mcpTools: Record<string, McpToolDefinition> = {
         throw new Error("Missing required parameter 'id'");
       }
 
-      const item = await getIngredientById(args.id, args.includeProducts ?? true);
-      if (!item) {
+      const res = await fetch(
+        `${NESTJS_API_BASE}/ingredients/${args.id}?includeProducts=${args.includeProducts ?? true}`,
+        { headers: { Accept: "application/json" } },
+      );
+      if (!res.ok) {
         throw new Error(`Ingredient with id '${args.id}' not found`);
       }
-      return item;
+      return await res.json();
     },
   },
 
-  // -------------------------------------------------------------------------
-  // READ: Live Retail Prices Across Supermarkets
-  // -------------------------------------------------------------------------
   get_ingredient_prices: {
     name: "get_ingredient_prices",
     description:
@@ -164,17 +158,16 @@ export const mcpTools: Record<string, McpToolDefinition> = {
         throw new Error("Missing required parameter 'id'");
       }
 
-      const priceData = await getIngredientPrices(args.id);
-      if (!priceData) {
+      const res = await fetch(`${NESTJS_API_BASE}/ingredients/${args.id}/price`, {
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) {
         throw new Error(`Ingredient with id '${args.id}' not found`);
       }
-      return priceData;
+      return await res.json();
     },
   },
 
-  // -------------------------------------------------------------------------
-  // READ: Semantic Vector Matcher
-  // -------------------------------------------------------------------------
   match_ingredient: {
     name: "match_ingredient",
     description:
@@ -201,13 +194,18 @@ export const mcpTools: Record<string, McpToolDefinition> = {
         throw new Error("Missing required parameter 'query'");
       }
 
-      return await getBestIngredientMatch(args.query.trim());
+      const res = await fetch(`${NESTJS_API_BASE}/ingredients/match`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ query: args.query.trim() }),
+      });
+      return await res.json();
     },
   },
 
-  // -------------------------------------------------------------------------
-  // WRITE: Contribute New Canonical Ingredient
-  // -------------------------------------------------------------------------
   contribute_ingredient: {
     name: "contribute_ingredient",
     description:
@@ -249,123 +247,82 @@ export const mcpTools: Record<string, McpToolDefinition> = {
         flavor_profile: {
           type: "array",
           items: { type: "string" },
-          description: "Taste and aromatic attributes (e.g. ['Spicy', 'Warm', 'Aromatic'])",
+          description: "Taste and aromatic attributes",
         },
         dietary_flags: {
           type: "array",
           items: { type: "string" },
-          description: "Dietary compliance tags (e.g. ['Vegan', 'Gluten-Free'])",
-        },
-        provenance: {
-          type: "string",
-          description: "Citation source, collector ID, or reference context",
+          description: "Dietary categorizations (e.g. 'Vegan', 'Halal')",
         },
         comment: {
           type: "string",
-          description: "Culinary commentary, preparation techniques, or notes",
+          description: "Culinary notes or usage guidance",
         },
-        pronunciation: {
+        photo: {
           type: "string",
-          description: "Phonetic pronunciation guide",
+          description: "Public URL of high-resolution representative photograph",
         },
       },
     },
     handler: async (args, auth) => {
       assertScope(auth, "write:ingredients");
-      if (!args.name?.trim()) {
-        throw new Error("Missing required parameter 'name'");
-      }
-
-      return await withAuditLog(
-        {
-          type: "MCP_CONTRIBUTE",
-          tag: "INGREDIENT_WRITE",
-          initiatedBy: auth.clientId || auth.userId || "gemini-spark",
-          metadata: { input: args },
+      const res = await fetch(`${NESTJS_API_BASE}/ingredients`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-        async (ctx) => {
-          const payload = {
-            name: args.name.trim(),
-            aliases: args.aliases || [],
-            country: args.country || [],
-            cuisine: args.cuisine || [],
-            region: args.region || [],
-            flavor_profile: args.flavor_profile || [],
-            dietary_flags: args.dietary_flags || [],
-            provenance: args.provenance || `SPARK_MCP_${auth.clientId || "AGENT"}`,
-            comment: args.comment || null,
-            pronunciation: args.pronunciation || null,
-          };
-
-          const created = await addIngredient(payload);
-          ctx.message = `Created ingredient '${created.name}' (${created.id})`;
-          ctx.metadata.ingredientId = created.id;
-
-          return {
-            success: true,
-            ingredient: created,
-          };
-        },
-      );
+        body: JSON.stringify({
+          name: args.name,
+          aliases: args.aliases || [],
+          country: args.country || [],
+          cuisine: args.cuisine || [],
+          region: args.region || [],
+          flavor_profile: args.flavor_profile || [],
+          dietary_flags: args.dietary_flags || [],
+          comment: args.comment || "",
+          photo: args.photo || "",
+        }),
+      });
+      return await res.json();
     },
   },
 
-  // -------------------------------------------------------------------------
-  // WRITE: Update Ingredient Metadata
-  // -------------------------------------------------------------------------
-  update_ingredient_metadata: {
-    name: "update_ingredient_metadata",
+  update_ingredient: {
+    name: "update_ingredient",
     description:
-      "Update or enrich metadata fields (aliases, cuisines, flavor profiles, comments) for an existing canonical ingredient record.",
+      "Update an existing canonical ingredient record by ID with verified metadata or dietary flags.",
     requiredScope: "write:ingredients",
     annotations: {
-      title: "Update Ingredient Metadata",
+      title: "Update Canonical Ingredient",
       readOnlyHint: false,
       destructiveHint: false,
     },
     inputSchema: {
       type: "object",
-      required: ["id", "updates"],
+      required: ["id", "data"],
       properties: {
         id: {
           type: "string",
           description: "UUID of the ingredient to update",
         },
-        updates: {
+        data: {
           type: "object",
-          description: "Fields to update (aliases, country, cuisine, region, flavorProfile, dietaryFlags, comment, pronunciation)",
+          description: "Key-value fields to update",
         },
       },
     },
     handler: async (args, auth) => {
       assertScope(auth, "write:ingredients");
-      if (!args.id) {
-        throw new Error("Missing required parameter 'id'");
-      }
-      if (!args.updates || typeof args.updates !== "object") {
-        throw new Error("Missing or invalid 'updates' object");
-      }
-
-      return await withAuditLog(
-        {
-          type: "MCP_UPDATE",
-          tag: "INGREDIENT_WRITE",
-          initiatedBy: auth.clientId || auth.userId || "gemini-spark",
-          metadata: { id: args.id, updates: args.updates },
+      const res = await fetch(`${NESTJS_API_BASE}/ingredients/${args.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-        async (ctx) => {
-          const updated = await updateIngredient(args.id, args.updates);
-          if (!updated) {
-            throw new Error(`Ingredient with id '${args.id}' not found`);
-          }
-
-          ctx.message = `Updated metadata for ingredient '${updated.name}' (${updated.id})`;
-          return {
-            success: true,
-            ingredient: updated,
-          };
-        },
-      );
+        body: JSON.stringify(args.data),
+      });
+      return await res.json();
     },
   },
 };
@@ -373,14 +330,14 @@ export const mcpTools: Record<string, McpToolDefinition> = {
 export const mcpResources = [
   {
     uri: "foodrepo://taxonomies/cuisines",
-    name: "Standard Cuisine Taxonomy",
-    description: "Supported cultural cuisines and sub-cuisines registered in FoodRepo",
+    name: "Supported Cuisines Taxonomy",
+    description: "Standardized list of regional and international culinary traditions indexed in FoodRepo.",
     mimeType: "application/json",
   },
   {
     uri: "foodrepo://taxonomies/dietary-flags",
-    name: "Dietary Compliance Flags",
-    description: "Standard dietary compliance tags (Vegan, Halal, Kosher, Gluten-Free, etc.)",
+    name: "Supported Dietary Flags",
+    description: "Standardized allergen, lifestyle, and religious dietary flags supported by the knowledge base.",
     mimeType: "application/json",
   },
 ];

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBestIngredientMatch } from "@/services/ingredientService";
+
+const NESTJS_API_BASE =
+  process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,10 +15,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Delegate to the service layer
-    const result = await getBestIngredientMatch(query);
+    const backendRes = await fetch(`${NESTJS_API_BASE}/ingredients/match`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ query }),
+    });
 
-    return NextResponse.json(result);
+    const data = await backendRes.json();
+
+    return NextResponse.json(data, {
+      status: backendRes.status,
+      headers: {
+        "X-Powered-By": "foodrepo-api (NestJS)",
+      },
+    });
   } catch (err: any) {
     console.error("Error in /api/ingredients/match:", err);
     return NextResponse.json(

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { DatabaseStats } from "@/services/metaService";
+import { DatabaseStats } from "@/types/types";
 import {
   Card,
   CardContent,

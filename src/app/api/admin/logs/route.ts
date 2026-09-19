@@ -1,35 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuditLogs } from "@/services/auditService";
+
+const NESTJS_API_BASE =
+  process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
 
 export async function GET(req: NextRequest) {
   try {
-    // NextRequest provides a handy .nextUrl property
-    const urlParams = req.nextUrl.searchParams;
-
-    // 1. Extract Filters
-    const type = urlParams.get("type") || undefined;
-    const tag = urlParams.get("tag") || undefined;
-    const status = urlParams.get("status") || undefined;
-
-    // Ensure valid numbers with fallbacks
-    const limit = parseInt(urlParams.get("limit") || "50", 10);
-    const page = parseInt(urlParams.get("page") || "1", 10);
-
-    // 2. Call the Service
-    const result = await getAuditLogs({
-      type,
-      tag,
-      status,
-      page: isNaN(page) ? 1 : page,
-      limit: isNaN(limit) ? 50 : limit,
+    const { searchParams } = new URL(req.url);
+    const res = await fetch(`${NESTJS_API_BASE}/admin/logs?${searchParams.toString()}`, {
+      headers: { Accept: "application/json" },
     });
-
-    // 3. Return JSON
-    return NextResponse.json(result);
-  } catch (err: any) {
-    console.error("Audit Log Fetch Error:", err);
+    const data = await res.json();
+    return NextResponse.json(data, {
+      status: res.status,
+      headers: { "X-Powered-By": "foodrepo-api (NestJS)" },
+    });
+  } catch (error: any) {
     return NextResponse.json(
-      { error: "Failed to fetch logs", details: err.message },
+      { error: error.message || "Failed to fetch logs" },
       { status: 500 },
     );
   }

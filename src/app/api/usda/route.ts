@@ -1,48 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/utils/db";
-import { usdaFoods } from "@/utils/schema";
-import { ilike, sql, desc } from "drizzle-orm";
 
-/**
- * GET /api/usda
- * Search USDA reference foods by description/name.
- */
+const NESTJS_API_BASE =
+  process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const query = searchParams.get("query")?.trim() || "";
-    const limit = parseInt(searchParams.get("limit") || "30", 10);
-
-    if (!query || query.length < 2) {
-      return NextResponse.json({ results: [] });
-    }
-
-    // Boost exact starts-with matches to the top
-    const isStartsWith = sql<number>`CASE WHEN ${usdaFoods.description} ILIKE ${query + "%"} THEN 1 ELSE 0 END`;
-
-    const results = await db
-      .select({
-        fdcId: usdaFoods.fdcId,
-        description: usdaFoods.description,
-        foodCategory: usdaFoods.foodCategory,
-        caloriesKcal: usdaFoods.caloriesKcal,
-        proteinG: usdaFoods.proteinG,
-        fatG: usdaFoods.fatG,
-        carbsG: usdaFoods.carbsG,
-        fiberG: usdaFoods.fiberG,
-        sodiumMg: usdaFoods.sodiumMg,
-        sugarG: usdaFoods.sugarG,
-      })
-      .from(usdaFoods)
-      .where(ilike(usdaFoods.description, `%${query}%`))
-      .orderBy(desc(isStartsWith), usdaFoods.description)
-      .limit(limit);
-
-    return NextResponse.json({ results });
-  } catch (err: any) {
-    console.error("USDA Search Error:", err);
+    const res = await fetch(`${NESTJS_API_BASE}/usda?${searchParams.toString()}`, {
+      headers: { Accept: "application/json" },
+    });
+    const data = await res.json();
+    return NextResponse.json(data, {
+      status: res.status,
+      headers: { "X-Powered-By": "foodrepo-api (NestJS)" },
+    });
+  } catch (error: any) {
     return NextResponse.json(
-      { error: "Server error", details: err.message || err },
+      { error: error.message || "Failed to search USDA foods" },
       { status: 500 },
     );
   }

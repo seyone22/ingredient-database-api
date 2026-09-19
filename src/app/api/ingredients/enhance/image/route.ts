@@ -1,33 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
-import { processIngredientImage } from "@/services/imageIngestService";
+
+const NESTJS_API_BASE =
+  process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id } = body;
 
-    if (!id) {
-      return NextResponse.json({ error: "ID required" }, { status: 400 });
-    }
+    const backendRes = await fetch(
+      `${NESTJS_API_BASE}/ingredients/enhance/image`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(body),
+      },
+    );
 
-    // Delegate to our new orchestration service
-    const result = await processIngredientImage(id);
+    const data = await backendRes.json();
 
-    if (!result) {
-      return NextResponse.json(
-        { error: "No image found across all providers." },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({ message: "Success", ingredient: result });
+    return NextResponse.json(data, {
+      status: backendRes.status,
+      headers: {
+        "X-Powered-By": "foodrepo-api (NestJS)",
+      },
+    });
   } catch (err: any) {
     console.error("Image Fetch Pipeline Error:", err);
-
-    if (err.message === "Ingredient not found") {
-      return NextResponse.json({ error: err.message }, { status: 404 });
-    }
-
     return NextResponse.json(
       { error: err.message || "Server Error" },
       { status: 500 },

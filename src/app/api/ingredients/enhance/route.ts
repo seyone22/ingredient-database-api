@@ -1,21 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { processAiEnrichment } from "@/services/aiService";
+
+const NESTJS_API_BASE =
+  process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // Ensure we always have an array of IDs
-    const ids: string[] = Array.isArray(body.id) ? body.id : [body.id];
+    const backendRes = await fetch(`${NESTJS_API_BASE}/ingredients/enhance`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+    });
 
-    if (!ids.length || !ids[0]) {
-      return NextResponse.json({ error: "No IDs provided" }, { status: 400 });
-    }
+    const data = await backendRes.json();
 
-    // Delegate execution and logging to the Service Layer
-    const enriched = await processAiEnrichment(ids);
-
-    return NextResponse.json({ message: "Enhancement completed", enriched });
+    return NextResponse.json(data, {
+      status: backendRes.status,
+      headers: {
+        "X-Powered-By": "foodrepo-api (NestJS)",
+      },
+    });
   } catch (err: any) {
     console.error("Enhancement Route Error:", err);
     return NextResponse.json(
