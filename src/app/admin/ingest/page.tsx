@@ -508,11 +508,11 @@ export default function IngestDashboard() {
         </Card>
 
         {/* Log List Section */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between border-b pb-4 bg-muted/20">
+        <Card className="gap-0 py-0 overflow-hidden shadow-xs border-border/80">
+          <CardHeader className="flex flex-row items-center justify-between border-b px-6 py-3.5 bg-muted/20">
             <div className="space-y-1">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <ListFilter className="h-5 w-5 text-primary" />
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <ListFilter className="h-4 w-4 text-primary" />
                 Recent Events
               </CardTitle>
             </div>
@@ -520,19 +520,19 @@ export default function IngestDashboard() {
               variant="ghost"
               size="sm"
               onClick={fetchLogs}
-              className="text-muted-foreground"
+              className="text-muted-foreground h-8 text-xs"
             >
-              <RefreshCcw className="h-4 w-4 mr-2" /> Refresh
+              <RefreshCcw className="h-3.5 w-3.5 mr-1.5" /> Refresh
             </Button>
           </CardHeader>
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead className="w-[200px]">Start Time</TableHead>
+                <TableHead className="w-[200px] pl-6">Start Time</TableHead>
                 <TableHead>Source Tag</TableHead>
                 <TableHead>Duration</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Details</TableHead>
+                <TableHead className="text-right pr-6">Details</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -558,7 +558,7 @@ export default function IngestDashboard() {
               ) : (
                 logs.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell className="font-medium whitespace-nowrap">
+                    <TableCell className="font-medium whitespace-nowrap pl-6">
                       {new Date(log.startTime).toLocaleString()}
                     </TableCell>
                     <TableCell>
@@ -597,7 +597,7 @@ export default function IngestDashboard() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right pr-6">
                       {log.error ? (
                         <Button
                           variant="ghost"
