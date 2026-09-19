@@ -1,52 +1,30 @@
-import { NextRequest, NextResponse } from "next/server";
-import { addIngredient, searchIngredients } from "@/services/ingredientService";
+import { type NextRequest, NextResponse } from "next/server";
+import { addIngredient } from "@/services/ingredientService";
+
+const NESTJS_API_BASE =
+  process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const query = searchParams.get("query")?.trim() || "";
-
-  // Ensure safe pagination parsing
-  const page = parseInt(searchParams.get("page") || "1", 10);
-  const limit = parseInt(searchParams.get("limit") || "20", 10);
-  const autosuggest = searchParams.get("autosuggest") === "true";
-  const includeProducts = searchParams.get("includeProducts") === "true";
-
-  // Optional structured filters
-  const country = searchParams.get("country");
-  const cuisine = searchParams.get("cuisine");
-  const region = searchParams.get("region");
-  const flavor = searchParams.get("flavor");
-
-  // Allow search when query is empty if structured filters are provided
-  const searchQuery = query || (country || cuisine || region || flavor ? "%" : "");
-
-  if (!searchQuery && !country && !cuisine && !region && !flavor) {
-    return NextResponse.json(
-      { error: "Missing search parameters (provide 'query', 'region', 'cuisine', or 'country')" },
-      { status: 400 },
-    );
-  }
 
   try {
-    const data = await searchIngredients(query, {
-      page: isNaN(page) ? 1 : page,
-      limit: isNaN(limit) ? 20 : limit,
-      autosuggest,
-      country,
-      cuisine,
-      region,
-      flavor,
-      includeProducts,
+    const backendRes = await fetch(
+      `${NESTJS_API_BASE}/ingredients?${searchParams.toString()}`,
+      {
+        headers: {
+          Accept: "application/json",
+        },
+      },
+    );
+
+    const data = await backendRes.json();
+
+    return NextResponse.json(data, {
+      status: backendRes.status,
+      headers: {
+        "X-Powered-By": "foodrepo-api (NestJS)",
+      },
     });
-
-    if (!data.results || data.results.length === 0) {
-      return NextResponse.json(
-        { error: "No ingredients found" },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json(data);
   } catch (err: any) {
     console.error("Text Search Error:", err);
     return NextResponse.json(

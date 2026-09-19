@@ -5,15 +5,16 @@ import {
   deleteIngredient,
 } from "@/services/ingredientService";
 
+const NESTJS_API_BASE =
+  process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
+
 export async function GET(
   request: NextRequest,
   { params }: { params: any },
 ): Promise<NextResponse> {
   try {
-    // Await params for Next.js 15+ compatibility
     const { id } = await params;
     const { searchParams } = new URL(request.url);
-    const includeProducts = searchParams.get("includeProducts") === "true";
 
     if (!id) {
       return NextResponse.json(
@@ -22,21 +23,22 @@ export async function GET(
       );
     }
 
-    const data = await getIngredientById(id, includeProducts);
+    const backendRes = await fetch(
+      `${NESTJS_API_BASE}/ingredients/${id}?${searchParams.toString()}`,
+      {
+        headers: {
+          Accept: "application/json",
+        },
+      },
+    );
 
-    if (!data) {
-      return NextResponse.json(
-        { error: "Ingredient not found" },
-        { status: 404 },
-      );
-    }
+    const data = await backendRes.json();
 
-    // To maintain backward compatibility with your frontend payload structure
-    const { products, ...ingredient } = data;
-
-    return NextResponse.json({
-      ingredient,
-      ...(includeProducts && { products: products || [] }),
+    return NextResponse.json(data, {
+      status: backendRes.status,
+      headers: {
+        "X-Powered-By": "foodrepo-api (NestJS)",
+      },
     });
   } catch (err: any) {
     console.error("GET Ingredient Error:", err);
