@@ -48,6 +48,14 @@ export interface IProductData {
   } | null;
 }
 
+export interface DerivativeItem {
+  name: string;
+  targetId?: string | null;
+  process?: string | null;
+  yieldRatio?: number | null;
+  lossRatio?: number | null;
+}
+
 export interface IIngredientData {
   id: string;
   name: string;
@@ -70,7 +78,7 @@ export interface IIngredientData {
     missing?: boolean;
   } | null;
   partOf?: string[] | null;
-  derivatives?: string[] | null;
+  derivatives?: (DerivativeItem | string)[] | null;
   varieties?: string[] | null;
   usedIn?: string[] | null;
   substitutes?: string[] | null;
@@ -80,6 +88,8 @@ export interface IIngredientData {
   products?: IProductData[];
   nutrition?: any;
 }
+
+export type IIngredient = IIngredientData;
 
 export interface DatabaseStats {
   totalIngredients: number;

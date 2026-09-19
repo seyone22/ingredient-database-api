@@ -229,7 +229,9 @@ export default function IngredientPage() {
           const substitutes: string[] = ingredient.substitutes || [];
           const pairsWith: string[] = ingredient.pairsWith || ingredient.pairs_with || [];
           const varieties: string[] = ingredient.varieties || [];
-          const derivatives: string[] = ingredient.derivatives || [];
+          const derivatives: any[] = Array.isArray(ingredient.derivatives)
+            ? ingredient.derivatives
+            : [];
           const usedIn: string[] = ingredient.usedIn || ingredient.used_in || [];
           const partOf: string[] = Array.isArray(ingredient.partOf)
             ? ingredient.partOf
@@ -599,21 +601,40 @@ export default function IngredientPage() {
                               <Info className="h-4 w-4 text-primary" /> Derivatives & Forms
                             </h3>
                             <div className="flex flex-wrap gap-1.5">
-                              {derivatives.map((d: string) => (
-                                <Link
-                                  key={d}
-                                  href={`/?query=${encodeURIComponent(d)}`}
-                                  className="inline-block transition-transform hover:scale-[1.03]"
-                                  title={`Explore derivative ${d}`}
-                                >
-                                  <Badge
-                                    variant="outline"
-                                    className="text-xs px-2.5 py-0.5 cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                              {derivatives.map((d: any, idx: number) => {
+                                const isObj = typeof d === "object" && d !== null;
+                                const name = isObj ? d.name : d;
+                                const hasYield = isObj && typeof d.yieldRatio === "number";
+                                const yieldPct = hasYield ? Math.round(d.yieldRatio * 100) : null;
+                                const process = isObj ? d.process : null;
+
+                                return (
+                                  <Link
+                                    key={`${name}-${idx}`}
+                                    href={`/?query=${encodeURIComponent(name)}`}
+                                    className="inline-block transition-transform hover:scale-[1.03]"
+                                    title={
+                                      process
+                                        ? `${name}: ${process}${yieldPct !== null ? ` (${yieldPct}% yield)` : ""}`
+                                        : yieldPct !== null
+                                        ? `${name} (${yieldPct}% yield)`
+                                        : `Explore derivative ${name}`
+                                    }
                                   >
-                                    {d}
-                                  </Badge>
-                                </Link>
-                              ))}
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs px-2.5 py-0.5 cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-1.5"
+                                    >
+                                      <span>{name}</span>
+                                      {yieldPct !== null && (
+                                        <span className="text-[10px] font-semibold opacity-75">
+                                          {yieldPct}%
+                                        </span>
+                                      )}
+                                    </Badge>
+                                  </Link>
+                                );
+                              })}
                             </div>
                           </div>
                         )}

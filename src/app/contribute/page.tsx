@@ -14,9 +14,11 @@ export default function ContributePage() {
   const [status, setStatus] = useState<{
     type: "success" | "error" | null;
     message: string;
+    details?: string | null;
   }>({
     type: null,
     message: "",
+    details: null,
   });
 
   const [formData, setFormData] = useState({
@@ -78,11 +80,52 @@ export default function ContributePage() {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to add ingredient");
+        let errorData: any = {};
+        try {
+          errorData = await res.json();
+        } catch {
+          errorData = {};
+        }
+        const errorMsg =
+          (Array.isArray(errorData.message)
+            ? errorData.message.join(", ")
+            : errorData.message) ||
+          errorData.error ||
+          errorData.detail ||
+          "Failed to add ingredient";
+
+        let errorDetails: string | null = null;
+        if (errorData.details) {
+          if (typeof errorData.details === "object") {
+            const parts: string[] = [];
+            if (errorData.details.hint) parts.push(errorData.details.hint);
+            if (errorData.details.endpoint)
+              parts.push(`Endpoint: ${errorData.details.endpoint}`);
+            if (errorData.details.code)
+              parts.push(`Code: ${errorData.details.code}`);
+            errorDetails =
+              parts.length > 0
+                ? parts.join(" • ")
+                : JSON.stringify(errorData.details);
+          } else {
+            errorDetails = String(errorData.details);
+          }
+        }
+
+        setStatus({
+          type: "error",
+          message: errorMsg,
+          details: errorDetails,
+        });
+        return;
       }
 
-      setStatus({ type: "success", message: "Ingredient added successfully!" });
+      setStatus({
+        type: "success",
+        message:
+          "Ingredient added successfully. AI enrichment has been queued to fill in culinary metadata and imagery in the background.",
+        details: null,
+      });
 
       // Reset form
       setFormData({
@@ -101,6 +144,7 @@ export default function ContributePage() {
       setStatus({
         type: "error",
         message: err.message || "Error submitting ingredient",
+        details: null,
       });
     } finally {
       setLoading(false);
@@ -110,29 +154,42 @@ export default function ContributePage() {
   return (
     <div className="min-h-screen flex flex-col bg-muted/20">
       <Navbar />
-      <main className="flex-1 flex flex-col items-center py-12 px-4 sm:px-6">
+      <main className="flex-1 flex flex-col items-center pt-6 pb-12 sm:pt-8 sm:pb-16 px-4 sm:px-6">
         <div className="w-full max-w-3xl space-y-6">
           <div className="space-y-2 text-center">
             <h1 className="text-3xl font-bold tracking-tight">
               Contribute an Ingredient
             </h1>
-            <p className="text-muted-foreground">
-              Help expand FoodRepo by adding new ingredients to the database.
+            <p className="text-muted-foreground text-sm sm:text-base max-w-xl mx-auto">
+              Only the ingredient name is required. Any missing culinary details, origins, flavor profiles, and photography are automatically enriched by AI in the background.
             </p>
           </div>
 
           <Card className="border-border/50 shadow-sm">
-            <CardContent className="p-6 sm:p-8 mt-4">
+            <CardContent className="p-6 sm:p-8">
               {status.type && (
                 <div
-                  className={`mb-6 p-4 rounded-md flex items-center gap-3 ${status.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}
+                  className={`mb-6 p-4 rounded-lg flex items-start gap-3 border ${
+                    status.type === "success"
+                      ? "bg-green-50/90 border-green-200 text-green-900"
+                      : "bg-red-50/90 border-red-200 text-red-900"
+                  }`}
                 >
                   {status.type === "success" ? (
-                    <CheckCircle2 className="h-5 w-5" />
+                    <CheckCircle2 className="h-5 w-5 mt-0.5 text-green-600 shrink-0" />
                   ) : (
-                    <AlertCircle className="h-5 w-5" />
+                    <AlertCircle className="h-5 w-5 mt-0.5 text-red-600 shrink-0" />
                   )}
-                  <p className="text-sm font-medium">{status.message}</p>
+                  <div className="space-y-1 text-left flex-1">
+                    <p className="text-sm font-semibold leading-snug">
+                      {status.message}
+                    </p>
+                    {status.details && (
+                      <p className="text-xs text-red-700/80 leading-relaxed font-mono mt-1 pt-1 border-t border-red-200/60">
+                        {status.details}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
 
