@@ -68,7 +68,7 @@ export default function IngredientPage() {
       const res = await fetch(`/api/ingredients/${id}/price`);
       if (!res.ok) throw new Error("Failed to fetch prices");
       const data = await res.json();
-      setProducts(data.prices || []);
+      setProducts(data.products || data.prices || []);
       setResolvedFrom(data.resolvedFrom || null);
     } catch (err) {
       console.error("Pricing fetch error:", err);
