@@ -2,13 +2,14 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Command,
   CommandEmpty,
@@ -39,6 +40,7 @@ import {
   Store,
   Info,
   Sparkles,
+  Search,
 } from "lucide-react";
 import ProductHistoryModal from "@/components/PriceHistoryModal";
 import { cn } from "@/lib/utils";
@@ -126,10 +128,36 @@ export default function RetailProductsPricing({
   const [productResults, setProductResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [isMappingLoading, setIsMappingLoading] = useState(false);
   const [selectedHistoryProduct, setSelectedHistoryProduct] =
     useState<any>(null);
+
+  // Selection helpers
+  const toggleProductSelection = (productId: string) => {
+    setSelectedProductIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(productId)) {
+        next.delete(productId);
+      } else {
+        next.add(productId);
+      }
+      return next;
+    });
+  };
+
+  const selectAllUnlinked = () => {
+    const unlinked = productResults
+      .filter((p) => !linkedProductIds.has(p.id))
+      .map((p) => p.id);
+    setSelectedProductIds(new Set(unlinked));
+  };
+
+  const clearSelection = () => {
+    setSelectedProductIds(new Set());
+  };
 
   // Track already linked product IDs for fast O(1) lookups
   const linkedProductIds = useMemo(() => {
@@ -234,23 +262,33 @@ export default function RetailProductsPricing({
   }, [debouncedQuery]);
 
   const handleCreateMapping = async () => {
-    if (!selectedProduct) return;
+    if (selectedProductIds.size === 0) return;
     setIsMappingLoading(true);
     try {
       const res = await fetch("/api/mapping/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: selectedProduct.id, ingredientId }),
+        body: JSON.stringify({
+          productId: Array.from(selectedProductIds),
+          ingredientId,
+          override: true,
+        }),
       });
-      if (!res.ok) throw new Error("Mapping failed");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(
+          errData.detail || errData.message || errData.error || "Mapping failed",
+        );
+      }
 
       setIsMappingOpen(false);
-      setSelectedProduct(null);
+      setSelectedProductIds(new Set());
       setProductQuery("");
       setProductResults([]);
       await onRefreshProducts();
-    } catch (error) {
-      alert("Failed to map product");
+    } catch (error: any) {
+      console.error(error);
+      alert(error.message || "Failed to map products");
     } finally {
       setIsMappingLoading(false);
     }
@@ -268,85 +306,146 @@ export default function RetailProductsPricing({
             <span className="text-primary font-medium">{ingredientName}</span>
           </p>
         </div>
-        <Dialog open={isMappingOpen} onOpenChange={setIsMappingOpen}>
-          <DialogTrigger>
+        <Sheet open={isMappingOpen} onOpenChange={setIsMappingOpen}>
+          <SheetTrigger render={
             <Button
               variant="outline"
               size="sm"
-              className="border-primary/50 text-primary"
+              className="border-primary/50 text-primary cursor-pointer hover:bg-primary/10"
             >
-              <Plus className="mr-2 h-4 w-4" /> Map Product
+              <Plus className="mr-2 h-4 w-4" /> Map Products
             </Button>
-          </DialogTrigger>
-          {/* Increased max-width and set flex column to allow internal scrolling */}
-          <DialogContent className="sm:max-w-[600px] flex flex-col max-h-[85vh]">
-            <DialogHeader>
-              <DialogTitle>Map a Retail Product</DialogTitle>
-              <DialogDescription>
-                Search the database to link a retail item to this ingredient.
-              </DialogDescription>
-            </DialogHeader>
+          } />
+          <SheetContent
+            side="right"
+            className="w-full sm:max-w-xl md:max-w-2xl h-full flex flex-col p-0 gap-0"
+          >
+            {/* Header */}
+            <div className="p-6 border-b pb-4">
+              <SheetHeader>
+                <SheetTitle className="text-xl font-bold flex items-center gap-2">
+                  <Store className="h-5 w-5 text-primary" /> Map Retail Products
+                </SheetTitle>
+                <SheetDescription>
+                  Search supermarkets to link retail products to{" "}
+                  <span className="font-semibold text-foreground">
+                    {ingredientName}
+                  </span>
+                  .
+                </SheetDescription>
+              </SheetHeader>
+            </div>
 
-            <div className="flex flex-col gap-4 py-2 flex-1 overflow-hidden">
+            {/* Content & Search */}
+            <div className="flex flex-col flex-1 overflow-hidden p-4 sm:p-6 gap-4">
               <Command
-                className="rounded-lg border shadow-md flex-1 overflow-hidden flex flex-col"
+                className="rounded-xl border shadow-sm flex-1 overflow-hidden flex flex-col bg-background"
                 shouldFilter={false}
               >
-                <CommandInput
-                  placeholder="Search products (e.g. 'Paneer')..."
-                  value={productQuery}
-                  onValueChange={setProductQuery}
-                />
-                {/* Increased max height for the list */}
-                <CommandList className="max-h-[500px] overflow-y-auto flex-1">
+                <div className="border-b px-3">
+                  <CommandInput
+                    placeholder="Search products by name or brand (e.g. 'Garlic Butter')..."
+                    value={productQuery}
+                    onValueChange={setProductQuery}
+                    className="text-sm h-12"
+                  />
+                </div>
+
+                {/* Selection Bar: Select All / Clear Selection & Count */}
+                {productResults.length > 0 && (
+                  <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/40 text-xs">
+                    <span className="text-muted-foreground">
+                      {productResults.length} found &bull;{" "}
+                      <span className="font-medium text-foreground">
+                        {selectedProductIds.size} selected
+                      </span>
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={selectAllUnlinked}
+                        className="text-primary hover:underline font-medium cursor-pointer"
+                      >
+                        Select all unlinked
+                      </button>
+                      {selectedProductIds.size > 0 && (
+                        <>
+                          <span className="text-muted-foreground/50">|</span>
+                          <button
+                            type="button"
+                            onClick={clearSelection}
+                            className="text-muted-foreground hover:text-foreground font-medium cursor-pointer"
+                          >
+                            Clear
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <CommandList className="max-h-none flex-1 overflow-y-auto p-2">
                   {isSearching && (
-                    <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
-                      Searching...
+                    <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin text-primary" />{" "}
+                      Searching database...
                     </div>
                   )}
                   {!isSearching &&
                     debouncedQuery.length >= 2 &&
                     productResults.length === 0 && (
-                      <CommandEmpty>
-                        No products found for &quot;{debouncedQuery}&quot;.
+                      <CommandEmpty className="py-12 text-center text-sm text-muted-foreground">
+                        No products found matching &quot;{debouncedQuery}&quot;.
                       </CommandEmpty>
                     )}
                   {!isSearching && debouncedQuery.length < 2 && (
-                    <div className="flex items-center justify-center py-6 text-sm text-muted-foreground italic">
-                      Type at least 2 characters to search...
+                    <div className="flex flex-col items-center justify-center py-16 text-center text-sm text-muted-foreground gap-2">
+                      <Search className="h-8 w-8 text-muted-foreground/40" />
+                      <p className="font-medium">Type at least 2 characters</p>
+                      <p className="text-xs text-muted-foreground/70">
+                        Search across Keells, Cargills, Glomark, and Spar
+                      </p>
                     </div>
                   )}
+
                   <CommandGroup>
                     {productResults.map((prod) => {
                       const isLinked = linkedProductIds.has(prod.id);
+                      const isSelected = selectedProductIds.has(prod.id);
+                      const currentMapping = prod.currentMapping;
+                      const isMappedToOther =
+                        currentMapping &&
+                        currentMapping.ingredientId !== ingredientId;
 
                       return (
                         <CommandItem
                           key={prod.id}
                           value={prod.id}
-                          // Disable selection if already linked
-                          onSelect={() => !isLinked && setSelectedProduct(prod)}
+                          onSelect={() =>
+                            !isLinked && toggleProductSelection(prod.id)
+                          }
                           disabled={isLinked}
                           className={cn(
-                            "flex items-center gap-3 py-3",
+                            "flex items-start gap-3.5 p-3 rounded-lg border my-1.5 transition-colors",
+                            isSelected
+                              ? "bg-primary/5 border-primary/40 ring-1 ring-primary/20"
+                              : "border-border/60 hover:bg-muted/50",
                             isLinked
-                              ? "opacity-60 cursor-not-allowed"
+                              ? "opacity-60 cursor-not-allowed bg-muted/20"
                               : "cursor-pointer",
                           )}
                         >
-                          <div
-                            className={cn(
-                              "flex h-5 w-5 items-center justify-center rounded-full border",
-                              selectedProduct?.id === prod.id
-                                ? "bg-primary border-primary text-primary-foreground"
-                                : "border-muted-foreground/30 text-transparent",
-                            )}
-                          >
-                            <Check className="h-3 w-3" />
+                          <div className="pt-1">
+                            <Checkbox
+                              checked={isSelected || isLinked}
+                              disabled={isLinked}
+                              onCheckedChange={() =>
+                                !isLinked && toggleProductSelection(prod.id)
+                              }
+                            />
                           </div>
 
-                          <div className="h-10 w-10 rounded bg-muted flex items-center justify-center shrink-0 overflow-hidden border">
+                          <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden border">
                             {getFormattedImageUrl(prod) ? (
                               <img
                                 src={getFormattedImageUrl(prod)!}
@@ -358,50 +457,89 @@ export default function RetailProductsPricing({
                             )}
                           </div>
 
-                          <div className="flex flex-col truncate flex-1">
-                            <span className="truncate font-medium text-sm">
+                          <div className="flex flex-col min-w-0 flex-1 gap-1">
+                            <span className="font-medium text-sm leading-snug line-clamp-2">
                               {prod.name}
                             </span>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap text-xs">
                               <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
                                 {prod.source?.name || "Market"}
                               </span>
-                              <span className="text-[10px] text-muted-foreground font-mono">
+                              <span className="text-muted-foreground font-mono font-medium">
                                 {prod.currency} {prod.price}
                               </span>
                             </div>
-                          </div>
 
-                          {/* Badge to indicate if it's already mapped */}
-                          {isLinked && (
-                            <Badge
-                              variant="secondary"
-                              className="text-[10px] ml-auto shrink-0"
-                            >
-                              Already Linked
-                            </Badge>
-                          )}
+                            {/* Mapping status tags */}
+                            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                              {isLinked && (
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[10px] px-1.5 py-0 bg-muted text-muted-foreground"
+                                >
+                                  Linked to this ingredient
+                                </Badge>
+                              )}
+
+                              {isMappedToOther && !isLinked && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] px-1.5 py-0 border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200"
+                                >
+                                  Mapped to: {currentMapping.ingredientName}
+                                </Badge>
+                              )}
+
+                              {isSelected && isMappedToOther && (
+                                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                  (Will reassign)
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </CommandItem>
                       );
                     })}
                   </CommandGroup>
                 </CommandList>
               </Command>
+            </div>
 
+            {/* Sticky Action Footer */}
+            <div className="p-4 sm:p-6 border-t bg-card mt-auto flex items-center justify-between gap-4">
+              <div className="text-xs text-muted-foreground">
+                {selectedProductIds.size === 0 ? (
+                  "Select items to link"
+                ) : (
+                  <span>
+                    <strong className="text-foreground">
+                      {selectedProductIds.size}
+                    </strong>{" "}
+                    item(s) selected
+                  </span>
+                )}
+              </div>
               <Button
-                className="w-full shrink-0"
-                disabled={!selectedProduct || isMappingLoading}
+                className="cursor-pointer"
+                disabled={selectedProductIds.size === 0 || isMappingLoading}
                 onClick={handleCreateMapping}
               >
                 {isMappingLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Linking...
+                  </>
+                ) : selectedProductIds.size > 1 ? (
+                  `Confirm & Link (${selectedProductIds.size} Products)`
+                ) : selectedProductIds.size === 1 ? (
                   "Confirm & Link Product"
+                ) : (
+                  "Select Products to Link"
                 )}
               </Button>
             </div>
-          </DialogContent>
-        </Dialog>
+          </SheetContent>
+        </Sheet>
       </div>
 
       {resolvedFrom && (
