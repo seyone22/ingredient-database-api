@@ -109,13 +109,13 @@ export default function IngredientSearch() {
     <div className="flex flex-col items-center w-full max-w-4xl mx-auto px-4 py-12 gap-8">
       {/* Hero Section */}
       <div className="flex flex-col items-center text-center space-y-4">
-        <div className="relative w-20 h-20 sm:w-24 sm:h-24 transition-transform hover:scale-105 duration-200">
+        <div className="relative w-28 h-28 sm:w-36 sm:h-36 transition-transform hover:scale-105 duration-200">
           <Image
             src="/logo.png"
             alt="FoodRepo Logo"
             fill
             priority
-            sizes="(max-width: 640px) 80px, 96px"
+            sizes="(max-width: 640px) 112px, 144px"
             className="object-contain drop-shadow-sm"
           />
         </div>
