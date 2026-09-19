@@ -41,7 +41,7 @@ export default function IngestDashboard() {
 
   const fetchLogs = async () => {
     try {
-      const res = await fetch("/api/admin/logs?type=SCRAPE_RUN&limit=50");
+      const res = await fetch("/api/admin/logs?type=SCRAPE_RUN&limit=200");
       const data = await res.json();
       setLogs(data.logs || []);
     } catch (error) {
@@ -85,8 +85,12 @@ export default function IngestDashboard() {
     }
   };
 
-  const today = new Date();
-  const sixMonthsAgo = new Date().setMonth(today.getMonth() - 6);
+  const today = React.useMemo(() => new Date(), []);
+  const sixMonthsAgo = React.useMemo(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 6);
+    return d;
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-background font-sans antialiased">
@@ -118,7 +122,7 @@ export default function IngestDashboard() {
         </div>
 
         {/* Heatmap Section */}
-        <Card className="bg-card shadow-sm overflow-hidden">
+        <Card className="bg-card shadow-xs border-border/80 overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" />
@@ -130,34 +134,79 @@ export default function IngestDashboard() {
           </CardHeader>
           <CardContent>
             {/* Added a responsive wrapper with overflow-x-auto for small screens */}
-            <div className="pt-6 pb-2 px-2 overflow-x-auto">
-              <div className="min-w-[600px] heatmap-container">
+            <div className="pt-4 pb-2 px-1 overflow-x-auto">
+              <div className="min-w-[650px] heatmap-container">
                 <CalendarHeatmap
                   startDate={sixMonthsAgo}
                   endDate={today}
                   values={heatmapData}
-                  gutterSize={1.5}
+                  gutterSize={2.5}
+                  showWeekdayLabels={true}
+                  weekdayLabels={["", "Mon", "", "Wed", "", "Fri", ""]}
+                  transformDayElement={(element: any) =>
+                    React.cloneElement(element, {
+                      rx: 2,
+                      ry: 2,
+                    })
+                  }
                   classForValue={(value: any) => {
                     if (!value || value.count === 0) {
                       return "color-empty";
                     }
-                    return `color-scale-${Math.min(value.count, 4)}`;
+                    if (value.count === 1) return "color-scale-1";
+                    if (value.count === 2) return "color-scale-2";
+                    if (value.count <= 4) return "color-scale-3";
+                    return "color-scale-4";
                   }}
                   // Cast the return object to 'any' to stop the TS error
                   tooltipDataAttrs={(value: any): any => {
                     const dateStr = value?.date
-                      ? new Date(value.date).toLocaleDateString()
+                      ? new Date(value.date).toLocaleDateString(undefined, {
+                          weekday: "short",
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })
                       : null;
                     return {
                       "data-tooltip-id": "heatmap-tooltip",
                       "data-tooltip-content": dateStr
-                        ? `${dateStr}: ${value.count} run(s)`
+                        ? `${value.count} scrape run${value.count === 1 ? "" : "s"} on ${dateStr}`
                         : "No activity logged",
                     };
                   }}
                   showMonthLabels={true}
                 />
                 <Tooltip id="heatmap-tooltip" />
+
+                {/* GitHub-style bottom legend */}
+                <div className="flex items-center justify-between pt-3 mt-2 text-xs text-muted-foreground border-t border-border/40 px-1">
+                  <span>Supermarket scrape activity</span>
+                  <div className="flex items-center gap-1.5">
+                    <span>Less</span>
+                    <span
+                      title="No activity"
+                      className="w-[10px] h-[10px] rounded-[2px] bg-[#ebedf0] dark:bg-[#161b22] border border-border/40 inline-block"
+                    />
+                    <span
+                      title="1 run"
+                      className="w-[10px] h-[10px] rounded-[2px] bg-[#e9d5ff] dark:bg-[#3b1d54] inline-block"
+                    />
+                    <span
+                      title="2 runs"
+                      className="w-[10px] h-[10px] rounded-[2px] bg-[#c084fc] dark:bg-[#6b21a8] inline-block"
+                    />
+                    <span
+                      title="3-4 runs"
+                      className="w-[10px] h-[10px] rounded-[2px] bg-[#9333ea] dark:bg-[#a855f7] inline-block"
+                    />
+                    <span
+                      title="5+ runs"
+                      className="w-[10px] h-[10px] rounded-[2px] bg-[#581c87] dark:bg-[#d8b4fe] inline-block"
+                    />
+                    <span>More</span>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
