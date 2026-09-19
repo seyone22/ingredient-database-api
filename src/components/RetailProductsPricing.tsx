@@ -10,14 +10,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -41,6 +34,7 @@ import {
   Info,
   Sparkles,
   Search,
+  X,
 } from "lucide-react";
 import ProductHistoryModal from "@/components/PriceHistoryModal";
 import { cn } from "@/lib/utils";
@@ -163,6 +157,10 @@ export default function RetailProductsPricing({
   const linkedProductIds = useMemo(() => {
     return new Set(products.map((p) => p.id));
   }, [products]);
+
+  const unlinkedCount = useMemo(() => {
+    return productResults.filter((p) => !linkedProductIds.has(p.id)).length;
+  }, [productResults, linkedProductIds]);
 
   // Calculate Price Insights
   const insights = useMemo(() => {
@@ -318,225 +316,263 @@ export default function RetailProductsPricing({
           } />
           <SheetContent
             side="right"
-            className="w-full sm:max-w-xl md:max-w-2xl h-full flex flex-col p-0 gap-0"
+            className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl h-full flex flex-col p-0 gap-0"
           >
             {/* Header */}
-            <div className="p-6 border-b pb-4">
-              <SheetHeader>
-                <SheetTitle className="text-xl font-bold flex items-center gap-2">
-                  <Store className="h-5 w-5 text-primary" /> Map Retail Products
-                </SheetTitle>
-                <SheetDescription>
-                  Search supermarkets to link retail products to{" "}
-                  <span className="font-semibold text-foreground">
-                    {ingredientName}
-                  </span>
-                  .
-                </SheetDescription>
+            <div className="px-6 py-5 border-b bg-card/60">
+              <SheetHeader className="space-y-1">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <Store className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <SheetTitle className="text-lg font-bold leading-tight">
+                      Map Retail Products
+                    </SheetTitle>
+                    <SheetDescription className="text-xs text-muted-foreground mt-0.5">
+                      Search & link supermarket products to{" "}
+                      <span className="font-semibold text-foreground">
+                        {ingredientName}
+                      </span>
+                    </SheetDescription>
+                  </div>
+                </div>
               </SheetHeader>
             </div>
 
-            {/* Content & Search */}
-            <div className="flex flex-col flex-1 overflow-hidden p-4 sm:p-6 gap-4">
-              <Command
-                className="rounded-xl border shadow-sm flex-1 overflow-hidden flex flex-col bg-background"
-                shouldFilter={false}
-              >
-                <div className="border-b px-3">
-                  <CommandInput
-                    placeholder="Search products by name or brand (e.g. 'Garlic Butter')..."
-                    value={productQuery}
-                    onValueChange={setProductQuery}
-                    className="text-sm h-12"
-                  />
-                </div>
+            {/* Search Bar */}
+            <div className="px-6 py-3.5 border-b bg-background">
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Search products by name or brand (e.g. 'Garlic Butter')..."
+                  value={productQuery}
+                  onChange={(e) => setProductQuery(e.target.value)}
+                  className="pl-10 pr-9 h-10 text-sm bg-muted/20 border-border/80 focus-visible:bg-background"
+                  autoFocus
+                />
+                {productQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setProductQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
 
-                {/* Selection Bar: Select All / Clear Selection & Count */}
-                {productResults.length > 0 && (
-                  <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/40 text-xs">
-                    <span className="text-muted-foreground">
-                      {productResults.length} found &bull;{" "}
-                      <span className="font-medium text-foreground">
-                        {selectedProductIds.size} selected
-                      </span>
-                    </span>
-                    <div className="flex items-center gap-2">
+            {/* Subheader / Quick Actions Toolbar */}
+            {productResults.length > 0 && (
+              <div className="px-6 py-2.5 bg-muted/30 border-b flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">
+                  {productResults.length} found &bull;{" "}
+                  <strong className="text-foreground font-semibold">
+                    {selectedProductIds.size} selected
+                  </strong>
+                </span>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={selectAllUnlinked}
+                    className="text-primary hover:underline font-medium cursor-pointer"
+                  >
+                    Select all unlinked ({unlinkedCount})
+                  </button>
+                  {selectedProductIds.size > 0 && (
+                    <>
+                      <span className="text-muted-foreground/40">|</span>
                       <button
                         type="button"
-                        onClick={selectAllUnlinked}
-                        className="text-primary hover:underline font-medium cursor-pointer"
+                        onClick={clearSelection}
+                        className="text-muted-foreground hover:text-foreground font-medium cursor-pointer"
                       >
-                        Select all unlinked
+                        Clear
                       </button>
-                      {selectedProductIds.size > 0 && (
-                        <>
-                          <span className="text-muted-foreground/50">|</span>
-                          <button
-                            type="button"
-                            onClick={clearSelection}
-                            className="text-muted-foreground hover:text-foreground font-medium cursor-pointer"
-                          >
-                            Clear
-                          </button>
-                        </>
-                      )}
-                    </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Content List Area - Single Clean Scrollable Container */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              {isSearching && (
+                <div className="flex flex-col items-center justify-center py-20 text-sm text-muted-foreground gap-3">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <p>Searching supermarket database...</p>
+                </div>
+              )}
+
+              {!isSearching && debouncedQuery.length < 2 && (
+                <div className="flex flex-col items-center justify-center py-20 text-center text-sm text-muted-foreground gap-3">
+                  <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center text-muted-foreground/60">
+                    <Search className="h-6 w-6" />
                   </div>
-                )}
+                  <div>
+                    <p className="font-semibold text-foreground">Search Supermarkets</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Type at least 2 characters to search Keells, Cargills, Glomark, and Spar
+                    </p>
+                  </div>
+                </div>
+              )}
 
-                <CommandList className="max-h-none flex-1 overflow-y-auto p-2">
-                  {isSearching && (
-                    <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin text-primary" />{" "}
-                      Searching database...
-                    </div>
-                  )}
-                  {!isSearching &&
-                    debouncedQuery.length >= 2 &&
-                    productResults.length === 0 && (
-                      <CommandEmpty className="py-12 text-center text-sm text-muted-foreground">
-                        No products found matching &quot;{debouncedQuery}&quot;.
-                      </CommandEmpty>
-                    )}
-                  {!isSearching && debouncedQuery.length < 2 && (
-                    <div className="flex flex-col items-center justify-center py-16 text-center text-sm text-muted-foreground gap-2">
-                      <Search className="h-8 w-8 text-muted-foreground/40" />
-                      <p className="font-medium">Type at least 2 characters</p>
-                      <p className="text-xs text-muted-foreground/70">
-                        Search across Keells, Cargills, Glomark, and Spar
-                      </p>
-                    </div>
-                  )}
+              {!isSearching && debouncedQuery.length >= 2 && productResults.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-20 text-center text-sm text-muted-foreground gap-3">
+                  <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center text-muted-foreground/60">
+                    <Store className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">No products found</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      No supermarket items matched &quot;{debouncedQuery}&quot;
+                    </p>
+                  </div>
+                </div>
+              )}
 
-                  <CommandGroup>
-                    {productResults.map((prod) => {
-                      const isLinked = linkedProductIds.has(prod.id);
-                      const isSelected = selectedProductIds.has(prod.id);
-                      const currentMapping = prod.currentMapping;
-                      const isMappedToOther =
-                        currentMapping &&
-                        currentMapping.ingredientId !== ingredientId;
+              {!isSearching && productResults.length > 0 && (
+                <div className="rounded-xl border border-border/80 bg-card divide-y divide-border/60 overflow-hidden shadow-2xs">
+                  {productResults.map((prod) => {
+                    const isLinked = linkedProductIds.has(prod.id);
+                    const isSelected = selectedProductIds.has(prod.id);
+                    const currentMapping = prod.currentMapping;
+                    const isMappedToOther =
+                      currentMapping &&
+                      currentMapping.ingredientId !== ingredientId;
 
-                      return (
-                        <CommandItem
-                          key={prod.id}
-                          value={prod.id}
-                          onSelect={() =>
-                            !isLinked && toggleProductSelection(prod.id)
-                          }
-                          disabled={isLinked}
-                          className={cn(
-                            "flex items-start gap-3.5 p-3 rounded-lg border my-1.5 transition-colors",
-                            isSelected
-                              ? "bg-primary/5 border-primary/40 ring-1 ring-primary/20"
-                              : "border-border/60 hover:bg-muted/50",
-                            isLinked
-                              ? "opacity-60 cursor-not-allowed bg-muted/20"
-                              : "cursor-pointer",
-                          )}
+                    return (
+                      <div
+                        key={prod.id}
+                        onClick={() => !isLinked && toggleProductSelection(prod.id)}
+                        className={cn(
+                          "group flex items-center gap-3.5 px-4 py-3 transition-colors select-none",
+                          !isLinked && "cursor-pointer hover:bg-muted/40",
+                          isSelected && "bg-primary/[0.04]",
+                          isLinked && "opacity-60 bg-muted/15 cursor-not-allowed",
+                        )}
+                      >
+                        <div
+                          className="shrink-0 flex items-center"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <div className="pt-1">
-                            <Checkbox
-                              checked={isSelected || isLinked}
-                              disabled={isLinked}
-                              onCheckedChange={() =>
-                                !isLinked && toggleProductSelection(prod.id)
-                              }
+                          <Checkbox
+                            checked={isSelected || isLinked}
+                            disabled={isLinked}
+                            onCheckedChange={() =>
+                              !isLinked && toggleProductSelection(prod.id)
+                            }
+                          />
+                        </div>
+
+                        {/* Thumbnail */}
+                        <div className="h-11 w-11 rounded-lg bg-muted/40 border border-border/50 flex items-center justify-center shrink-0 overflow-hidden">
+                          {getFormattedImageUrl(prod) ? (
+                            <img
+                              src={getFormattedImageUrl(prod)!}
+                              alt=""
+                              className="h-full w-full object-cover"
                             />
-                          </div>
+                          ) : (
+                            <Store className="h-5 w-5 text-muted-foreground/60" />
+                          )}
+                        </div>
 
-                          <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center shrink-0 overflow-hidden border">
-                            {getFormattedImageUrl(prod) ? (
-                              <img
-                                src={getFormattedImageUrl(prod)!}
-                                alt=""
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <Store className="h-5 w-5 text-muted-foreground" />
-                            )}
-                          </div>
-
-                          <div className="flex flex-col min-w-0 flex-1 gap-1">
-                            <span className="font-medium text-sm leading-snug line-clamp-2">
+                        {/* Product Info */}
+                        <div className="flex flex-col min-w-0 flex-1 gap-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="font-medium text-sm text-foreground leading-snug line-clamp-1 group-hover:text-primary transition-colors">
                               {prod.name}
                             </span>
-                            <div className="flex items-center gap-2 flex-wrap text-xs">
-                              <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                                {prod.source?.name || "Market"}
+                            <span className="font-mono font-semibold text-sm tabular-nums text-foreground shrink-0">
+                              {prod.currency} {prod.price.toLocaleString()}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-wrap text-xs">
+                            <span className="text-[10px] bg-secondary text-secondary-foreground font-semibold px-1.5 py-0.5 rounded tracking-wide uppercase">
+                              {prod.source?.name || "Supermarket"}
+                            </span>
+                            {prod.quantity && (
+                              <span className="text-[11px] text-muted-foreground">
+                                {prod.quantity} {prod.unit}
                               </span>
-                              <span className="text-muted-foreground font-mono font-medium">
-                                {prod.currency} {prod.price}
-                              </span>
-                            </div>
+                            )}
 
                             {/* Mapping status tags */}
-                            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                              {isLinked && (
-                                <Badge
-                                  variant="secondary"
-                                  className="text-[10px] px-1.5 py-0 bg-muted text-muted-foreground"
-                                >
-                                  Linked to this ingredient
-                                </Badge>
-                              )}
+                            {isLinked && (
+                              <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-medium">
+                                <Check className="h-3 w-3 text-green-600" /> Linked
+                              </span>
+                            )}
 
-                              {isMappedToOther && !isLinked && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px] px-1.5 py-0 border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200"
-                                >
-                                  Mapped to: {currentMapping.ingredientName}
-                                </Badge>
-                              )}
+                            {isMappedToOther && !isLinked && (
+                              <span className="inline-flex items-center text-[10px] font-medium text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
+                                Mapped to: {currentMapping.ingredientName}
+                              </span>
+                            )}
 
-                              {isSelected && isMappedToOther && (
-                                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-                                  (Will reassign)
-                                </span>
-                              )}
-                            </div>
+                            {isSelected && isMappedToOther && (
+                              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                                (Will reassign)
+                              </span>
+                            )}
                           </div>
-                        </CommandItem>
-                      );
-                    })}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Sticky Action Footer */}
-            <div className="p-4 sm:p-6 border-t bg-card mt-auto flex items-center justify-between gap-4">
+            <div className="px-6 py-4 border-t bg-card/80 backdrop-blur-sm mt-auto flex items-center justify-between gap-4">
               <div className="text-xs text-muted-foreground">
                 {selectedProductIds.size === 0 ? (
                   "Select items to link"
                 ) : (
                   <span>
-                    <strong className="text-foreground">
+                    <strong className="text-foreground font-semibold">
                       {selectedProductIds.size}
                     </strong>{" "}
-                    item(s) selected
+                    {selectedProductIds.size === 1 ? "item" : "items"} selected
                   </span>
                 )}
               </div>
-              <Button
-                className="cursor-pointer"
-                disabled={selectedProductIds.size === 0 || isMappingLoading}
-                onClick={handleCreateMapping}
-              >
-                {isMappingLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Linking...
-                  </>
-                ) : selectedProductIds.size > 1 ? (
-                  `Confirm & Link (${selectedProductIds.size} Products)`
-                ) : selectedProductIds.size === 1 ? (
-                  "Confirm & Link Product"
-                ) : (
-                  "Select Products to Link"
-                )}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsMappingOpen(false)}
+                  disabled={isMappingLoading}
+                  className="cursor-pointer"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="cursor-pointer min-w-[140px]"
+                  disabled={selectedProductIds.size === 0 || isMappingLoading}
+                  onClick={handleCreateMapping}
+                >
+                  {isMappingLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Linking...
+                    </>
+                  ) : selectedProductIds.size > 1 ? (
+                    `Confirm & Link (${selectedProductIds.size})`
+                  ) : selectedProductIds.size === 1 ? (
+                    "Confirm & Link"
+                  ) : (
+                    "Select Products"
+                  )}
+                </Button>
+              </div>
             </div>
           </SheetContent>
         </Sheet>
