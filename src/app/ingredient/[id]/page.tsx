@@ -10,6 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   ArrowLeft,
   Globe,
   Image as ImageIcon,
@@ -345,9 +351,29 @@ export default function IngredientPage() {
                     {/* Origin & Geography Card */}
                     {(country.length > 0 || region.length > 0 || provenance) && (
                       <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                          <Globe className="h-4 w-4 text-primary" /> Origin & Geography
-                        </h3>
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                            <Globe className="h-4 w-4 text-primary" /> Origin & Geography
+                          </h3>
+                          {provenance && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger
+                                  type="button"
+                                  className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-muted focus:outline-none cursor-pointer"
+                                  aria-label="Provenance information"
+                                >
+                                  <Info className="h-3.5 w-3.5" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  <p className="text-xs">
+                                    <span className="font-semibold">Provenance:</span> {provenance}
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
                         <div className="flex flex-col gap-2 text-sm">
                           {country.length > 0 && (
                             <div>
@@ -372,11 +398,6 @@ export default function IngredientPage() {
                                 ))}
                               </div>
                             </div>
-                          )}
-                          {provenance && (
-                            <p className="text-xs text-muted-foreground pt-1 border-t">
-                              <span className="font-medium text-foreground">Provenance:</span> {provenance}
-                            </p>
                           )}
                         </div>
                       </div>
