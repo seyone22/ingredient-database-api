@@ -7,15 +7,13 @@ import {
   LayoutDashboard,
   Link2,
   Package,
-  ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import styles from "./NavBar.module.css";
-
 import { cn } from "@/lib/utils";
+import styles from "./NavBar.module.css";
 
 export default function NavBar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,11 +28,11 @@ export default function NavBar() {
   const adminLinks = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/all", label: "All Ingredients", icon: Database },
-    { href: "/admin/quality", label: "Data Quality", icon: ShieldCheck },
+    { href: "/admin/quality", label: "Quality", icon: ShieldCheck },
     { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
-    { href: "/admin/mapper", label: "Product Mapper", icon: Link2 },
-    { href: "/admin/product", label: "Products Catalog", icon: Package },
-    { href: "/admin/ingest", label: "Ingest Pipeline", icon: ArrowDownToLine },
+    { href: "/admin/mapper", label: "Mapper", icon: Link2 },
+    { href: "/admin/product", label: "Products", icon: Package },
+    { href: "/admin/ingest", label: "Ingest", icon: ArrowDownToLine },
   ];
 
   const publicLinks = [
@@ -50,7 +48,7 @@ export default function NavBar() {
       <nav
         className={cn(
           styles.navContainer,
-          isAdminPage ? "max-w-7xl" : "max-w-5xl"
+          isAdminPage ? "max-w-7xl" : "max-w-5xl",
         )}
       >
         <div className="flex items-center gap-3">
@@ -59,11 +57,6 @@ export default function NavBar() {
               <span className={styles.textPrimary}>Food</span>Repo
             </h2>
           </Link>
-          {isAdminPage && (
-            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-              <ShieldAlert className="w-3 h-3" /> Admin Area
-            </span>
-          )}
         </div>
 
         <button
@@ -83,7 +76,9 @@ export default function NavBar() {
           ></div>
         </button>
 
-        <ul className={`${styles.navLinks} ${isOpen ? styles.navLinksOpen : ""}`}>
+        <ul
+          className={`${styles.navLinks} ${isOpen ? styles.navLinksOpen : ""}`}
+        >
           {isAdminPage ? (
             <>
               {adminLinks.map((link) => {
