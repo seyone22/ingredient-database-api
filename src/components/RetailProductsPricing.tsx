@@ -35,6 +35,7 @@ import {
   Sparkles,
   Search,
   X,
+  Trash2,
 } from "lucide-react";
 import ProductHistoryModal from "@/components/PriceHistoryModal";
 import { cn } from "@/lib/utils";
@@ -128,6 +129,31 @@ export default function RetailProductsPricing({
   const [isMappingLoading, setIsMappingLoading] = useState(false);
   const [selectedHistoryProduct, setSelectedHistoryProduct] =
     useState<any>(null);
+  const [unlinkingProductId, setUnlinkingProductId] = useState<string | null>(
+    null,
+  );
+
+  const handleUnlink = async (productId: string) => {
+    if (!confirm("Remove this product link from this ingredient?")) return;
+    setUnlinkingProductId(productId);
+    try {
+      const res = await fetch("/api/mapping/unlink", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId,
+          ingredientId,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to unlink product");
+      await onRefreshProducts();
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Failed to unlink product");
+    } finally {
+      setUnlinkingProductId(null);
+    }
+  };
 
   // Selection helpers
   const toggleProductSelection = (productId: string) => {
@@ -765,7 +791,8 @@ export default function RetailProductsPricing({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            title="Price history"
                             onClick={() => setSelectedHistoryProduct(product)}
                           >
                             <LineChart className="h-4 w-4" />
@@ -775,6 +802,7 @@ export default function RetailProductsPricing({
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-primary"
+                              title="View on store website"
                             >
                               <a
                                 href={product.source.website}
@@ -785,6 +813,20 @@ export default function RetailProductsPricing({
                               </a>
                             </Button>
                           )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                            title="Unlink product"
+                            disabled={unlinkingProductId === product.id}
+                            onClick={() => handleUnlink(product.id)}
+                          >
+                            {unlinkingProductId === product.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin text-destructive" />
+                            ) : (
+                              <Trash2 className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
