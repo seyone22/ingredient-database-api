@@ -90,8 +90,10 @@ export default function IngredientPage() {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to fetch image");
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(
+          errorData.detail || errorData.message || errorData.error || "Failed to fetch image",
+        );
       }
 
       await fetchIngredient();
@@ -112,7 +114,12 @@ export default function IngredientPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: [id] }),
       });
-      if (!res.ok) throw new Error("Enhancement failed");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(
+          errorData.detail || errorData.message || errorData.error || "Enhancement failed",
+        );
+      }
       await fetchIngredient();
       alert("Ingredient successfully enhanced!");
     } catch (err: any) {
