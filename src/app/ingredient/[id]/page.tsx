@@ -23,6 +23,7 @@ import {
   Leaf,
   Loader2,
   RefreshCw,
+  Scale,
   Search,
   Sparkles,
   Utensils,
@@ -30,6 +31,7 @@ import {
 } from "lucide-react";
 import RetailProductsPricing from "@/components/RetailProductsPricing";
 import NutritionFacts from "@/components/NutritionFacts";
+import { getKitchenConversions } from "@/utils/calculators";
 
 export default function IngredientPage() {
   const { id } = useParams();
@@ -253,6 +255,9 @@ export default function IngredientPage() {
           const dietaryFlags = Array.from(new Set(rawDiet.map((d) => d.trim().toLowerCase()))).map(formatLabel);
           const flavorProfile = Array.from(new Set(rawFlavor.map((f) => f.trim().toLowerCase()))).map(formatLabel);
           const cleanVarieties = Array.from(new Set(varieties.map((v) => v.trim()))).filter((v) => v.toLowerCase() !== ingredient.name.toLowerCase());
+          const densityValue: number = typeof ingredient.density === "number" && ingredient.density > 0 ? ingredient.density : 1.0;
+          const isExplicitDensity: boolean = typeof ingredient.density === "number" && ingredient.density > 0;
+          const kitchenConversions = getKitchenConversions(densityValue);
 
           return (
             <div className="animate-in slide-in-from-bottom-4 fade-in duration-500 flex flex-col gap-12">
@@ -448,6 +453,37 @@ export default function IngredientPage() {
                         </div>
                       </div>
                     )}
+
+                    {/* Culinary Density & Volume Conversions Card */}
+                    <div className="rounded-xl border bg-card text-card-foreground p-5 shadow-sm space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                          <Scale className="h-4 w-4 text-primary" /> Culinary Density
+                        </h3>
+                        <Badge variant="secondary" className="font-mono text-xs font-semibold px-2 py-0.5">
+                          {densityValue.toFixed(2)} g/ml
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {isExplicitDensity
+                          ? "Standard bulk density used for recipe volume-to-weight conversions."
+                          : "Calculated density inherited for recipe volume-to-weight conversions."}
+                      </p>
+                      <div className="grid grid-cols-3 gap-2 pt-1 border-t border-border/50 text-center">
+                        <div className="bg-muted/40 rounded-lg p-2">
+                          <span className="block text-[10px] text-muted-foreground uppercase font-medium">1 tsp (5ml)</span>
+                          <span className="text-xs font-bold text-foreground font-mono">{kitchenConversions.tspGrams}g</span>
+                        </div>
+                        <div className="bg-muted/40 rounded-lg p-2">
+                          <span className="block text-[10px] text-muted-foreground uppercase font-medium">1 tbsp (15ml)</span>
+                          <span className="text-xs font-bold text-foreground font-mono">{kitchenConversions.tbspGrams}g</span>
+                        </div>
+                        <div className="bg-muted/40 rounded-lg p-2">
+                          <span className="block text-[10px] text-muted-foreground uppercase font-medium">1 cup (240ml)</span>
+                          <span className="text-xs font-bold text-foreground font-mono">{kitchenConversions.cupGrams}g</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Right Column: Description, Dietary, Flavor, Varieties, Substitutes */}

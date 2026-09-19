@@ -16,6 +16,7 @@ export interface Ingredient {
   };
   comment?: string;
   pronunciation?: string;
+  density?: number | null;
 }
 
 export interface IProductData {
@@ -87,6 +88,7 @@ export interface IIngredientData {
   updatedAt?: Date | null;
   products?: IProductData[];
   nutrition?: any;
+  density?: number | null;
 }
 
 export type IIngredient = IIngredientData;
