@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const NESTJS_API_BASE =
+const RAW_BASE =
   process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
+const NESTJS_BASE = RAW_BASE.replace(/\/api\/v1\/?$/, "");
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    const res = await fetch(`${NESTJS_API_BASE}/.well-known/openid-configuration`, {
+    const res = await fetch(`${NESTJS_BASE}/.well-known/openid-configuration`, {
       headers: { Accept: "application/json" },
     });
     const data = await res.json();
