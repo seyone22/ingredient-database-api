@@ -10,6 +10,8 @@ import IngredientCard from "@/components/ingredientcard/IngredientCard";
 import Pagination from "@/components/pagination/Pagination";
 import { Ingredient } from "@/types/types";
 
+import Image from "next/image";
+
 export default function IngredientSearch() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -106,7 +108,17 @@ export default function IngredientSearch() {
   return (
     <div className="flex flex-col items-center w-full max-w-4xl mx-auto px-4 py-12 gap-8">
       {/* Hero Section */}
-      <div className="text-center space-y-4">
+      <div className="flex flex-col items-center text-center space-y-4">
+        <div className="relative w-20 h-20 sm:w-24 sm:h-24 transition-transform hover:scale-105 duration-200">
+          <Image
+            src="/logo.png"
+            alt="FoodRepo Logo"
+            fill
+            priority
+            sizes="(max-width: 640px) 80px, 96px"
+            className="object-contain drop-shadow-sm"
+          />
+        </div>
         <h1 className="text-5xl font-extrabold tracking-tight lg:text-6xl">
           <span className="text-primary">Food</span>Repo
         </h1>
