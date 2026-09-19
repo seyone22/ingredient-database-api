@@ -56,10 +56,39 @@ export default function DataQualityPage() {
         const res = await fetch("/api/admin/quality");
         if (res.ok) {
           const data = await res.json();
-          setTotal(data.totalIngredients);
-          setHealthScore(data.healthScore);
-          setMetrics(data.metrics);
-          setDuplicates(data.potentialDuplicates || []);
+          const totalCount = data.total ?? data.totalIngredients ?? 0;
+          setTotal(totalCount);
+
+          const missingImage = data.metrics?.missingImageCount ?? data.missingImage ?? 0;
+          const missingFdc = data.metrics?.missingFdcCount ?? data.missingFdc ?? 0;
+          const missingComment = data.metrics?.missingCommentCount ?? data.missingComment ?? 0;
+          const missingVarieties = data.metrics?.missingVarietiesCount ?? data.missingVarieties ?? 0;
+          const missingAliases = data.metrics?.missingAliasesCount ?? data.missingAliases ?? 0;
+          const orphanCount = data.metrics?.orphanCount ?? data.orphanCount ?? 0;
+          const dups = data.potentialDuplicates || [];
+
+          const calculatedHealth = data.healthScore ?? (totalCount > 0
+            ? Math.max(0, Math.min(100, Math.round(((totalCount - missingImage) / totalCount) * 100)))
+            : 100);
+          setHealthScore(calculatedHealth);
+
+          setMetrics({
+            missingImageCount: missingImage,
+            missingFdcCount: missingFdc,
+            missingCommentCount: missingComment,
+            missingVarietiesCount: missingVarieties,
+            missingAliasesCount: missingAliases,
+            orphanCount,
+            potentialDuplicatesCount: dups.length,
+          });
+
+          const formattedDups: DuplicatePair[] = dups.map((d: any) => ({
+            item1: d.item1 ?? { id: d.ids?.[0] ?? "", name: d.clean_name ?? "Candidate A" },
+            item2: d.item2 ?? { id: d.ids?.[1] ?? "", name: d.clean_name ?? "Candidate B" },
+            confidence: d.confidence ?? "95%",
+          }));
+          setDuplicates(formattedDups);
+
           setOrphans(data.orphanIngredients || []);
         }
       } catch (err) {
@@ -80,16 +109,11 @@ export default function DataQualityPage() {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20">
-                Enterprise Suite
-              </span>
-            </div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <ShieldCheck className="w-8 h-8 text-primary" /> Data Quality & Anomaly Detector
             </h1>
             <p className="text-muted-foreground text-sm">
-              Real-time heuristic duplicate detection, orphan ingredient auditing, and database health scoring across {total.toLocaleString()} SKUs.
+              Real-time heuristic duplicate detection, orphan ingredient auditing, and database health scoring across {(total || 0).toLocaleString()} SKUs.
             </p>
           </div>
 
@@ -173,7 +197,7 @@ export default function DataQualityPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-amber-500">
-                    {metrics?.orphanCount.toLocaleString()}
+                    {(metrics?.orphanCount ?? 0).toLocaleString()}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Ingredients with 0 retail products
@@ -191,7 +215,7 @@ export default function DataQualityPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-sky-500">
-                    {metrics?.missingImageCount.toLocaleString()}
+                    {(metrics?.missingImageCount ?? 0).toLocaleString()}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                     <Sparkles className="w-3.5 h-3.5 text-sky-400" /> Overnight GitHub Pipeline
@@ -353,7 +377,7 @@ export default function DataQualityPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold text-sky-500">
-                      {metrics?.missingImageCount.toLocaleString()}
+                      {(metrics?.missingImageCount ?? 0).toLocaleString()}
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
                       ⚡ <i>GitHub Action 6-Tier Pipeline actively populating overnight</i>
@@ -369,7 +393,7 @@ export default function DataQualityPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold text-amber-500">
-                      {metrics?.missingFdcCount.toLocaleString()}
+                      {(metrics?.missingFdcCount ?? 0).toLocaleString()}
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
                       Opportunity for local USDA database string joining
@@ -385,7 +409,7 @@ export default function DataQualityPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-3xl font-bold text-purple-500">
-                      {metrics?.missingCommentCount.toLocaleString()}
+                      {(metrics?.missingCommentCount ?? 0).toLocaleString()}
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
                       Optional culinary description field

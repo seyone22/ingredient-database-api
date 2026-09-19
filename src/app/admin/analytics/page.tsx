@@ -36,7 +36,7 @@ export default function CulinaryAnalyticsPage() {
         const res = await fetch("/api/admin/analytics");
         if (res.ok) {
           const data = await res.json();
-          setTotal(data.totalIngredients);
+          setTotal(data.totalIngredients ?? data.total ?? 0);
           setMacroRegions(data.macroRegions || []);
           setSouthAsianSubregions(data.southAsianSubregions || []);
           setCuisines(data.topCuisines || []);
@@ -66,16 +66,11 @@ export default function CulinaryAnalyticsPage() {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20">
-                Market Intelligence
-              </span>
-            </div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <BarChart3 className="w-8 h-8 text-primary" /> Regional & Culinary Analytics Dashboard
             </h1>
             <p className="text-muted-foreground text-sm">
-              Visualizing regional hierarchies, sub-cuisines, flavor matrices, and dietary distribution across {total.toLocaleString()} ingredients.
+              Visualizing regional hierarchies, sub-cuisines, flavor matrices, and dietary distribution across {(total || 0).toLocaleString()} ingredients.
             </p>
           </div>
 
