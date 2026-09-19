@@ -1,7 +1,7 @@
 "use server";
 
 const NESTJS_API_BASE =
-  process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
+  process.env.FOODREPO_API_URL || "https://foodapi.seyone.dev/api/v1";
 
 /**
  * Fetches the last 30 days of sales history for a specific product from foodrepo-api.

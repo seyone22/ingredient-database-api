@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 const NESTJS_API_BASE =
-  process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
+  process.env.FOODREPO_API_URL || "https://foodapi.seyone.dev/api/v1";
 
 // Search products by name or SKU
 export async function GET(req: NextRequest) {

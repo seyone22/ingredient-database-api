@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 const NESTJS_API_BASE =
-  process.env.FOODREPO_API_URL || "http://localhost:4000/api/v1";
+  process.env.FOODREPO_API_URL || "https://foodapi.seyone.dev/api/v1";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -63,43 +63,14 @@ export async function POST(req: NextRequest) {
       derivatives: Array.isArray(body.derivatives) ? body.derivatives : [],
     };
 
-    let backendRes: Response;
-    let targetBase = NESTJS_API_BASE;
-
-    try {
-      backendRes = await fetch(`${targetBase}/ingredients`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-    } catch (primaryErr: any) {
-      // If primary target is localhost and fails with connection refused, try remote API fallback
-      if (
-        (primaryErr?.cause?.code === "ECONNREFUSED" ||
-          primaryErr?.message?.includes("fetch failed")) &&
-        targetBase.includes("localhost")
-      ) {
-        const fallbackBase = "https://foodapi.seyone.dev/api/v1";
-        try {
-          backendRes = await fetch(`${fallbackBase}/ingredients`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            body: JSON.stringify(payload),
-          });
-          targetBase = fallbackBase;
-        } catch {
-          throw primaryErr;
-        }
-      } else {
-        throw primaryErr;
-      }
-    }
+    const backendRes = await fetch(`${NESTJS_API_BASE}/ingredients`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
 
     let data: any;
     try {
@@ -139,18 +110,20 @@ export async function POST(req: NextRequest) {
     const code =
       err?.cause?.code ||
       (err?.message?.includes("fetch failed")
-        ? "ECONNREFUSED"
+        ? "CONNECTION_FAILED"
         : "NETWORK_ERROR");
     const isConn =
-      code === "ECONNREFUSED" || err?.message?.includes("fetch failed");
+      code === "ECONNREFUSED" ||
+      code === "CONNECTION_FAILED" ||
+      err?.message?.includes("fetch failed");
 
     const userMessage = isConn
       ? `Cannot connect to FoodRepo backend API at ${NESTJS_API_BASE}. The backend service is currently offline or unreachable.`
       : err.message || "An unexpected error occurred while communicating with the backend API.";
 
     const hint = isConn
-      ? "Ensure foodrepo-api is running on port 4000 (npm run start:dev), or set FOODREPO_API_URL in .env.local."
-      : "Check server logs or verify your network connection.";
+      ? "Verify the foodrepo-api service status on Railway or check network connectivity."
+      : "Check server logs or verify network connection.";
 
     return NextResponse.json(
       {
