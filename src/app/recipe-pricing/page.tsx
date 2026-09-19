@@ -12,7 +12,6 @@ import {
   RefreshCw,
   ShoppingBag,
   SlidersHorizontal,
-  Sparkles,
   Store,
 } from "lucide-react";
 import Link from "next/link";
@@ -178,10 +177,6 @@ export default function RecipePricingPage() {
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-8 space-y-8">
         {/* Hero Section */}
         <div className="text-center space-y-3 pt-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-            <Sparkles className="w-3.5 h-3.5" />
-            Standard Schema.org / JSON-LD Pricing Engine
-          </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
             Recipe Supermarket Pricing
           </h1>
