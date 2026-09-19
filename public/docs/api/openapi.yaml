@@ -4,12 +4,16 @@ info:
   description: |
     Comprehensive, multi-regional culinary ingredient intelligence API. 
     Provides multi-tiered regional hierarchies, state-level sub-cuisines, organoleptic flavor profiles, dietary compliance flags, and product mapping metadata across 20,800+ canonical ingredients.
-  version: 2.0.0
+  version: 1.0.0
 servers:
-  - url: http://localhost:3000
-    description: Local development server
-  - url: https://ingredient-database-api.vercel.app
-    description: Production API server
+  - url: https://foodapi.seyone.dev/api/v1
+    description: FoodRepo NestJS API Engine (Production)
+  - url: https://foodrepo.seyone.dev/api
+    description: FoodRepo Web Gateway (Production)
+  - url: http://localhost:4000/api/v1
+    description: Local NestJS Backend
+  - url: http://localhost:3000/api
+    description: Local Next.js Gateway
 
 paths:
   /api/ingredients:
