@@ -3,15 +3,20 @@
 import {
   AlertCircle,
   Check,
+  CheckSquare,
   ChefHat,
   ClipboardList,
   Copy,
   DollarSign,
   ExternalLink,
   Link as LinkIcon,
+  Package,
   RefreshCw,
+  Scale,
+  Share2,
   ShoppingBag,
   SlidersHorizontal,
+  Square,
   Store,
 } from "lucide-react";
 import Link from "next/link";
@@ -64,6 +69,46 @@ export default function RecipePricingPage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SchemaOrgRecipe | null>(null);
   const [copiedJson, setCopiedJson] = useState(false);
+  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+  const [copiedReceipt, setCopiedReceipt] = useState(false);
+
+  const toggleItemCheck = (key: string) => {
+    setCheckedItems((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleCopyReceiptText = () => {
+    if (!result) return;
+    const lines = [
+      `🛒 GROCERY SHOPPING LIST: ${result.name.toUpperCase()}`,
+      `Yield: ${result.recipeYield || "Standard"} servings`,
+      `Strategy: ${strategy.replace(/_/g, " ").toUpperCase()}`,
+      `----------------------------------------`,
+    ];
+
+    result.recipeIngredient?.forEach((ing, i) => {
+      const offer = ing.offers?.[0];
+      const isChecked = checkedItems[`${ing.name}-${i}`];
+      const checkMark = isChecked ? "[x]" : "[ ]";
+      const req = `${ing.requiredQuantity?.value ?? 1} ${ing.requiredQuantity?.unitText ?? "unit"}`;
+      if (offer) {
+        const store = offer.seller?.name || "Store";
+        const pricingType = offer.isLooseWeight ? "Weighed at Scale" : `${offer.packsNeeded} pack`;
+        lines.push(`${checkMark} ${ing.name} (${req})`);
+        lines.push(`    -> ${offer.itemOffered?.name} [${store}]`);
+        lines.push(`    -> Rs. ${offer.basketCost?.toFixed(2)} (${pricingType})`);
+      } else {
+        lines.push(`${checkMark} ${ing.name} (${req}) - (Unpriced / Pantry)`);
+      }
+    });
+
+    lines.push(`----------------------------------------`);
+    lines.push(`BASKET CHECKOUT TOTAL: Rs. ${basketCostSpec?.price?.toFixed(2) || "0.00"}`);
+    lines.push(`PRO-RATA RECIPE COST: Rs. ${recipeCostSpec?.price?.toFixed(2) || "0.00"}`);
+
+    navigator.clipboard.writeText(lines.join("\n"));
+    setCopiedReceipt(true);
+    setTimeout(() => setCopiedReceipt(false), 2000);
+  };
 
   // Preset demo
   const handleLoadDemo = () => {
@@ -582,167 +627,232 @@ export default function RecipePricingPage() {
                 </Card>
               )}
 
-            {/* Ingredient Breakdown List */}
-            <Card className="border-border/80">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <ShoppingBag className="w-4 h-4 text-primary" />
-                      Ingredients & Supermarket Matches
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      Matched with real supermarket items. Click ingredient
-                      links to inspect canonical database records.
-                    </CardDescription>
+            {/* Instagrammable Digital Grocery Receipt Card */}
+            <Card className="border-border shadow-md overflow-hidden bg-gradient-to-b from-card to-muted/20">
+              {/* Receipt Header Banner */}
+              <div className="p-4 sm:p-5 border-b border-border/80 bg-muted/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px] tracking-wider uppercase bg-background font-mono">
+                      Official Grocery Receipt
+                    </Badge>
+                    <Badge variant="secondary" className="text-[10px]">
+                      {Object.values(checkedItems).filter(Boolean).length} / {result.recipeIngredient?.length || 0} gathered
+                    </Badge>
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    {result.recipeIngredient?.length || 0} Ingredients
-                  </Badge>
+                  <h3 className="font-bold text-lg sm:text-xl text-foreground flex items-center gap-2">
+                    <ClipboardList className="w-5 h-5 text-primary" />
+                    Shopping List · {result.name}
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Tap any item to cross off while shopping in aisle. Optimized for mobile screenshots.
+                  </p>
                 </div>
-              </CardHeader>
 
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyReceiptText}
+                    className="text-xs h-8 shadow-2xs font-medium"
+                  >
+                    {copiedReceipt ? (
+                      <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+                    ) : (
+                      <Share2 className="w-3.5 h-3.5 mr-1.5 text-primary" />
+                    )}
+                    {copiedReceipt ? "Copied List!" : "Share / Copy List"}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Receipt Items List */}
               <CardContent className="p-0">
                 <div className="divide-y divide-border/60">
                   {result.recipeIngredient?.map((ing: HowToSupply, idx) => {
                     const offer = ing.offers?.[0];
                     const isPriced = ing.status === "priced" && !!offer;
                     const isExcluded = ing.status === "excluded";
+                    const itemKey = `${ing.name}-${idx}`;
+                    const isChecked = checkedItems[itemKey] === true;
 
                     return (
                       <div
-                        key={`${ing.name || "ingredient"}-${idx}`}
-                        className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/20 transition-colors"
+                        key={itemKey}
+                        onClick={() => toggleItemCheck(itemKey)}
+                        className={`p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer transition-colors select-none ${
+                          isChecked ? "bg-muted/40 opacity-55" : "hover:bg-muted/20"
+                        }`}
                       >
-                        {/* Ingredient Info */}
-                        <div className="space-y-1 min-w-[240px]">
-                          <div className="flex items-center gap-2">
-                            {ing.identifier ? (
-                              <Link
-                                href={`/ingredient/${ing.identifier}`}
-                                className="font-semibold text-sm sm:text-base hover:text-primary transition-colors flex items-center gap-1 group"
-                              >
-                                <span>{ing.name}</span>
-                                <ExternalLink className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-primary" />
-                              </Link>
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Interactive Checkbox */}
+                          <button
+                            type="button"
+                            aria-label={`Mark ${ing.name}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleItemCheck(itemKey);
+                            }}
+                            className="shrink-0 text-muted-foreground hover:text-primary transition-colors focus:outline-hidden"
+                          >
+                            {isChecked ? (
+                              <CheckSquare className="w-5 h-5 text-primary" />
                             ) : (
-                              <span className="font-semibold text-sm sm:text-base">
-                                {ing.name}
-                              </span>
+                              <Square className="w-5 h-5" />
                             )}
+                          </button>
 
-                            {isPriced && (
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400 border-emerald-300"
-                              >
-                                Priced
-                              </Badge>
-                            )}
-                            {ing.fulfillment?.strategy === "derivative" && (
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300 border-sky-300"
-                              >
-                                {ing.fulfillment.sourceIngredient ? (
-                                  <Link
-                                    href={`/ingredient/${ing.fulfillment.sourceIngredientId || ing.identifier}`}
-                                    className="hover:underline"
-                                  >
-                                    Derived from {ing.fulfillment.sourceIngredient}
-                                    {ing.fulfillment.yieldRatio
-                                      ? ` (${Math.round(ing.fulfillment.yieldRatio * 100)}% yield)`
-                                      : ""}
-                                  </Link>
-                                ) : (
-                                  "Derived Item"
-                                )}
-                              </Badge>
-                            )}
-                            {(ing.fulfillment?.strategy === "parent" ||
-                              ing.fulfillment?.strategy === "ancestor") && (
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border-purple-300"
-                              >
-                                Via {ing.fulfillment.sourceIngredient}
-                              </Badge>
-                            )}
-                            {isExcluded && (
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] bg-muted text-muted-foreground"
-                              >
-                                Excluded
-                              </Badge>
-                            )}
-                            {!isPriced && !isExcluded && (
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400 border-amber-300"
-                              >
-                                Unpriced
-                              </Badge>
+                          {/* Product Thumbnail Image */}
+                          <div className="w-12 h-12 rounded-lg bg-background border border-border/80 overflow-hidden shrink-0 flex items-center justify-center shadow-2xs relative">
+                            {offer?.itemOffered?.image ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={offer.itemOffered.image}
+                                alt={offer.itemOffered.name || ing.name}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <Store className="w-5 h-5 text-muted-foreground/60" />
                             )}
                           </div>
 
-                          <div className="text-xs text-muted-foreground flex items-center gap-2">
-                            <span>
-                              Quantity:{" "}
-                              <strong>
+                          {/* Item Details */}
+                          <div className="space-y-0.5 min-w-0">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {ing.identifier ? (
+                                <Link
+                                  href={`/ingredient/${ing.identifier}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className={`font-semibold text-sm hover:text-primary transition-colors ${
+                                    isChecked ? "line-through" : ""
+                                  }`}
+                                >
+                                  {ing.name}
+                                </Link>
+                              ) : (
+                                <span
+                                  className={`font-semibold text-sm ${
+                                    isChecked ? "line-through" : ""
+                                  }`}
+                                >
+                                  {ing.name}
+                                </span>
+                              )}
+
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] px-1.5 py-0 h-4 font-mono font-normal"
+                              >
                                 {ing.requiredQuantity?.value ?? 1}{" "}
                                 {ing.requiredQuantity?.unitText ?? "unit"}
-                              </strong>
-                            </span>
-                            {ing.note && <span>• {ing.note}</span>}
+                              </Badge>
+
+                              {ing.fulfillment?.strategy === "derivative" && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[9px] px-1.5 py-0 h-4 bg-sky-50 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border-sky-300"
+                                >
+                                  Derived
+                                </Badge>
+                              )}
+
+                              {isExcluded && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[9px] px-1.5 py-0 h-4 bg-muted text-muted-foreground"
+                                >
+                                  Pantry Staple
+                                </Badge>
+                              )}
+                            </div>
+
+                            {/* Matched Supermarket Item Name & Packaging Badge */}
+                            {isPriced && offer ? (
+                              <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[10px] font-medium px-1.5 py-0 h-4"
+                                >
+                                  {offer.seller?.name || "Store"}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground line-clamp-1 max-w-[200px] sm:max-w-[320px]">
+                                  {offer.itemOffered?.name}
+                                </span>
+                                {offer.isLooseWeight ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] px-1.5 py-0 h-4 bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/30 flex items-center gap-1 font-medium"
+                                  >
+                                    <Scale className="w-2.5 h-2.5" /> Scale Produce
+                                  </Badge>
+                                ) : (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] px-1.5 py-0 h-4 bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/30 flex items-center gap-1 font-medium"
+                                  >
+                                    <Package className="w-2.5 h-2.5" /> {offer.packsNeeded}{" "}
+                                    {offer.packsNeeded === 1 ? "pack" : "packs"}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground italic">
+                                {isExcluded
+                                  ? "Assumed at home (Rs. 0.00)"
+                                  : "No supermarket match available"}
+                              </p>
+                            )}
                           </div>
                         </div>
 
-                        {/* Matched Product & Price */}
-                        {isPriced && offer ? (
-                          <div className="flex flex-col sm:items-end text-left sm:text-right space-y-1">
-                            <div className="flex items-center gap-1.5 sm:justify-end">
-                              <Badge
-                                variant="secondary"
-                                className="text-[10px] font-medium"
-                              >
-                                {offer.seller?.name || "Supermarket"}
-                              </Badge>
-                              <span className="text-xs sm:text-sm font-medium line-clamp-1 max-w-[280px]">
-                                {offer.itemOffered?.name}
-                              </span>
+                        {/* Price Column */}
+                        <div className="text-right shrink-0">
+                          {isPriced && offer ? (
+                            <div className="space-y-0.5">
+                              <div className="font-bold text-sm sm:text-base text-foreground">
+                                Rs. {offer.basketCost?.toFixed(2)}
+                              </div>
+                              <div className="text-[11px] text-muted-foreground">
+                                Portion: Rs. {offer.recipeCost?.toFixed(2)}
+                              </div>
                             </div>
-
-                            <div className="flex items-center gap-3 text-xs">
-                              <span className="text-muted-foreground">
-                                Shelf: Rs. {offer.price}
-                              </span>
-                              <span className="text-muted-foreground font-mono">
-                                •
-                              </span>
-                              <span className="font-semibold text-foreground">
-                                Pro-rata: Rs. {offer.recipeCost?.toFixed(2)}
-                              </span>
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] font-normal"
-                              >
-                                {offer.packsNeeded}{" "}
-                                {offer.packsNeeded === 1 ? "pack" : "packs"}{" "}
-                                (Rs. {offer.basketCost})
-                              </Badge>
+                          ) : (
+                            <div className="text-xs font-mono text-muted-foreground">
+                              Rs. 0.00
                             </div>
-                          </div>
-                        ) : (
-                          <div className="text-xs text-muted-foreground italic sm:text-right">
-                            {isExcluded
-                              ? "Excluded from pricing options"
-                              : "No supermarket match found"}
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     );
                   })}
+                </div>
+
+                {/* Perforated Receipt Bottom Summary */}
+                <div className="p-4 sm:p-5 bg-muted/30 border-t-2 border-dashed border-border/80 space-y-3">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
+                    <span>CASHIER BASKET TOTAL</span>
+                    <span className="text-base sm:text-xl font-black text-foreground font-sans">
+                      Rs. {basketCostSpec?.price?.toFixed(2) || "0.00"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
+                    <span>EXACT RECIPE PORTIONS</span>
+                    <span className="font-medium text-foreground">
+                      Rs. {recipeCostSpec?.price?.toFixed(2) || "0.00"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
+                    <span>COST PER SERVING ({result.recipeYield || 1} plates)</span>
+                    <span className="font-semibold text-primary font-sans">
+                      Rs. {servingCostSpec?.price?.toFixed(2) || "0.00"}
+                    </span>
+                  </div>
+                  <div className="pt-2 border-t border-border/40 text-center">
+                    <p className="text-[10px] text-muted-foreground/80 font-mono tracking-widest uppercase">
+                      *** FOODREPO AUTHENTIC SUPERMARKET INVENTORY PASS ***
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
