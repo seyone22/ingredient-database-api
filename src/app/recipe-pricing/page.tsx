@@ -677,24 +677,21 @@ export default function RecipePricingPage() {
               )}
 
             {/* Instagrammable Digital Grocery Receipt Card */}
-            <Card className="border-border shadow-md overflow-hidden bg-gradient-to-b from-card to-muted/20">
+            <Card className="border-border shadow-sm overflow-hidden bg-card">
               {/* Receipt Header Banner */}
-              <div className="p-4 sm:p-5 border-b border-border/80 bg-muted/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-[10px] tracking-wider uppercase bg-background font-mono">
-                      Official Grocery Receipt
-                    </Badge>
-                    <Badge variant="secondary" className="text-[10px]">
+              <div className="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-border/80 bg-muted/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-semibold text-base sm:text-lg text-foreground flex items-center gap-2">
+                      <ClipboardList className="w-4 h-4 text-primary shrink-0" />
+                      <span>Shopping List · {result.name}</span>
+                    </h3>
+                    <Badge variant="secondary" className="text-[10px] font-normal h-5 px-1.5">
                       {Object.values(checkedItems).filter(Boolean).length} / {result.recipeIngredient?.length || 0} gathered
                     </Badge>
                   </div>
-                  <h3 className="font-bold text-lg sm:text-xl text-foreground flex items-center gap-2">
-                    <ClipboardList className="w-5 h-5 text-primary" />
-                    Shopping List · {result.name}
-                  </h3>
                   <p className="text-xs text-muted-foreground">
-                    Tap any item to cross off while shopping in aisle. Optimized for mobile screenshots.
+                    Tap any item to cross off while shopping in aisle.
                   </p>
                 </div>
 
@@ -729,7 +726,7 @@ export default function RecipePricingPage() {
                       <div
                         key={itemKey}
                         onClick={() => toggleItemCheck(itemKey)}
-                        className={`p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer transition-colors select-none ${
+                        className={`px-3.5 py-2.5 sm:px-4 sm:py-3 flex items-center justify-between gap-3 cursor-pointer transition-colors select-none ${
                           isChecked ? "bg-muted/40 opacity-55" : "hover:bg-muted/20"
                         }`}
                       >
@@ -869,11 +866,11 @@ export default function RecipePricingPage() {
                   })}
                 </div>
 
-                {/* Perforated Receipt Bottom Summary */}
-                <div className="p-4 sm:p-5 bg-muted/30 border-t-2 border-dashed border-border/80 space-y-3">
+                {/* Receipt Bottom Summary */}
+                <div className="p-3.5 sm:p-4 bg-muted/20 border-t-2 border-dashed border-border/80 space-y-2">
                   <div className="flex items-center justify-between text-xs text-muted-foreground font-mono">
                     <span>CASHIER BASKET TOTAL</span>
-                    <span className="text-base sm:text-xl font-black text-foreground font-sans">
+                    <span className="text-base sm:text-xl font-bold text-foreground font-sans">
                       Rs. {basketCostSpec?.price?.toFixed(2) || "0.00"}
                     </span>
                   </div>
@@ -888,11 +885,6 @@ export default function RecipePricingPage() {
                     <span className="font-semibold text-primary font-sans">
                       Rs. {servingCostSpec?.price?.toFixed(2) || "0.00"}
                     </span>
-                  </div>
-                  <div className="pt-2 border-t border-border/40 text-center">
-                    <p className="text-[10px] text-muted-foreground/80 font-mono tracking-widest uppercase">
-                      *** FOODREPO AUTHENTIC SUPERMARKET INVENTORY PASS ***
-                    </p>
                   </div>
                 </div>
               </CardContent>
