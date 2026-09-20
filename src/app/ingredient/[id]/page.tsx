@@ -51,6 +51,7 @@ export default function IngredientPage() {
     { id: string; name: string; count: number }[] | null
   >(null);
   const [resolvedFrom, setResolvedFrom] = useState<{
+    id?: string;
     ingredient: string;
     relation: string;
     level?: number;

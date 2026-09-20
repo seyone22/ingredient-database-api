@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import ProductHistoryModal from "@/components/PriceHistoryModal";
 import ProductSparkline from "@/components/ProductSparkline";
 import { Badge } from "@/components/ui/badge";
@@ -106,6 +107,7 @@ interface RetailProductsPricingProps {
   categories?: { id: string; name: string; count: number }[] | null;
   loadingProducts: boolean;
   resolvedFrom?: {
+    id?: string;
     ingredient: string;
     relation: string;
     level?: number;
@@ -658,19 +660,77 @@ export default function RetailProductsPricing({
         <div className="flex items-center gap-3 p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-900 dark:text-amber-200 text-xs">
           <Info className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
           <span>
-            {resolvedFrom.relation === "parent" ? (
+            {resolvedFrom.relation === "substitute" ? (
+              <>
+                No retail products are directly mapped to{" "}
+                <strong>{ingredientName}</strong>. Displaying market pricing
+                from culinary substitute (
+                {resolvedFrom.id ? (
+                  <Link
+                    href={`/ingredient/${resolvedFrom.id}`}
+                    className="font-bold underline hover:text-amber-700 dark:hover:text-amber-100 transition-colors inline-flex items-center gap-0.5"
+                  >
+                    {resolvedFrom.ingredient}
+                    <ExternalLink className="h-3 w-3 inline ml-0.5" />
+                  </Link>
+                ) : (
+                  <strong>{resolvedFrom.ingredient}</strong>
+                )}
+                ).
+              </>
+            ) : resolvedFrom.relation === "derivative" ? (
+              <>
+                No retail products are directly mapped to{" "}
+                <strong>{ingredientName}</strong>. Displaying market pricing
+                derived from parent ingredient (
+                {resolvedFrom.id ? (
+                  <Link
+                    href={`/ingredient/${resolvedFrom.id}`}
+                    className="font-bold underline hover:text-amber-700 dark:hover:text-amber-100 transition-colors inline-flex items-center gap-0.5"
+                  >
+                    {resolvedFrom.ingredient}
+                    <ExternalLink className="h-3 w-3 inline ml-0.5" />
+                  </Link>
+                ) : (
+                  <strong>{resolvedFrom.ingredient}</strong>
+                )}
+                ).
+              </>
+            ) : resolvedFrom.relation === "parent" ? (
               <>
                 No retail products are directly mapped to{" "}
                 <strong>{ingredientName}</strong>. Displaying market pricing
                 from its immediate parent ingredient (
-                <strong>{resolvedFrom.ingredient}</strong>).
+                {resolvedFrom.id ? (
+                  <Link
+                    href={`/ingredient/${resolvedFrom.id}`}
+                    className="font-bold underline hover:text-amber-700 dark:hover:text-amber-100 transition-colors inline-flex items-center gap-0.5"
+                  >
+                    {resolvedFrom.ingredient}
+                    <ExternalLink className="h-3 w-3 inline ml-0.5" />
+                  </Link>
+                ) : (
+                  <strong>{resolvedFrom.ingredient}</strong>
+                )}
+                ).
               </>
             ) : resolvedFrom.relation === "ancestor" ? (
               <>
                 No retail products are directly mapped to{" "}
                 <strong>{ingredientName}</strong> or its immediate parent.
                 Displaying market pricing from ancestor ingredient (
-                <strong>{resolvedFrom.ingredient}</strong>).
+                {resolvedFrom.id ? (
+                  <Link
+                    href={`/ingredient/${resolvedFrom.id}`}
+                    className="font-bold underline hover:text-amber-700 dark:hover:text-amber-100 transition-colors inline-flex items-center gap-0.5"
+                  >
+                    {resolvedFrom.ingredient}
+                    <ExternalLink className="h-3 w-3 inline ml-0.5" />
+                  </Link>
+                ) : (
+                  <strong>{resolvedFrom.ingredient}</strong>
+                )}
+                ).
               </>
             ) : (
               <>
@@ -882,16 +942,28 @@ export default function RetailProductsPricing({
                               {product.quantity &&
                                 ` • ${product.quantity}${product.unit}`}
                             </span>
-                            {product.childIngredient &&
-                              categories &&
-                              categories.length > 1 && (
-                                <Badge
-                                  variant="outline"
-                                  className="h-4 text-[9px] font-medium border-primary/20 text-primary bg-primary/5 px-1 capitalize"
-                                >
-                                  {product.childIngredient.name}
-                                </Badge>
-                              )}
+                            {resolvedFrom?.relation === "substitute" ? (
+                              <Badge
+                                variant="secondary"
+                                className="h-4 text-[9px] font-medium border-amber-500/20 text-amber-700 dark:text-amber-300 bg-amber-500/10 px-1 capitalize"
+                              >
+                                Substitute: {product.childIngredient?.name || resolvedFrom.ingredient}
+                              </Badge>
+                            ) : resolvedFrom?.relation === "parent" || resolvedFrom?.relation === "ancestor" ? (
+                              <Badge
+                                variant="outline"
+                                className="h-4 text-[9px] font-medium border-muted-foreground/30 text-muted-foreground px-1 capitalize"
+                              >
+                                via {resolvedFrom.ingredient}
+                              </Badge>
+                            ) : product.childIngredient?.name ? (
+                              <Badge
+                                variant="outline"
+                                className="h-4 text-[9px] font-medium border-primary/20 text-primary bg-primary/5 px-1 capitalize"
+                              >
+                                {product.childIngredient.name}
+                              </Badge>
+                            ) : null}
                             {isBestValue && (
                               <Badge className="h-4 text-[9px] bg-green-600 hover:bg-green-600 border-none px-1">
                                 BEST VALUE
