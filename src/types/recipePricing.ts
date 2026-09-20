@@ -104,8 +104,11 @@ export interface SchemaOrgRecipe {
 
 export type PricingStrategy =
   | "cheapest"
-  | "expensive"
-  | "cheapest_single_store";
+  | "cheapest_basket"
+  | "cheapest_per_unit"
+  | "cheapest_pro_rata"
+  | "cheapest_single_store"
+  | "expensive";
 
 export interface RecipePricingOptions {
   strategy?: PricingStrategy;

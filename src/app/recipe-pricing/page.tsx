@@ -323,19 +323,16 @@ export default function RecipePricingPage() {
                         className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                       >
                         <option value="cheapest">
-                          Cheapest (Best Mix Across Stores)
+                          Lowest Checkout Outlay (Minimum Cart Total)
                         </option>
                         <option value="cheapest_per_unit">
-                          Cheapest Per Unit (Optimized Pro-Rata)
+                          Best Unit Value (Optimized Pro-Rata)
                         </option>
-                        <option value="cheapest_total_pack">
-                          Cheapest Total Pack (Min Immediate Spend)
-                        </option>
-                        <option value="single_store_cheapest">
+                        <option value="cheapest_single_store">
                           Single Store (Lowest Total Trip)
                         </option>
-                        <option value="organic_premium">
-                          Organic / Premium Preferred
+                        <option value="expensive">
+                          Premium / Highest Shelf
                         </option>
                       </select>
                     </div>
