@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Footer from "@/components/footer/Footer";
 import NavBar from "@/components/navbar/NavBar";
 import { Badge } from "@/components/ui/badge";
@@ -44,10 +44,59 @@ import type {
 const SUPERMARKET_OPTIONS = [
   { id: "keells", label: "Keells", color: "bg-emerald-600" },
   { id: "cargills", label: "Cargills", color: "bg-red-600" },
-  { id: "spar", label: "SPAR", color: "bg-green-700" },
-  { id: "glomark", label: "Glomark", color: "bg-amber-600" },
-  { id: "arpico", label: "Arpico", color: "bg-blue-600" },
+  { id: "glomark", label: "Glomark", color: "bg-blue-600" },
+  { id: "spar", label: "SPAR", color: "bg-emerald-700" },
+  { id: "arpico", label: "Arpico", color: "bg-blue-700" },
 ];
+
+function ItemThumbnail({
+  src,
+  fallbackSrc,
+  alt,
+}: {
+  src?: string | null;
+  fallbackSrc?: string | null;
+  alt: string;
+}) {
+  const [currentSrc, setCurrentSrc] = useState<string | null>(
+    src || fallbackSrc || null,
+  );
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setCurrentSrc(src || fallbackSrc || null);
+    setFailed(false);
+  }, [src, fallbackSrc]);
+
+  const handleError = () => {
+    if (currentSrc === src && fallbackSrc && fallbackSrc !== src) {
+      setCurrentSrc(fallbackSrc);
+    } else {
+      setFailed(true);
+    }
+  };
+
+  if (!currentSrc || failed) {
+    return (
+      <div className="w-12 h-12 rounded-lg bg-background border border-border/80 overflow-hidden shrink-0 flex items-center justify-center shadow-2xs relative">
+        <Store className="w-5 h-5 text-muted-foreground/60" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-12 h-12 rounded-lg bg-background border border-border/80 overflow-hidden shrink-0 flex items-center justify-center shadow-2xs relative">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={currentSrc}
+        alt={alt}
+        className="w-full h-full object-cover"
+        loading="lazy"
+        onError={handleError}
+      />
+    </div>
+  );
+}
 
 export default function RecipePricingPage() {
   const [activeTab, setActiveTab] = useState<"url" | "text">("url");
@@ -703,19 +752,11 @@ export default function RecipePricingPage() {
                           </button>
 
                           {/* Product Thumbnail Image */}
-                          <div className="w-12 h-12 rounded-lg bg-background border border-border/80 overflow-hidden shrink-0 flex items-center justify-center shadow-2xs relative">
-                            {offer?.itemOffered?.image ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={offer.itemOffered.image}
-                                alt={offer.itemOffered.name || ing.name}
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                              />
-                            ) : (
-                              <Store className="w-5 h-5 text-muted-foreground/60" />
-                            )}
-                          </div>
+                          <ItemThumbnail
+                            src={offer?.itemOffered?.image}
+                            fallbackSrc={ing.image}
+                            alt={offer?.itemOffered?.name || ing.name}
+                          />
 
                           {/* Item Details */}
                           <div className="space-y-0.5 min-w-0">
