@@ -164,103 +164,6 @@ const MCP_TOOLS: McpToolDoc[] = [
       2,
     ),
   },
-  {
-    name: "contribute_ingredient",
-    title: "Contribute Canonical Ingredient",
-    readOnly: false,
-    scope: "write:ingredients",
-    description:
-      "Add a newly discovered canonical ingredient into the knowledge base, automatically generating pgvector semantic embeddings.",
-    params: [
-      {
-        name: "name",
-        type: "string",
-        required: true,
-        description: "Canonical English or common title",
-      },
-      {
-        name: "aliases",
-        type: "string[]",
-        description: "Vernacular, regional, or scientific synonyms",
-      },
-      {
-        name: "country",
-        type: "string[]",
-        description: "Countries of primary cultivation or usage",
-      },
-      {
-        name: "cuisine",
-        type: "string[]",
-        description:
-          "Associated cuisines (e.g. ['Sri Lankan', 'South Indian'])",
-      },
-      {
-        name: "region",
-        type: "string[]",
-        description: "Broader regional categories",
-      },
-      {
-        name: "flavor_profile",
-        type: "string[]",
-        description: "Taste and aromatic attributes",
-      },
-      {
-        name: "dietary_flags",
-        type: "string[]",
-        description: "Dietary categorizations (e.g. 'Vegan', 'Halal')",
-      },
-      {
-        name: "comment",
-        type: "string",
-        description: "Culinary notes or usage guidance",
-      },
-      {
-        name: "photo",
-        type: "string",
-        description: "Public URL of representative photograph",
-      },
-    ],
-    exampleArgs: JSON.stringify(
-      {
-        name: "Karapincha",
-        aliases: ["Curry Leaves", "Murraya koenigii"],
-        cuisine: ["Sri Lankan", "South Indian"],
-        flavor_profile: ["Aromatic", "Citrusy"],
-      },
-      null,
-      2,
-    ),
-  },
-  {
-    name: "update_ingredient",
-    title: "Update Canonical Ingredient",
-    readOnly: false,
-    scope: "write:ingredients",
-    description:
-      "Update an existing canonical ingredient record by UUID with verified metadata or dietary flags.",
-    params: [
-      {
-        name: "id",
-        type: "string",
-        required: true,
-        description: "UUID of the ingredient to update",
-      },
-      {
-        name: "data",
-        type: "object",
-        required: true,
-        description: "Key-value fields to update",
-      },
-    ],
-    exampleArgs: JSON.stringify(
-      {
-        id: "00000000-0000-0000-0000-000000000000",
-        data: { dietary_flags: ["Vegan", "Gluten-Free"] },
-      },
-      null,
-      2,
-    ),
-  },
 ];
 
 const MCP_CONFIG_SNIPPET = `{
@@ -376,7 +279,7 @@ export default function McpDocumentationPage() {
                   read:products
                 </span>
                 <span className="font-mono px-2 py-0.5 rounded bg-muted border border-border text-foreground">
-                  write:ingredients
+                  read:recipes
                 </span>
               </div>
             </CardContent>
@@ -385,29 +288,21 @@ export default function McpDocumentationPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-primary" /> Read vs. Write
-                Safety
+                <ShieldCheck className="w-4 h-4 text-primary" /> Strictly
+                Read-Only MCP
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-xs text-muted-foreground">
               <p>
-                4 of 6 tools are strictly read-only (
+                All 4 exposed MCP tools are strictly read-only (
                 <code className="font-mono text-foreground">
                   readOnlyHint: true
                 </code>
-                ). Write tools (
-                <code className="font-mono text-foreground">
-                  contribute_ingredient
-                </code>
                 ,{" "}
                 <code className="font-mono text-foreground">
-                  update_ingredient
+                  destructiveHint: false
                 </code>
-                ) require{" "}
-                <code className="font-mono text-foreground">
-                  write:ingredients
-                </code>{" "}
-                scope.
+                ). Database mutations are disabled over MCP.
               </p>
             </CardContent>
           </Card>
