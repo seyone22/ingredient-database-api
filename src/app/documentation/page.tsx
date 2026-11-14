@@ -666,6 +666,12 @@ export default function DocumentationPage() {
 
           <div className="flex flex-wrap items-center gap-2">
             <a
+              href="/documentation/mcp"
+              className="px-3.5 py-2 rounded-lg text-xs font-medium border border-primary/30 bg-primary/10 hover:bg-primary/15 text-primary inline-flex items-center gap-1.5 transition-colors shadow-xs"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> MCP &amp; Plugin Docs
+            </a>
+            <a
               href="https://foodapi.seyone.dev/api/docs"
               target="_blank"
               rel="noopener noreferrer"
