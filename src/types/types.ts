@@ -49,6 +49,11 @@ export interface IProductData {
   } | null;
 }
 
+export interface RelationItem {
+  id?: string | null;
+  name: string;
+}
+
 export interface DerivativeItem {
   name: string;
   targetId?: string | null;
@@ -78,12 +83,12 @@ export interface IIngredientData {
     source?: string;
     missing?: boolean;
   } | null;
-  partOf?: string[] | null;
+  partOf?: (RelationItem | string)[] | null;
   derivatives?: (DerivativeItem | string)[] | null;
-  varieties?: string[] | null;
-  usedIn?: string[] | null;
-  substitutes?: string[] | null;
-  pairsWith?: string[] | null;
+  varieties?: (RelationItem | string)[] | null;
+  usedIn?: (RelationItem | string)[] | null;
+  substitutes?: (RelationItem | string)[] | null;
+  pairsWith?: (RelationItem | string)[] | null;
   createdAt?: Date | null;
   updatedAt?: Date | null;
   products?: IProductData[];

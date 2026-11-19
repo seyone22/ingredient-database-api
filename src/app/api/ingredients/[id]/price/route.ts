@@ -1,41 +1,18 @@
 import { type NextRequest, NextResponse } from "next/server";
-
-const NESTJS_API_BASE =
-  process.env.FOODREPO_API_URL || "https://foodapi.seyone.dev/api/v1";
+import { fetchFromBackendApi, jsonResponse } from "@/lib/backend-client";
 
 export async function GET(request: NextRequest, { params }: { params: any }) {
-  try {
-    const ingredientId = (await params).id;
+  const ingredientId = (await params).id;
 
-    if (!ingredientId) {
-      return NextResponse.json(
-        { error: "Invalid ingredient ID" },
-        { status: 400 },
-      );
-    }
-
-    const backendRes = await fetch(
-      `${NESTJS_API_BASE}/ingredients/${ingredientId}/price`,
-      {
-        headers: {
-          Accept: "application/json",
-        },
-      },
-    );
-
-    const data = await backendRes.json();
-
-    return NextResponse.json(data, {
-      status: backendRes.status,
-      headers: {
-        "X-Powered-By": "foodrepo-api (NestJS)",
-      },
-    });
-  } catch (err: any) {
-    console.error("Fetch Ingredient Prices Error:", err);
+  if (!ingredientId) {
     return NextResponse.json(
-      { error: "Failed to fetch ingredient prices", details: err.message },
-      { status: 500 },
+      { error: "Invalid ingredient ID" },
+      { status: 400 },
     );
   }
+
+  const result = await fetchFromBackendApi(
+    `/ingredients/${ingredientId}/price`,
+  );
+  return jsonResponse(result);
 }

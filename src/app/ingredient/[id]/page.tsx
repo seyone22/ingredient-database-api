@@ -1,20 +1,5 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import NavBar from "@/components/navbar/NavBar";
-import Footer from "@/components/footer/Footer";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   ArrowLeft,
   Globe,
@@ -29,10 +14,26 @@ import {
   Utensils,
   Wand2,
 } from "lucide-react";
-import RetailProductsPricing from "@/components/RetailProductsPricing";
-import NutritionFacts from "@/components/NutritionFacts";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import Footer from "@/components/footer/Footer";
 import IngredientGraphExplorer from "@/components/IngredientGraphExplorer";
+import NutritionFacts from "@/components/NutritionFacts";
+import NavBar from "@/components/navbar/NavBar";
+import RetailProductsPricing from "@/components/RetailProductsPricing";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { getKitchenConversions } from "@/utils/calculators";
+import type { RelationItem } from "@/types/types";
 
 export default function IngredientPage() {
   const { id } = useParams();
@@ -42,6 +43,9 @@ export default function IngredientPage() {
   const [ingredient, setIngredient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [errorType, setErrorType] = useState<
+    "not_found" | "service_unavailable" | null
+  >(null);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [isFetchingImage, setIsFetchingImage] = useState(false);
 
@@ -60,10 +64,20 @@ export default function IngredientPage() {
 
   const fetchIngredient = async () => {
     setLoading(true);
+    setError(false);
+    setErrorType(null);
     try {
       const res = await fetch(`/api/ingredients/${id}`);
-      if (!res.ok) throw new Error("Ingredient not found");
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const isWakingUp =
+          res.status === 503 ||
+          Boolean(data?.isWakingUp) ||
+          data?.code === "BACKEND_UNAVAILABLE" ||
+          data?.code === "BACKEND_TIMEOUT";
+        setErrorType(isWakingUp ? "service_unavailable" : "not_found");
+        throw new Error(data?.error || "Ingredient not found");
+      }
       setIngredient(data.ingredient);
     } catch (err) {
       console.error(err);
@@ -230,43 +244,128 @@ export default function IngredientPage() {
         )}
 
         {!loading && (error || !ingredient) && (
-          <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-            <Info className="h-12 w-12 text-muted-foreground" />
-            <h2 className="text-2xl font-bold">Ingredient not found</h2>
-            <p className="text-muted-foreground">
-              We couldn't find the ingredient you were looking for.
-            </p>
-            <Button onClick={() => router.push("/")}>Return Home</Button>
+          <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 max-w-md mx-auto animate-in fade-in duration-300">
+            {errorType === "service_unavailable" ? (
+              <>
+                <div className="p-3 bg-amber-500/10 rounded-full text-amber-600 dark:text-amber-400">
+                  <Sparkles className="h-10 w-10 animate-pulse" />
+                </div>
+                <h2 className="text-2xl font-bold">
+                  Database Service Warming Up
+                </h2>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  FoodRepo's backend is currently starting up or establishing
+                  connections. Please wait a moment and try again.
+                </p>
+                <div className="flex items-center gap-3 pt-2">
+                  <Button
+                    onClick={() => {
+                      fetchIngredient();
+                      fetchPrices();
+                    }}
+                    className="gap-2"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Try Again
+                  </Button>
+                  <Button variant="outline" onClick={() => router.push("/")}>
+                    Return Home
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Info className="h-12 w-12 text-muted-foreground" />
+                <h2 className="text-2xl font-bold">Ingredient not found</h2>
+                <p className="text-muted-foreground">
+                  We couldn't find the ingredient you were looking for.
+                </p>
+                <Button onClick={() => router.push("/")}>Return Home</Button>
+              </>
+            )}
           </div>
         )}
 
         {!loading &&
           ingredient &&
           (() => {
-            const rawDiet: string[] =
-              ingredient.dietaryFlags || ingredient.dietary_flags || [];
-            const rawFlavor: string[] =
-              ingredient.flavorProfile || ingredient.flavor_profile || [];
-            const country: string[] = ingredient.country || [];
-            const region: string[] = ingredient.region || [];
-            const cuisine: string[] =
-              ingredient.cuisine || ingredient.cuisines || [];
-            const substitutes: string[] = ingredient.substitutes || [];
-            const pairsWith: string[] =
-              ingredient.pairsWith || ingredient.pairs_with || [];
-            const varieties: string[] = ingredient.varieties || [];
+            const normalizeStrings = (raw: unknown): string[] => {
+              if (!Array.isArray(raw)) return [];
+              return raw
+                .map((item) => {
+                  if (typeof item === "string") return item.trim();
+                  if (item && typeof item === "object" && "name" in item) {
+                    const name = (item as { name?: unknown }).name;
+                    return typeof name === "string" ? name.trim() : "";
+                  }
+                  return "";
+                })
+                .filter(Boolean);
+            };
+
+            const normalizeRelations = (raw: unknown): RelationItem[] => {
+              const arr = Array.isArray(raw)
+                ? raw
+                : raw
+                  ? [raw]
+                  : [];
+              const seen = new Map<string, RelationItem>();
+              for (const item of arr) {
+                if (!item) continue;
+                let name = "";
+                let itemId: string | null = null;
+                if (typeof item === "string") {
+                  name = item.trim();
+                } else if (
+                  typeof item === "object" &&
+                  "name" in item &&
+                  typeof (item as { name?: unknown }).name === "string"
+                ) {
+                  name = (item as { name: string }).name.trim();
+                  const rawId =
+                    (item as { id?: unknown }).id ??
+                    (item as { targetId?: unknown }).targetId;
+                  itemId = typeof rawId === "string" && rawId ? rawId : null;
+                }
+                if (!name) continue;
+                const key = name.toLowerCase();
+                const existing = seen.get(key);
+                if (!existing || (!existing.id && itemId)) {
+                  seen.set(key, { id: itemId, name });
+                }
+              }
+              return Array.from(seen.values());
+            };
+
+            const rawDiet: string[] = normalizeStrings(
+              ingredient.dietaryFlags || ingredient.dietary_flags,
+            );
+            const rawFlavor: string[] = normalizeStrings(
+              ingredient.flavorProfile || ingredient.flavor_profile,
+            );
+            const country: string[] = normalizeStrings(ingredient.country);
+            const region: string[] = normalizeStrings(ingredient.region);
+            const cuisine: string[] = normalizeStrings(
+              ingredient.cuisine || ingredient.cuisines,
+            );
+            const substitutes: RelationItem[] = normalizeRelations(
+              ingredient.substitutes,
+            );
+            const pairsWith: RelationItem[] = normalizeRelations(
+              ingredient.pairsWith || ingredient.pairs_with,
+            );
+            const varieties: RelationItem[] = normalizeRelations(
+              ingredient.varieties,
+            );
             const derivatives: any[] = Array.isArray(ingredient.derivatives)
               ? ingredient.derivatives
               : [];
-            const usedIn: string[] =
-              ingredient.usedIn || ingredient.used_in || [];
-            const partOf: string[] = Array.isArray(ingredient.partOf)
-              ? ingredient.partOf
-              : Array.isArray(ingredient.part_of)
-                ? ingredient.part_of
-                : typeof ingredient.partOf === "string"
-                  ? [ingredient.partOf]
-                  : [];
+            const usedIn: RelationItem[] = normalizeRelations(
+              ingredient.usedIn || ingredient.used_in,
+            );
+            const partOf: RelationItem[] = normalizeRelations(
+              ingredient.partOf ?? ingredient.part_of,
+            );
             const provenance: string | null =
               ingredient.provenance && ingredient.provenance !== "MISSING"
                 ? ingredient.provenance
@@ -286,9 +385,9 @@ export default function IngredientPage() {
             const flavorProfile = Array.from(
               new Set(rawFlavor.map((f) => f.trim().toLowerCase())),
             ).map(formatLabel);
-            const cleanVarieties = Array.from(
-              new Set(varieties.map((v) => v.trim())),
-            ).filter((v) => v.toLowerCase() !== ingredient.name.toLowerCase());
+            const cleanVarieties = varieties.filter(
+              (v) => v.name.toLowerCase() !== (ingredient.name || "").toLowerCase(),
+            );
             const densityValue: number =
               typeof ingredient.density === "number" && ingredient.density > 0
                 ? ingredient.density
@@ -590,18 +689,22 @@ export default function IngredientPage() {
                           Classification
                         </h3>
                         <div className="flex flex-wrap gap-1.5">
-                          {partOf.map((p: string) => (
+                          {partOf.map((p) => (
                             <Link
-                              key={p}
-                              href={`/?query=${encodeURIComponent(p)}`}
+                              key={p.id || p.name}
+                              href={
+                                p.id
+                                  ? `/ingredient/${p.id}`
+                                  : `/?query=${encodeURIComponent(p.name)}`
+                              }
                               className="inline-block transition-transform hover:scale-[1.03]"
-                              title={`Explore ${p}`}
+                              title={`Explore ${p.name}`}
                             >
                               <Badge
                                 variant="outline"
                                 className="text-xs px-2.5 py-0.5 capitalize cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
                               >
-                                {p}
+                                {p.name}
                               </Badge>
                             </Link>
                           ))}

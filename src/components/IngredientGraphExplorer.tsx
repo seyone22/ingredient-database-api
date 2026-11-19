@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { DerivativeItem } from "@/types/types";
+import { DerivativeItem, RelationItem } from "@/types/types";
 import {
   ArrowLeftRight,
   ChevronRight,
@@ -38,12 +38,12 @@ import React, {
 export interface IngredientGraphExplorerProps {
   ingredientId: string;
   ingredientName: string;
-  partOf?: string[];
-  varieties?: string[];
+  partOf?: (RelationItem | string)[];
+  varieties?: (RelationItem | string)[];
   derivatives?: (DerivativeItem | string)[];
-  substitutes?: string[];
-  pairsWith?: string[];
-  usedIn?: string[];
+  substitutes?: (RelationItem | string)[];
+  pairsWith?: (RelationItem | string)[];
+  usedIn?: (RelationItem | string)[];
   className?: string;
 }
 
@@ -205,30 +205,69 @@ export default function IngredientGraphExplorer({
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef({ x: 0, y: 0 });
 
-  // Clean inputs
-  const cleanedVarieties = useMemo(() => {
-    return Array.from(new Set(varieties.map((v) => v.trim()))).filter(
-      (v) => Boolean(v) && v.toLowerCase() !== ingredientName.toLowerCase(),
-    );
-  }, [varieties, ingredientName]);
+  // Clean inputs (handles both legacy string[] and { id, name }[] objects)
+  const normalizeRelationItems = useCallback(
+    (
+      items: (RelationItem | string)[],
+      excludeName?: string,
+    ): { name: string; targetId: string | null }[] => {
+      const seen = new Map<string, { name: string; targetId: string | null }>();
+      const excludeLower = excludeName?.trim().toLowerCase();
 
-  const cleanedPartOf = useMemo(() => {
-    return Array.from(new Set(partOf.map((p) => p.trim()))).filter(Boolean);
-  }, [partOf]);
+      for (const item of items) {
+        if (!item) continue;
+        let name = "";
+        let targetId: string | null = null;
 
-  const cleanedSubstitutes = useMemo(() => {
-    return Array.from(new Set(substitutes.map((s) => s.trim()))).filter(
-      Boolean,
-    );
-  }, [substitutes]);
+        if (typeof item === "string") {
+          name = item.trim();
+        } else if (typeof item === "object" && typeof item.name === "string") {
+          name = item.name.trim();
+          targetId =
+            (item as RelationItem).id ||
+            (item as { targetId?: string | null }).targetId ||
+            null;
+        }
 
-  const cleanedPairsWith = useMemo(() => {
-    return Array.from(new Set(pairsWith.map((p) => p.trim()))).filter(Boolean);
-  }, [pairsWith]);
+        if (!name) continue;
+        const key = name.toLowerCase();
+        if (excludeLower && key === excludeLower) continue;
 
-  const cleanedUsedIn = useMemo(() => {
-    return Array.from(new Set(usedIn.map((u) => u.trim()))).filter(Boolean);
-  }, [usedIn]);
+        const existing = seen.get(key);
+        if (!existing || (!existing.targetId && targetId)) {
+          seen.set(key, { name, targetId });
+        }
+      }
+
+      return Array.from(seen.values());
+    },
+    [],
+  );
+
+  const cleanedVarieties = useMemo(
+    () => normalizeRelationItems(varieties, ingredientName),
+    [varieties, ingredientName, normalizeRelationItems],
+  );
+
+  const cleanedPartOf = useMemo(
+    () => normalizeRelationItems(partOf),
+    [partOf, normalizeRelationItems],
+  );
+
+  const cleanedSubstitutes = useMemo(
+    () => normalizeRelationItems(substitutes),
+    [substitutes, normalizeRelationItems],
+  );
+
+  const cleanedPairsWith = useMemo(
+    () => normalizeRelationItems(pairsWith),
+    [pairsWith, normalizeRelationItems],
+  );
+
+  const cleanedUsedIn = useMemo(
+    () => normalizeRelationItems(usedIn),
+    [usedIn, normalizeRelationItems],
+  );
 
   const normalizedDerivatives = useMemo(() => {
     return derivatives

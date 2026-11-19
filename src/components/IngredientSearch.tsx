@@ -1,16 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import {
+  AlertCircle,
+  Loader2,
+  RefreshCw,
+  Search,
+  Sparkles,
+} from "lucide-react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertCircle, Loader2, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useCallback, useEffect, useState } from "react";
 import IngredientCard from "@/components/ingredientcard/IngredientCard";
 import Pagination from "@/components/pagination/Pagination";
-import { Ingredient } from "@/types/types";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import type { Ingredient } from "@/types/types";
 
-import Image from "next/image";
+interface SearchErrorState {
+  message: string;
+  type: "not_found" | "waking_up" | "server_error";
+  isRetryable: boolean;
+}
 
 export default function IngredientSearch() {
   const router = useRouter();
@@ -23,14 +34,18 @@ export default function IngredientSearch() {
 
   const [results, setResults] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<SearchErrorState | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   const fetchData = useCallback(
     async (searchQuery: string, pageNumber: number = 1) => {
-      if (!searchQuery.trim()) {
+      const trimmed = searchQuery.trim();
+      if (!trimmed) {
         setResults([]);
+        setError(null);
+        setCountdown(null);
         return;
       }
 
@@ -39,37 +54,79 @@ export default function IngredientSearch() {
 
       try {
         const url = new URL("/api/ingredients", window.location.origin);
-        url.searchParams.set("query", searchQuery);
+        url.searchParams.set("query", trimmed);
         url.searchParams.set("page", pageNumber.toString());
         url.searchParams.set("limit", "20");
 
         const res = await fetch(url.toString());
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
 
         if (!res.ok || !data.results) {
           setResults([]);
-          setError(data.error || "No results found");
           setTotalPages(1);
           setPage(1);
+
+          const isWakingUp =
+            res.status === 503 ||
+            Boolean(data?.isWakingUp) ||
+            data?.code === "BACKEND_UNAVAILABLE" ||
+            data?.code === "BACKEND_TIMEOUT";
+
+          if (isWakingUp) {
+            setError({
+              type: "waking_up",
+              message:
+                data?.error ||
+                "FoodRepo database is currently warming up. Connection in progress...",
+              isRetryable: true,
+            });
+            return;
+          }
+
+          if (res.status === 404) {
+            setError({
+              type: "not_found",
+              message: `No ingredients found matching "${trimmed}".`,
+              isRetryable: false,
+            });
+            return;
+          }
+
+          setError({
+            type: "server_error",
+            message:
+              data?.error || "Failed to load ingredients. Please try again.",
+            isRetryable: true,
+          });
           return;
         }
 
         setResults(data.results);
-        setPage(data.page);
-        setTotalPages(data.totalPages);
+        setPage(data.page || 1);
+        setTotalPages(data.totalPages || 1);
 
         if (data.results.length === 0) {
-          setError(
-            data.page === 1
-              ? "No results found"
-              : "No more results on this page.",
-          );
+          setError({
+            type: "not_found",
+            message:
+              data.page === 1
+                ? `No ingredients found matching "${trimmed}".`
+                : "No more results on this page.",
+            isRetryable: false,
+          });
+        } else {
+          setError(null);
         }
       } catch {
         setResults([]);
-        setError("Failed to fetch ingredients. Please try again.");
         setTotalPages(1);
         setPage(1);
+        setError({
+          type: "server_error",
+          message:
+            "Unable to connect to FoodRepo. Please check your network connection.",
+          isRetryable: true,
+        });
       } finally {
         setLoading(false);
       }
@@ -77,12 +134,35 @@ export default function IngredientSearch() {
     [],
   );
 
+  // Auto-retry timer when backend is waking up
+  useEffect(() => {
+    if (error?.type !== "waking_up" || !activeQuery) {
+      setCountdown(null);
+      return;
+    }
+
+    setCountdown(4);
+    const interval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(interval);
+          fetchData(activeQuery, page);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [error?.type, activeQuery, page, fetchData]);
+
   // Fetch data whenever the active query changes
   useEffect(() => {
     if (activeQuery) {
       fetchData(activeQuery, 1);
     } else {
       setResults([]);
+      setError(null);
     }
   }, [activeQuery, fetchData]);
 
@@ -91,11 +171,19 @@ export default function IngredientSearch() {
     const trimmed = inputValue.trim();
     if (!trimmed) return;
 
+    setCountdown(null);
     setActiveQuery(trimmed);
 
     // Update the URL without reloading the page, preserving shareable links
     router.replace(`/?query=${encodeURIComponent(trimmed)}`, { scroll: false });
   };
+
+  const handleRetry = useCallback(() => {
+    setCountdown(null);
+    if (activeQuery) {
+      fetchData(activeQuery, page);
+    }
+  }, [activeQuery, page, fetchData]);
 
   const handlePageChange = useCallback(
     (newPage: number) => {
@@ -153,12 +241,73 @@ export default function IngredientSearch() {
         </Button>
       </form>
 
-      {/* Error Handling */}
+      {/* Error & Wake-up Handling */}
       {error && !loading && (
-        <Alert variant="destructive" className="w-full max-w-2xl">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+        <div className="w-full max-w-2xl animate-in fade-in duration-300">
+          {error.type === "waking_up" ? (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 text-amber-950 dark:text-amber-200 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 animate-pulse" />
+                  <div className="space-y-1">
+                    <h4 className="font-semibold text-sm">
+                      Database Service is Warming Up
+                    </h4>
+                    <p className="text-xs text-amber-900/80 dark:text-amber-200/80 leading-relaxed">
+                      FoodRepo's backend is starting up and connecting.
+                      {countdown !== null && countdown > 0
+                        ? ` Retrying automatically in ${countdown}s...`
+                        : " Ready to retry."}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleRetry}
+                  disabled={loading}
+                  className="border-amber-500/40 bg-background/80 hover:bg-amber-500/20 text-xs shrink-0 self-end sm:self-center"
+                >
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                  Retry Now
+                </Button>
+              </div>
+            </div>
+          ) : error.type === "not_found" ? (
+            <div className="rounded-xl border bg-muted/30 p-8 text-center space-y-2">
+              <Search className="h-8 w-8 text-muted-foreground/60 mx-auto" />
+              <p className="font-medium text-foreground">{error.message}</p>
+              <p className="text-xs text-muted-foreground">
+                Try searching by common culinary name, genus, or an alternate
+                spelling.
+              </p>
+            </div>
+          ) : (
+            <Alert
+              variant="destructive"
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+            >
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <AlertDescription className="text-sm">
+                  {error.message}
+                </AlertDescription>
+              </div>
+              {error.isRetryable && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleRetry}
+                  disabled={loading}
+                  className="h-8 text-xs shrink-0 self-end sm:self-center bg-background/50 hover:bg-background"
+                >
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                  Try Again
+                </Button>
+              )}
+            </Alert>
+          )}
+        </div>
       )}
 
       {/* Results Section */}

@@ -1,36 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { FOODREPO_API_BASE } from "@/lib/api-config";
+import { fetchFromBackendApi, jsonResponse } from "@/lib/backend-client";
 
-const NESTJS_API_BASE =
-  process.env.FOODREPO_API_URL || "https://foodapi.seyone.dev/api/v1";
+const NESTJS_API_BASE = FOODREPO_API_BASE;
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-
-  try {
-    const backendRes = await fetch(
-      `${NESTJS_API_BASE}/ingredients?${searchParams.toString()}`,
-      {
-        headers: {
-          Accept: "application/json",
-        },
-      },
-    );
-
-    const data = await backendRes.json();
-
-    return NextResponse.json(data, {
-      status: backendRes.status,
-      headers: {
-        "X-Powered-By": "foodrepo-api (NestJS)",
-      },
-    });
-  } catch (err: any) {
-    console.error("Text Search Error:", err);
-    return NextResponse.json(
-      { error: "Server error", details: err.message || err },
-      { status: 500 },
-    );
-  }
+  const result = await fetchFromBackendApi(
+    `/ingredients?${searchParams.toString()}`,
+  );
+  return jsonResponse(result);
 }
 
 export async function POST(req: NextRequest) {
@@ -119,7 +98,8 @@ export async function POST(req: NextRequest) {
 
     const userMessage = isConn
       ? `Cannot connect to FoodRepo backend API at ${NESTJS_API_BASE}. The backend service is currently offline or unreachable.`
-      : err.message || "An unexpected error occurred while communicating with the backend API.";
+      : err.message ||
+        "An unexpected error occurred while communicating with the backend API.";
 
     const hint = isConn
       ? "Verify the foodrepo-api service status on Railway or check network connectivity."
