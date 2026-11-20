@@ -159,7 +159,7 @@ export default function AllProductsPage() {
 
                     <TableCell>
                       {/* Dedicated component fetches its own data progressively */}
-                      <ProductSparkline productId={row.id} />
+                      <ProductSparkline productId={row.id} mode="sales" />
                     </TableCell>
 
                     <TableCell className="text-right">

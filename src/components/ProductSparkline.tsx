@@ -6,6 +6,7 @@ import { getProductSalesHistory } from "@/actions/stock.actions";
 
 interface ProductSparklineProps {
   productId: string;
+  mode?: "price" | "sales";
   width?: number;
   height?: number;
   className?: string;
@@ -14,6 +15,7 @@ interface ProductSparklineProps {
 
 export default function ProductSparkline({
   productId,
+  mode = "price",
   width = 110,
   height = 24,
   className,
@@ -24,33 +26,49 @@ export default function ProductSparkline({
 
   useEffect(() => {
     let isMounted = true;
+    const controller = new AbortController();
+
+    const fetchPriceHistory = async (): Promise<number[]> => {
+      const res = await fetch(`/api/products/${productId}/history`, {
+        signal: controller.signal,
+      });
+      if (!res.ok) return [];
+      const json = await res.json();
+      if (!Array.isArray(json.history)) return [];
+      const prices = json.history
+        .map((h: any) => Number(h?.price))
+        .filter((p: number) => Number.isFinite(p) && p > 0);
+      return prices.slice(-30);
+    };
 
     const fetchHistory = async () => {
       setLoading(true);
       try {
-        // 1. Try stock / sales velocity history first
-        let history = await getProductSalesHistory(productId);
+        let history: number[] = [];
 
-        // 2. If not enough data points, fall back to price history
-        if (!history || history.length < 2) {
-          const res = await fetch(`/api/products/${productId}/history`);
-          if (res.ok) {
-            const json = await res.json();
-            if (
-              json.history &&
-              Array.isArray(json.history) &&
-              json.history.length >= 2
-            ) {
-              history = json.history.map((h: any) => Number(h.price));
-            }
+        if (mode === "sales") {
+          const rawSales = await getProductSalesHistory(productId);
+          const cleanSales = Array.isArray(rawSales)
+            ? rawSales
+                .map((v) => Number(v))
+                .filter((v) => Number.isFinite(v) && v >= 0)
+            : [];
+          // Ignore all-zero arrays (stores without stock velocity tracking)
+          if (cleanSales.length >= 2 && cleanSales.some((v) => v > 0)) {
+            history = cleanSales.slice(-30);
+          } else {
+            history = await fetchPriceHistory();
           }
+        } else {
+          history = await fetchPriceHistory();
         }
 
         if (isMounted) {
-          setData(history && history.length >= 2 ? history : null);
+          setData(history.length >= 2 ? history : null);
           setLoading(false);
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.name === "AbortError") return;
         if (isMounted) {
           setData(null);
           setLoading(false);
@@ -62,8 +80,9 @@ export default function ProductSparkline({
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
-  }, [productId]);
+  }, [productId, mode]);
 
   if (loading) {
     return (
@@ -81,25 +100,34 @@ export default function ProductSparkline({
 
   const min = Math.min(...data);
   const max = Math.max(...data);
-  const range = max - min || 1;
+  const range = max - min;
 
-  const points = data
-    .map((d, i) => {
-      const x = (i / (data.length - 1)) * width;
-      const y = height - ((d - min) / range) * (height - 6) - 3;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
+  const padX = 4;
+  const padY = 4;
+  const innerW = Math.max(1, width - padX * 2);
+  const innerH = Math.max(1, height - padY * 2);
+
+  const coords = data.map((d, i) => {
+    const x = padX + (i / (data.length - 1)) * innerW;
+    const y =
+      range === 0
+        ? height / 2
+        : padY + innerH - ((d - min) / range) * innerH;
+    return { x, y };
+  });
+
+  const points = coords
+    .map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`)
     .join(" ");
 
-  const lastY =
-    height - ((data[data.length - 1] - min) / range) * (height - 6) - 3;
+  const last = coords[coords.length - 1];
 
   const svgContent = (
     <svg
       width={width}
       height={height}
-      viewBox={`0 -4 ${width} ${height + 8}`}
-      className={`overflow-visible ${className || ""}`}
+      viewBox={`0 0 ${width} ${height}`}
+      className={`block ${className || ""}`}
       role="img"
       aria-label="30-Day Trend"
     >
@@ -108,12 +136,17 @@ export default function ProductSparkline({
         points={points}
         fill="none"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.75"
         strokeLinecap="round"
         strokeLinejoin="round"
         className="text-primary opacity-80"
       />
-      <circle cx={width} cy={lastY} r="3" className="fill-primary" />
+      <circle
+        cx={last.x.toFixed(1)}
+        cy={last.y.toFixed(1)}
+        r="2.75"
+        className="fill-primary"
+      />
     </svg>
   );
 
